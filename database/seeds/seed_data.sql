@@ -2,9 +2,11 @@
 -- Initial seed data for development and testing
 -- Last updated: 06/11/2024 14:45:00
 
--- Insert default admin user (password: admin123)
+-- Insert default platform users (password for all: admin123)
 INSERT INTO users (email, password_hash, name, role) VALUES
-('admin@eclectyc.energy', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'System Admin', 'admin');
+('admin@eclectyc.energy', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'System Admin', 'admin'),
+('manager@eclectyc.energy', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Operations Manager', 'manager'),
+('viewer@eclectyc.energy', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Read Only Analyst', 'viewer');
 
 -- Insert suppliers
 INSERT INTO suppliers (name, code, contact_email) VALUES

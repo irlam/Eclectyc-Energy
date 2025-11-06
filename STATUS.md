@@ -9,12 +9,13 @@ This document captures the current progress of the Eclectyc Energy platform so f
 - **Tooling**: CLI utilities for migrations, seeding, CSV import, aggregation, SFTP export; structure and health check tools.
 - **UI**: Base layout, dashboard scaffold, login view, admin/report placeholders, consistent styling.
 - **APIs**: `/api/health` endpoint with database, filesystem, PHP, memory, and disk diagnostics.
+- **Access Control**: Session-backed auth service, role-aware middleware, and navigation that respects admin/manager/viewer capabilities.
 
 ## ⚠️ Work Still Required
 
 - **Authentication & Authorization**
   - Harden login flow (redirect handling, throttling, password reset).
-  - Enforce role-based access for admin routes and future APIs.
+  - Extend role-based policies to APIs and non-admin UIs (manager workflows, viewer read-only safeguards).
 
 - **Controller Layer**
   - Finish wiring dedicated controllers for dashboard, meters, imports, rather than anonymous closures.

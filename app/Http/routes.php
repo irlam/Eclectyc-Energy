@@ -192,7 +192,10 @@ $app->group('/reports', function ($group) {
             'page_title' => 'Cost Analysis Report'
         ]);
     });
-})->add(AuthMiddleware::class);
+})->add(function ($request, $handler) use ($container) {
+    $middleware = new AuthMiddleware($container->get(AuthService::class), ['admin', 'manager']);
+    return $middleware->process($request, $handler);
+});
 
 // Catch-all for 404
 $app->map(['GET', 'POST', 'PUT', 'DELETE', 'PATCH'], '/{routes:.+}', function (Request $request, Response $response) use ($app) {

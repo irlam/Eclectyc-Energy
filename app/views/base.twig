@@ -30,15 +30,22 @@
     </header>
     
     {% if auth.check %}
+        {% set role = auth.user.role ?? 'viewer' %}
         <nav class="nav">
             <div class="container">
                 <ul>
                     <li><a href="/">Dashboard</a></li>
-                    <li><a href="/admin/sites">Sites</a></li>
-                    <li><a href="/admin/tariffs">Tariffs</a></li>
-                    <li><a href="/reports/consumption">Reports</a></li>
-                    <li><a href="/admin/users">Users</a></li>
-                    <li><a href="/tools/show-structure">Tools</a></li>
+
+                    {% if role in ['admin', 'manager'] %}
+                        <li><a href="/reports/consumption">Reports</a></li>
+                    {% endif %}
+
+                    {% if role == 'admin' %}
+                        <li><a href="/admin/sites">Sites</a></li>
+                        <li><a href="/admin/tariffs">Tariffs</a></li>
+                        <li><a href="/admin/users">Users</a></li>
+                        <li><a href="/tools/show-structure">Tools</a></li>
+                    {% endif %}
                 </ul>
             </div>
         </nav>

@@ -98,6 +98,18 @@ Append `&seed=true` to load sample data when running from the browser.
 php scripts/seed.php
 ```
 
+### Default Accounts & Roles
+
+Running the seeder creates three demo operators, all with the temporary password `admin123`:
+
+| Email | Role | Access |
+| --- | --- | --- |
+| `admin@eclectyc.energy` | admin | Full platform access, user management, tooling |
+| `manager@eclectyc.energy` | manager | Dashboard + reporting modules |
+| `viewer@eclectyc.energy` | viewer | Dashboard only |
+
+Update these passwords immediately after seeding. Remove demo accounts in production environments.
+
 ## Project Structure
 ```
 eclectyc-energy/
@@ -228,7 +240,8 @@ Keeping this checklist handy avoids “Class not found” errors after refactors
 
 ## Development Roadmap
 
-- [ ] Finalise authentication flow (sessions, role enforcement)
+- [ ] Finalise authentication flow (session regeneration, password policies)
+- [ ] Extend role matrix (non-admin admin UI, manager workflows)
 - [ ] Implement Sites/Meters/Tariffs CRUD in UI and API
 - [ ] Build domain services (ingestion, aggregation, tariffs, analytics, exports)
 - [ ] Complete reporting dashboards with charts
