@@ -12,6 +12,8 @@ This document captures the current progress of the Eclectyc Energy platform so f
 - **APIs**: `/api/health` endpoint plus controller-backed meter/import feeds returning aggregated roll-ups.
 - **Access Control**: Session-backed auth service, role-aware middleware, and navigation that respects admin/manager/viewer capabilities.
 - **Aggregation**: Domain services for daily and period roll-ups (weekly/monthly/annual), CLI wrappers, and audit logging feeding the aggregation tables.
+- **Imports & Exports**: Central CSV ingestion service shared by CLI and admin UI (dry-run support, batch flash messaging) plus operational SFTP export pipeline with phpseclib authentication.
+- **Health Monitoring**: `/api/health` now reports environment, SFTP, filesystem, and recent activity checks with graded status codes.
 - **Requirements**: High-level capability matrix tracked in `docs/product_requirements.md`.
 
 ## ⚠️ Work Still Required
@@ -30,8 +32,8 @@ This document captures the current progress of the Eclectyc Energy platform so f
   - Integrate external datasets (temperature, calorific values) to power AI insights and carbon reporting.
 
 - **Data Imports**
-  - Expose the CSV importer beyond CLI (queue worker or admin trigger) and add validation/dry-run capabilities.
-  - Surface ingestion history and batch health inside the admin UI with actionable alerts.
+  - Extend the new admin importer with batch history views, retry workflows, and user attribution.
+  - Introduce background processing/queueing to avoid long-running requests for large files.
 
 - **CRUD & Admin UI**
   - Add create/edit flows for sites, meters, tariffs; introduce validation, flash messaging, and REST endpoints.
@@ -46,7 +48,7 @@ This document captures the current progress of the Eclectyc Energy platform so f
   - Prepare for supplier integrations and customer switching analysis.
 
 - **Exports & Automation**
-  - Implement real SFTP/FTPS upload using phpseclib, add email/report packaging, and build scheduling with retention policies.
+  - Enhance export monitoring with delivery receipts, retention policies, and email packaging.
 
 - **Testing & QA**
   - Expand automated tests, fixtures, and sample data; ensure the health endpoint covers new dependencies.

@@ -2,7 +2,7 @@
 Self‑hosted energy intelligence for estates, construction &amp; industry
 # eclectyc-energy/.README.md  
 # Energy Management Platform Documentation
-# Last updated: 06/11/2025 21:45:00
+# Last updated: 06/11/2025 22:35:00
 
 # Eclectyc Energy Management Platform
 
@@ -147,9 +147,9 @@ eclectyc-energy/
 
 ### Health Check
 Visit: https://eclectyc.energy/api/health
-- Shows system status
-- Database connectivity
-- Environment configuration
+- Multi-tier status (healthy/degraded/critical) with per-check metadata
+- Database, filesystem, PHP, disk, and memory diagnostics
+- Environment/SFTP configuration validation plus recent import/export activity timestamps
 
 ### Structure Checker
 ```bash
@@ -168,14 +168,17 @@ Visit: https://eclectyc.energy/tools/show
 - `/admin/sites` (admin only) shows estates with meter counts and status.
 - `/admin/tariffs` (admin only) lists configured supply tariffs.
 - `/admin/users` (admin only) lists seeded accounts for quick role testing.
+- `/admin/imports` (admin only) provides CSV uploads with optional dry-run previews and batch summaries.
 
 ## CLI Scripts
 
-### Import CSV Data (CLI only)
+### Import CSV Data (CLI + Admin UI)
 ```bash
 php scripts/import_csv.php -f /path/to/readings.csv -t hh
 ```
-Run from the project root so the autoloader resolves; switch `-t` to `daily` for single-value totals. The importer always executes from the command line, assigns a UUID batch, and upserts rows in `meter_readings`.
+Run from the project root so the autoloader resolves; switch `-t` to `daily` for single-value totals. The CLI importer supports `--dry-run`/`-n` validation, assigns a UUID batch ID, and upserts rows in `meter_readings`.
+
+The same ingestion service powers the admin console at `/admin/imports`, giving administrators a browser-based uploader with dry-run support and flash summaries covering processed/imported/failed rows plus sample errors.
 
 ### Run Aggregations
 ```bash
@@ -190,11 +193,11 @@ php scripts/aggregate_annual.php --date 2025-01-01
 ```
 Each script logs to `audit_logs` and reuses the shared aggregation helper, so you can schedule individual frequencies or run everything in one hit.
 
-### Export via SFTP (preview)
+### Export via SFTP
 ```bash
 php scripts/export_sftp.php -t daily -d 2025-11-05 -f csv
 ```
-Configure `SFTP_HOST`, `SFTP_PORT`, `SFTP_USERNAME`, `SFTP_PASSWORD`, and `SFTP_PATH` in `.env`. The current implementation simulates the upload; replace the placeholder block with phpseclib once credentials are provisioned.
+Configure `SFTP_HOST`, `SFTP_PORT`, `SFTP_USERNAME`, and either `SFTP_PASSWORD` or `SFTP_PRIVATE_KEY` (plus optional `SFTP_PASSPHRASE`) and `SFTP_PATH` in `.env`. The exporter now performs live uploads via phpseclib, creates remote directories when missing, and records outcomes in the `exports` table. If credentials are incomplete it retains the file locally and reports the warning.
 
 ## Cron Job Setup (Plesk)
 
