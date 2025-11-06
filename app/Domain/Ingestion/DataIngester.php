@@ -24,11 +24,13 @@ class DataIngester
      * @param string $filePath Path to the CSV file
      * @return IngestionResult Result of the ingestion operation
      */
-    public function ingestFromCsv(string $filePath): IngestionResult
+    public function ingestFromCsv(string $filePath, string $format = 'hh', ?string $batchId = null, bool $dryRun = false, ?int $userId = null): IngestionResult
     {
-        // Placeholder implementation
-        // TODO: Implement CSV ingestion logic
-        return new IngestionResult(0, 0, []);
+        $service = new CsvIngestionService($this->pdo);
+        /** @var IngestionResult $result */
+        $result = $service->ingestFromCsv($filePath, $format, $batchId, $dryRun, $userId);
+
+        return $result;
     }
 
     /**

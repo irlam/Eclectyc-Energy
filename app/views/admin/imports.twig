@@ -1,0 +1,86 @@
+{% extends "base.twig" %}
+
+{% block title %}Imports{% endblock %}
+
+{% block content %}
+<section class="card">
+    <h2>Data Imports</h2>
+    <p class="mb-2">Upload CSV files for meter readings. Use dry-run mode to validate files without persisting data.</p>
+
+    {% if flash %}
+        <div class="alert alert-{{ flash.type }}">
+            <p>{{ flash.message }}</p>
+
+            {% if flash.payload %}
+                <dl class="mt-2 import-summary">
+                    <div>
+                        <dt>Batch ID</dt>
+                        <dd>{{ flash.payload.batch_id ?? 'n/a' }}</dd>
+                    </div>
+                    <div>
+                        <dt>File</dt>
+                        <dd>{{ flash.payload.filename ?? 'n/a' }}</dd>
+                    </div>
+                    <div>
+                        <dt>Format</dt>
+                        <dd>{{ flash.payload.format|upper }}</dd>
+                    </div>
+                    <div>
+                        <dt>Rows processed</dt>
+                        <dd>{{ flash.payload.records_processed }}</dd>
+                    </div>
+                    <div>
+                        <dt>Rows imported</dt>
+                        <dd>{{ flash.payload.records_imported }}</dd>
+                    </div>
+                    <div>
+                        <dt>Rows failed</dt>
+                        <dd>{{ flash.payload.records_failed }}</dd>
+                    </div>
+                    <div>
+                        <dt>Data points</dt>
+                        <dd>{{ flash.payload.meta.total_values_processed ?? 0 }}</dd>
+                    </div>
+                </dl>
+
+                {% if flash.payload.errors %}
+                    <div class="mt-2">
+                        <h3>Sample errors</h3>
+                        <ul>
+                            {% for error in flash.payload.errors %}
+                                <li>{{ error }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% endif %}
+            {% endif %}
+        </div>
+    {% endif %}
+
+    <form method="POST" enctype="multipart/form-data" class="form-grid mt-3">
+        <div class="form-group">
+            <label for="csv_file">CSV file</label>
+            <input type="file" id="csv_file" name="csv_file" accept=".csv" required>
+        </div>
+
+        <div class="form-group">
+            <label for="import_type">Import type</label>
+            <select id="import_type" name="import_type" required>
+                <option value="hh">Half-hourly (48 periods)</option>
+                <option value="daily">Daily totals</option>
+            </select>
+        </div>
+
+        <div class="form-group form-group-inline">
+            <label>
+                <input type="checkbox" name="dry_run" value="1">
+                Dry run (validate without saving)
+            </label>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Upload &amp; Process</button>
+        </div>
+    </form>
+</section>
+{% endblock %}

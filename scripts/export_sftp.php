@@ -7,6 +7,8 @@
 
 use App\Config\Database;
 use League\Csv\Writer;
+use phpseclib3\Net\SFTP;
+use phpseclib3\Crypt\PublicKeyLoader;
 
 // Check if running from CLI
 if (php_sapi_name() !== 'cli') {
@@ -193,23 +195,62 @@ try {
     echo "File size: " . number_format($filesize / 1024, 2) . " KB\n\n";
     
     // SFTP upload (if configured)
-    if (!empty($_ENV['SFTP_HOST'])) {
+    $sftpHost = $_ENV['SFTP_HOST'] ?? null;
+    $sftpUser = $_ENV['SFTP_USERNAME'] ?? null;
+    $sftpPassword = $_ENV['SFTP_PASSWORD'] ?? null;
+    $sftpPrivateKey = $_ENV['SFTP_PRIVATE_KEY'] ?? null;
+    $sftpPort = (int) ($_ENV['SFTP_PORT'] ?? 22);
+    $sftpPath = $_ENV['SFTP_PATH'] ?? '';
+    $sftpTimeout = (int) ($_ENV['SFTP_TIMEOUT'] ?? 15);
+
+    $hasCredentials = $sftpHost && $sftpUser && ($sftpPassword || $sftpPrivateKey);
+
+    if ($hasCredentials) {
         echo "Uploading to SFTP server...\n";
-        
-        // TODO: Implement actual SFTP upload using phpseclib or similar
-        // This is a placeholder for the SFTP logic
-        echo "SFTP upload simulation:\n";
-        echo "  Host: {$_ENV['SFTP_HOST']}\n";
-        echo "  Port: {$_ENV['SFTP_PORT']}\n";
-        echo "  Path: {$_ENV['SFTP_PATH']}$filename.$exportFormat\n";
-        echo "  Status: Would upload (not implemented)\n\n";
-        
-        // In production, you would use:
-        // $sftp = new phpseclib3\Net\SFTP($_ENV['SFTP_HOST']);
-        // $sftp->login($_ENV['SFTP_USERNAME'], $_ENV['SFTP_PASSWORD']);
-        // $sftp->put($_ENV['SFTP_PATH'] . basename($filepath), $filepath, SFTP::SOURCE_LOCAL_FILE);
+
+        try {
+            $sftp = new SFTP($sftpHost, $sftpPort, $sftpTimeout);
+
+            if (!$sftp->isConnected()) {
+                throw new Exception('Unable to establish SFTP connection.');
+            }
+
+            $credential = $sftpPassword;
+
+            if ($sftpPrivateKey) {
+                $keyMaterial = is_file($sftpPrivateKey)
+                    ? file_get_contents($sftpPrivateKey)
+                    : $sftpPrivateKey;
+
+                if ($keyMaterial === false) {
+                    throw new Exception('Unable to read SFTP private key material.');
+                }
+
+                $credential = PublicKeyLoader::load($keyMaterial, $_ENV['SFTP_PASSPHRASE'] ?? false);
+            }
+
+            if (!$sftp->login($sftpUser, $credential)) {
+                throw new Exception('SFTP authentication failed. Check username/password or key.');
+            }
+
+            $remoteDirectory = rtrim($sftpPath, '/') . '/';
+            $remotePath = $remoteDirectory . basename($filepath);
+
+            if (!empty($sftpPath) && !$sftp->is_dir($sftpPath)) {
+                $sftp->mkdir($sftpPath, -1, true);
+            }
+
+            if (!$sftp->put($remotePath, $filepath, SFTP::SOURCE_LOCAL_FILE)) {
+                throw new Exception('SFTP upload failed.');
+            }
+
+            echo "Uploaded to SFTP: $remotePath\n\n";
+        } catch (Exception $sftpException) {
+            echo "SFTP upload failed: " . $sftpException->getMessage() . "\n";
+            echo "File saved locally only.\n\n";
+        }
     } else {
-        echo "SFTP not configured. File saved locally only.\n";
+        echo "SFTP not fully configured. File saved locally only.\n";
     }
     
     // Log export to database
