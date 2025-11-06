@@ -6,7 +6,7 @@ Friend-supplied blueprint captured below so we can benchmark the current platfor
 
 | Capability | Status | Notes |
 | --- | --- | --- |
-| Aggregate raw meter feeds (1/5/30 minute) into day/week/month/year buckets | Planned | Migration seeds provide sample readings but no aggregation engine yet. |
+| Aggregate raw meter feeds (1/5/30 minute) into day/week/month/year buckets | Partial | Daily aggregator service + cron covers daily snapshots; weekly/monthly/annual rollups still pending. |
 | Store historical comparison windows (previous day/week/month/year) for fast reporting | Planned | Requires aggregation jobs and cache tables; not implemented. |
 | Handle sub-minute (1 min) and half-hourly data ingestion pipelines | Planned | `domain/ingestion` scaffolding exists but no logic. |
 | Support multiple meter channels (import/export) with accurate aggregation | Planned | Schema tracks `reading_type` but not direction. Needs model expansion. |

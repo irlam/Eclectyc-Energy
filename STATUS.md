@@ -11,6 +11,7 @@ This document captures the current progress of the Eclectyc Energy platform so f
 - **Reports**: Consumption and cost dashboards now backed by controllers and live aggregates.
 - **APIs**: `/api/health` endpoint with database, filesystem, PHP, memory, and disk diagnostics.
 - **Access Control**: Session-backed auth service, role-aware middleware, and navigation that respects admin/manager/viewer capabilities.
+- **Aggregation**: Domain service (`DailyAggregator`) plus CLI cron script producing daily_aggregations snapshots.
 - **Requirements**: High-level capability matrix tracked in `docs/product_requirements.md`.
 
 ## ⚠️ Work Still Required
