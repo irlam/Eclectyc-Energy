@@ -2,7 +2,7 @@
 /**
  * eclectyc-energy/tools/check-structure.php
  * Validates project structure and reports missing files/folders
- * Last updated: 06/11/2024 14:45:00
+ * Last updated: 06/11/2025 20:20:00
  */
 
 // Determine if running from CLI or web
@@ -14,19 +14,25 @@ $basePath = dirname(__DIR__);
 // Define expected structure
 $expectedStructure = [
     'directories' => [
-    'app',
-    'app/Config',
-    'app/Http',
-    'app/Http/Controllers',
-    'app/Http/Controllers/Api',
+        'app',
+        'app/Config',
+        'app/Http',
+        'app/Http/Controllers',
+        'app/Http/Controllers/Admin',
+        'app/Http/Controllers/Api',
+        'app/Http/Middleware',
         'app/Domain',
-        'app/Domain/Ingestion',
         'app/Domain/Aggregation',
+        'app/Domain/Ingestion',
         'app/Domain/Tariffs',
         'app/Domain/Analytics',
-    'app/Domain/Exports',
-    'app/Models',
+        'app/Domain/Exports',
+        'app/Models',
+        'app/Services',
         'app/views',
+        'app/views/admin',
+        'app/views/reports',
+        'app/views/tools',
         'database',
         'database/migrations',
         'database/seeds',
@@ -47,13 +53,22 @@ $expectedStructure = [
         'public/router.php',
         'public/assets/css/style.css',
         'public/assets/js/app.js',
-    'app/Http/routes.php',
-    'app/Http/Controllers/Api/HealthController.php',
+        'app/Http/routes.php',
+        'app/Http/Controllers/DashboardController.php',
+        'app/Http/Controllers/ReportsController.php',
+        'app/Http/Controllers/ToolsController.php',
+        'app/Http/Controllers/Api/HealthController.php',
+        'app/Http/Controllers/Api/MetersController.php',
+        'app/Http/Controllers/Api/ImportStatusController.php',
         'tools/check-structure.php',
         'tools/show-structure.php',
         'scripts/import_csv.php',
         'scripts/aggregate_cron.php',
-        'scripts/export_sftp.php'
+        'scripts/export_sftp.php',
+        'scripts/migrate.php',
+        'scripts/seed.php',
+        'app/views/tools/check.twig',
+        'app/views/tools/show.twig'
     ]
 ];
 
@@ -219,7 +234,7 @@ if ($isCli) {
             
             <div style="margin-top: 2rem;">
                 <a href="/" class="btn btn-primary">Back to Dashboard</a>
-                <a href="/tools/show-structure" class="btn btn-secondary">View Structure</a>
+                <a href="/tools/show" class="btn btn-secondary">View Structure</a>
             </div>
         </div>
     </body>
