@@ -6,6 +6,7 @@
  */
 
 use App\Http\Controllers\Admin\UsersController;
+use App\Http\Controllers\Api\HealthController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Middleware\AuthMiddleware;
@@ -15,6 +16,7 @@ use Dotenv\Dotenv;
 use Slim\Factory\AppFactory;
 use Slim\Views\Twig;
 use Slim\Views\TwigMiddleware;
+use Psr\Container\ContainerInterface;
 
 // Set error reporting for development
 error_reporting(E_ALL);
@@ -160,6 +162,10 @@ $container->set(AuthMiddleware::class, function(Container $c) {
     return new AuthMiddleware($c->get(AuthService::class));
 });
 
+$container->set(HealthController::class, function(ContainerInterface $c) {
+    return new HealthController($c);
+});
+
 // Set container for AppFactory
 AppFactory::setContainer($container);
 
@@ -183,7 +189,7 @@ $app->add(TwigMiddleware::createFromContainer($app, 'view'));
 
 // Add error middleware
 $errorMiddleware = $app->addErrorMiddleware(
-    true,
+    $debugMode,
     true,
     true
 );
