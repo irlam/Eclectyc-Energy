@@ -5,6 +5,8 @@
  * Last updated: 06/11/2024 14:45:00
  */
 
+use App\Http\Controllers\Admin\SitesController;
+use App\Http\Controllers\Admin\TariffsController;
 use App\Http\Controllers\Admin\UsersController;
 use App\Http\Controllers\Api\HealthController;
 use App\Http\Controllers\AuthController;
@@ -149,25 +151,8 @@ $app->group('/tools', function ($group) {
 
 // Admin Routes (future expansion)
 $app->group('/admin', function ($group) {
-    // Sites management
-    $group->get('/sites', function (Request $request, Response $response) use ($group) {
-        $view = $group->getContainer()->get('view');
-        
-        return $view->render($response, 'admin/sites.twig', [
-            'page_title' => 'Sites Management'
-        ]);
-    });
-    
-    // Tariffs management
-    $group->get('/tariffs', function (Request $request, Response $response) use ($group) {
-        $view = $group->getContainer()->get('view');
-        
-        return $view->render($response, 'admin/tariffs.twig', [
-            'page_title' => 'Tariffs Management'
-        ]);
-    });
-    
-    // Users management
+    $group->get('/sites', [SitesController::class, 'index'])->setName('admin.sites');
+    $group->get('/tariffs', [TariffsController::class, 'index'])->setName('admin.tariffs');
     $group->get('/users', [UsersController::class, 'index'])->setName('admin.users');
 })->add(function ($request, $handler) use ($container) {
     $middleware = new AuthMiddleware($container->get(AuthService::class), ['admin']);

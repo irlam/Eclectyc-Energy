@@ -163,6 +163,8 @@ Visit: https://eclectyc.energy/tools/show-structure.php
 ### Management Dashboards
 - `/reports/consumption` (manager+) summarises site demand for the selected window.
 - `/reports/costs` (manager+) estimates spend per supplier using tariff unit rates.
+- `/admin/sites` (admin only) shows estates with meter counts and status.
+- `/admin/tariffs` (admin only) lists configured supply tariffs.
 - `/admin/users` (admin only) lists seeded accounts for quick role testing.
 
 ## CLI Scripts

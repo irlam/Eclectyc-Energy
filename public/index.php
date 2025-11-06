@@ -5,6 +5,8 @@
  * Last updated: 06/11/2024 14:45:00
  */
 
+use App\Http\Controllers\Admin\SitesController;
+use App\Http\Controllers\Admin\TariffsController;
 use App\Http\Controllers\Admin\UsersController;
 use App\Http\Controllers\Api\HealthController;
 use App\Http\Controllers\AuthController;
@@ -161,6 +163,20 @@ $container->set(ReportsController::class, function(Container $c) {
 
 $container->set(UsersController::class, function(Container $c) {
     return new UsersController(
+        $c->get('view'),
+        $c->get('db')
+    );
+});
+
+$container->set(SitesController::class, function(Container $c) {
+    return new SitesController(
+        $c->get('view'),
+        $c->get('db')
+    );
+});
+
+$container->set(TariffsController::class, function(Container $c) {
+    return new TariffsController(
         $c->get('view'),
         $c->get('db')
     );

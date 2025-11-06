@@ -5,6 +5,67 @@
 {% block content %}
 <section class="card">
     <h2>Tariff Management</h2>
-    <p class="mb-2">Tariff configuration UI is planned. Manage tariffs through database scripts in the meantime.</p>
+    <p class="mb-2">Monitor available supply tariffs and their rate structures.</p>
+
+    {% if tariffs is not empty %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Supplier</th>
+                    <th>Energy</th>
+                    <th>Type</th>
+                    <th class="text-right">Unit Rate (p)</th>
+                    <th class="text-right">Standing (p/day)</th>
+                    <th>Status</th>
+                    <th>Valid</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for tariff in tariffs %}
+                    <tr>
+                        <td>
+                            <strong>{{ tariff.name }}</strong><br>
+                            <small>{{ tariff.code }}</small>
+                        </td>
+                        <td>{{ tariff.supplier_name }}</td>
+                        <td>{{ tariff.energy_type|title }}</td>
+                        <td>{{ tariff.tariff_type|replace({'_': ' '})|title }}</td>
+                        <td class="text-right">
+                            {% if tariff.unit_rate is not null %}
+                                {{ tariff.unit_rate|number_format(2, '.', ',') }}
+                            {% else %}
+                                &mdash;
+                            {% endif %}
+                        </td>
+                        <td class="text-right">
+                            {% if tariff.standing_charge is not null %}
+                                {{ tariff.standing_charge|number_format(2, '.', ',') }}
+                            {% else %}
+                                &mdash;
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if tariff.is_active %}
+                                <span class="status status-success">Active</span>
+                            {% else %}
+                                <span class="status status-muted">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {{ tariff.valid_from|date("d/m/Y") }}
+                            {% if tariff.valid_to %}
+                                &ndash; {{ tariff.valid_to|date("d/m/Y") }}
+                            {% else %}
+                                <span class="badge">Open-ended</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No tariffs configured. Use the seed process or database scripts to add tariffs.</p>
+    {% endif %}
 </section>
 {% endblock %}

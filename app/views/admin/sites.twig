@@ -5,6 +5,58 @@
 {% block content %}
 <section class="card">
     <h2>Sites Management</h2>
-    <p class="mb-2">Functionality coming soon. Use the import scripts to register sites for now.</p>
+    <p class="mb-2">Review registered estates and their connected metering.</p>
+
+    <div class="stats-grid">
+        <div class="stat">
+            <span>Total sites</span>
+            <strong>{{ totals.site_count }}</strong>
+        </div>
+        <div class="stat">
+            <span>Total meters</span>
+            <strong>{{ totals.meter_count }}</strong>
+        </div>
+    </div>
+
+    {% if sites is not empty %}
+        <table class="table mt-3">
+            <thead>
+                <tr>
+                    <th>Site</th>
+                    <th>Company</th>
+                    <th>Region</th>
+                    <th>Type</th>
+                    <th class="text-right">Meters</th>
+                    <th>Status</th>
+                    <th>Added</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for site in sites %}
+                    <tr>
+                        <td>
+                            <strong>{{ site.name }}</strong>
+                            <br>
+                            <small>{{ site.postcode ?: 'No postcode' }}</small>
+                        </td>
+                        <td>{{ site.company_name ?: 'Unassigned' }}</td>
+                        <td>{{ site.region_name ?: 'Unknown' }}</td>
+                        <td>{{ site.site_type|title }}</td>
+                        <td class="text-right">{{ site.meter_count }}</td>
+                        <td>
+                            {% if site.is_active %}
+                                <span class="status status-success">Active</span>
+                            {% else %}
+                                <span class="status status-muted">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ site.created_at|date("d/m/Y") }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No sites are registered yet. Run the seed script or import CSV data to populate this list.</p>
+    {% endif %}
 </section>
 {% endblock %}
