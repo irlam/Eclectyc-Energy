@@ -1,0 +1,122 @@
+{% extends "base.twig" %}
+
+{% block title %}Import History{% endblock %}
+
+{% block content %}
+<section class="card">
+    <div class="card-header">
+        <div>
+            <h2>Import History</h2>
+            <p class="mb-2">Review recent ingestion runs captured from the audit log. Use filters to focus on specific batches or outcomes.</p>
+        </div>
+        <a class="btn btn-tertiary" href="/admin/imports">Back to importer</a>
+    </div>
+
+    <form method="get" class="filters mb-3">
+        <div class="form-group">
+            <label for="status">Status</label>
+            <select id="status" name="status">
+                <option value="">All statuses</option>
+                <option value="completed"{% if filters.status == 'completed' %} selected{% endif %}>Completed</option>
+                <option value="partial"{% if filters.status == 'partial' %} selected{% endif %}>Partial</option>
+                <option value="failed"{% if filters.status == 'failed' %} selected{% endif %}>Failed</option>
+                <option value="dry-run"{% if filters.status == 'dry-run' %} selected{% endif %}>Dry run</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="type">Type</label>
+            <select id="type" name="type">
+                <option value="">All types</option>
+                <option value="hh"{% if filters.type == 'hh' %} selected{% endif %}>Half-hourly</option>
+                <option value="daily"{% if filters.type == 'daily' %} selected{% endif %}>Daily totals</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="limit">Limit</label>
+            <input id="limit" type="number" name="limit" min="10" max="200" value="{{ filters.limit }}">
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Apply</button>
+        </div>
+    </form>
+
+    {% if error %}
+        <div class="alert alert-danger">
+            <p>{{ error }}</p>
+        </div>
+    {% endif %}
+
+    {% if entries is empty %}
+        <p class="muted">No imports found for the current filters.</p>
+    {% else %}
+        <div class="table-wrapper">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th scope="col">Batch</th>
+                        <th scope="col">Type</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Records</th>
+                        <th scope="col">Duration</th>
+                        <th scope="col">Initiated</th>
+                        <th scope="col">Operator</th>
+                        <th scope="col">Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for entry in entries %}
+                        <tr>
+                            <td data-heading="Batch">{{ entry.batch_id }}</td>
+                            <td data-heading="Type">{{ entry.import_type|upper }}</td>
+                            <td data-heading="Status">
+                                <span class="status-pill status-{{ entry.status }}">{{ entry.status|replace({'-':' '})|title }}</span>
+                            </td>
+                            <td data-heading="Records">
+                                <span class="d-block">{{ entry.imported_records }} imported</span>
+                                <span class="d-block muted">{{ entry.failed_records }} failed of {{ entry.total_records }}</span>
+                            </td>
+                            <td data-heading="Duration">
+                                <span class="muted">n/a</span>
+                            </td>
+                            <td data-heading="Initiated">{{ entry.created_at|date('d M Y H:i') }}</td>
+                            <td data-heading="Operator">
+                                {% if entry.user_name %}
+                                    {{ entry.user_name }}
+                                    <br><small class="muted">{{ entry.user_email }}</small>
+                                {% else %}
+                                    <span class="muted">System</span>
+                                {% endif %}
+                            </td>
+                            <td data-heading="Details">
+                                {% set meta = entry.meta %}
+                                {% if meta.filename %}
+                                    <div><strong>File:</strong> {{ meta.filename }}</div>
+                                {% endif %}
+                                {% if meta.total_values_processed is defined %}
+                                    <div><strong>Values:</strong> {{ meta.total_values_processed }}</div>
+                                {% endif %}
+                                {% if meta.site_codes %}
+                                    <div><strong>Sites:</strong> {{ meta.site_codes|join(', ') }}</div>
+                                {% endif %}
+                                {% if entry.errors %}
+                                    <details>
+                                        <summary>{{ entry.errors|length }} errors</summary>
+                                        <ul>
+                                            {% for error in entry.errors|slice(0, 5) %}
+                                                <li>{{ error }}</li>
+                                            {% endfor %}
+                                            {% if entry.errors|length > 5 %}
+                                                <li class="muted">+ {{ entry.errors|length - 5 }} more</li>
+                                            {% endif %}
+                                        </ul>
+                                    </details>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+</section>
+{% endblock %}

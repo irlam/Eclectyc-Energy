@@ -1,0 +1,118 @@
+{% extends "base.twig" %}
+
+{% block title %}Exports{% endblock %}
+
+{% block content %}
+<section class="card">
+    <div class="card-header">
+        <div>
+            <h2>Export Activity</h2>
+            <p class="mb-2">Monitor recent SFTP export jobs, including runtime details and any delivery issues.</p>
+        </div>
+        <span class="muted">Trigger exports from the CLI via <code>php scripts/export_sftp.php</code>.</span>
+    </div>
+
+    <form method="get" class="filters mb-3">
+        <div class="form-group">
+            <label for="status">Status</label>
+            <select id="status" name="status">
+                <option value="">All statuses</option>
+                <option value="pending"{% if filters.status == 'pending' %} selected{% endif %}>Pending</option>
+                <option value="processing"{% if filters.status == 'processing' %} selected{% endif %}>Processing</option>
+                <option value="completed"{% if filters.status == 'completed' %} selected{% endif %}>Completed</option>
+                <option value="failed"{% if filters.status == 'failed' %} selected{% endif %}>Failed</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="type">Type</label>
+            <select id="type" name="type">
+                <option value="">All types</option>
+                <option value="daily"{% if filters.type == 'daily' %} selected{% endif %}>Daily summary</option>
+                <option value="site"{% if filters.type == 'site' %} selected{% endif %}>Site export</option>
+                <option value="meter"{% if filters.type == 'meter' %} selected{% endif %}>Meter export</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label for="limit">Limit</label>
+            <input id="limit" type="number" name="limit" min="10" max="200" value="{{ filters.limit }}">
+        </div>
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Apply</button>
+        </div>
+    </form>
+
+    {% if error %}
+        <div class="alert alert-danger">
+            <p>{{ error }}</p>
+        </div>
+    {% endif %}
+
+    {% if exports is empty %}
+        <p class="muted">No export runs recorded for the selected filters.</p>
+    {% else %}
+        <div class="table-wrapper">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th scope="col">ID</th>
+                        <th scope="col">Type</th>
+                        <th scope="col">Format</th>
+                        <th scope="col">File</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Size</th>
+                        <th scope="col">Timeline</th>
+                        <th scope="col">Operator</th>
+                        <th scope="col">Errors</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for export in exports %}
+                        <tr>
+                            <td data-heading="ID">#{{ export.id }}</td>
+                            <td data-heading="Type">{{ export.export_type|title }}</td>
+                            <td data-heading="Format">{{ export.export_format|upper }}</td>
+                            <td data-heading="File">
+                                <div>{{ export.file_name }}</div>
+                                {% if export.file_path %}
+                                    <div class="muted">{{ export.file_path }}</div>
+                                {% endif %}
+                            </td>
+                            <td data-heading="Status">
+                                <span class="status-pill status-{{ export.status }}">{{ export.status|capitalize }}</span>
+                            </td>
+                            <td data-heading="Size">
+                                {% if export.file_size %}
+                                    {{ (export.file_size / 1024)|number_format(2, '.', ',') }} KB
+                                {% else %}
+                                    <span class="muted">n/a</span>
+                                {% endif %}
+                            </td>
+                            <td data-heading="Timeline">
+                                <div><strong>Created:</strong> {{ export.created_at|date('d M Y H:i') }}</div>
+                                {% if export.completed_at %}
+                                    <div><strong>Completed:</strong> {{ export.completed_at|date('d M Y H:i') }}</div>
+                                {% endif %}
+                            </td>
+                            <td data-heading="Operator">
+                                {% if export.user_name %}
+                                    {{ export.user_name }}<br>
+                                    <small class="muted">{{ export.user_email }}</small>
+                                {% else %}
+                                    <span class="muted">System</span>
+                                {% endif %}
+                            </td>
+                            <td data-heading="Errors">
+                                {% if export.error_message %}
+                                    <span class="text-danger">{{ export.error_message }}</span>
+                                {% else %}
+                                    <span class="muted">None</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% endif %}
+</section>
+{% endblock %}

@@ -36,6 +36,115 @@ class ImportController
         ]);
     }
 
+    public function history(Request $request, Response $response): Response
+    {
+        if (!$this->pdo) {
+            return $this->view->render($response, 'admin/imports_history.twig', [
+                'page_title' => 'Import History',
+                'error' => 'Database connection unavailable.',
+                'entries' => [],
+                'filters' => [
+                    'status' => null,
+                    'type' => null,
+                    'limit' => 50,
+                ],
+            ]);
+        }
+
+        $query = $request->getQueryParams();
+        $limit = isset($query['limit']) ? max(10, min(200, (int) $query['limit'])) : 50;
+        $statusFilter = isset($query['status']) && $query['status'] !== '' ? strtolower($query['status']) : null;
+        $typeFilter = isset($query['type']) && $query['type'] !== '' ? strtolower($query['type']) : null;
+
+        $stmt = $this->pdo->prepare('SELECT a.id, a.user_id, a.new_values, a.created_at, u.name, u.email
+            FROM audit_logs a
+            LEFT JOIN users u ON a.user_id = u.id
+            WHERE a.action = :action
+            ORDER BY a.created_at DESC
+            LIMIT :limit');
+
+        $stmt->bindValue(':action', 'import_csv');
+        // fetch extra rows so filters still have data to work with
+        $stmt->bindValue(':limit', max($limit, 150), PDO::PARAM_INT);
+        $stmt->execute();
+
+        $records = $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+
+        $entries = [];
+        foreach ($records as $row) {
+            $payload = [];
+            if (!empty($row['new_values'])) {
+                $decoded = json_decode($row['new_values'], true);
+                if (is_array($decoded)) {
+                    $payload = $decoded;
+                }
+            }
+
+            $status = $this->deriveStatus($payload);
+            $importType = strtolower($payload['format'] ?? $payload['meta']['format'] ?? 'unknown');
+
+            if ($statusFilter && $status !== $statusFilter) {
+                continue;
+            }
+
+            if ($typeFilter && $importType !== $typeFilter) {
+                continue;
+            }
+
+            $entries[] = [
+                'id' => (int) $row['id'],
+                'user_name' => $row['name'] ?? null,
+                'user_email' => $row['email'] ?? null,
+                'created_at' => $row['created_at'],
+                'completed_at' => $row['created_at'],
+                'batch_id' => $payload['batch_id'] ?? null,
+                'import_type' => $importType,
+                'status' => $status,
+                'total_records' => $payload['records_processed'] ?? 0,
+                'imported_records' => $payload['records_imported'] ?? 0,
+                'failed_records' => $payload['records_failed'] ?? 0,
+                'dry_run' => (bool) ($payload['dry_run'] ?? false),
+                'errors' => !empty($payload['errors']) && is_array($payload['errors']) ? $payload['errors'] : [],
+                'meta' => isset($payload['meta']) && is_array($payload['meta']) ? $payload['meta'] : [],
+            ];
+
+            if (count($entries) >= $limit) {
+                break;
+            }
+        }
+
+        return $this->view->render($response, 'admin/imports_history.twig', [
+            'page_title' => 'Import History',
+            'entries' => $entries,
+            'filters' => [
+                'status' => $statusFilter,
+                'type' => $typeFilter,
+                'limit' => $limit,
+            ],
+            'error' => null,
+        ]);
+    }
+
+    private function deriveStatus(array $payload): string
+    {
+        $imported = (int) ($payload['records_imported'] ?? 0);
+        $failed = (int) ($payload['records_failed'] ?? 0);
+
+        if (($payload['dry_run'] ?? false) && $failed === 0) {
+            return 'dry-run';
+        }
+
+        if ($failed === 0) {
+            return 'completed';
+        }
+
+        if ($imported === 0 && $failed > 0) {
+            return 'failed';
+        }
+
+        return 'partial';
+    }
+
     public function upload(Request $request, Response $response): Response
     {
         if (!$this->pdo) {

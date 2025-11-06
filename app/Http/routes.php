@@ -5,6 +5,7 @@
  * Last updated: 06/11/2024 14:45:00
  */
 
+use App\Http\Controllers\Admin\ExportsController;
 use App\Http\Controllers\Admin\ImportController;
 use App\Http\Controllers\Admin\SitesController;
 use App\Http\Controllers\Admin\TariffsController;
@@ -57,6 +58,8 @@ $app->group('/tools', function ($group) {
 $app->group('/admin', function ($group) {
     $group->get('/imports', [ImportController::class, 'index'])->setName('admin.imports');
     $group->post('/imports', [ImportController::class, 'upload'])->setName('admin.imports.upload');
+    $group->get('/imports/history', [ImportController::class, 'history'])->setName('admin.imports.history');
+    $group->get('/exports', [ExportsController::class, 'index'])->setName('admin.exports');
     $group->get('/sites', [SitesController::class, 'index'])->setName('admin.sites');
     $group->get('/tariffs', [TariffsController::class, 'index'])->setName('admin.tariffs');
     $group->get('/users', [UsersController::class, 'index'])->setName('admin.users');

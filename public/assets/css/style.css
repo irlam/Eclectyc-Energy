@@ -206,6 +206,19 @@ a {
     letter-spacing: 0.015em;
 }
 
+.card-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1.5rem;
+    margin-bottom: 1.35rem;
+}
+
+.card-header p {
+    color: var(--muted);
+    max-width: 560px;
+}
+
 /* Status Chips */
 .status {
     display: inline-flex;
@@ -237,6 +250,65 @@ a {
     border: 1px solid rgba(255, 107, 107, 0.35);
 }
 
+.status-pill {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.3rem 0.7rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    border: 1px solid var(--line);
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.status-pill.status-completed {
+    border-color: rgba(39, 224, 165, 0.35);
+    background: rgba(39, 224, 165, 0.18);
+    color: var(--brand);
+}
+
+.status-pill.status-partial {
+    border-color: rgba(244, 183, 64, 0.4);
+    background: rgba(244, 183, 64, 0.2);
+    color: var(--warning);
+}
+
+.status-pill.status-failed {
+    border-color: rgba(255, 107, 107, 0.45);
+    background: rgba(255, 107, 107, 0.2);
+    color: var(--danger);
+}
+
+.status-pill.status-dry-run {
+    border-color: rgba(87, 161, 255, 0.4);
+    background: rgba(87, 161, 255, 0.2);
+    color: var(--brand-alt);
+}
+
+.status-pill.status-pending,
+.status-pill.status-processing {
+    border-color: rgba(87, 161, 255, 0.4);
+    background: rgba(87, 161, 255, 0.18);
+    color: var(--brand-alt);
+}
+
+.status-pill.status-completed::before,
+.status-pill.status-partial::before,
+.status-pill.status-failed::before,
+.status-pill.status-dry-run::before,
+.status-pill.status-pending::before,
+.status-pill.status-processing::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    margin-right: 0.35rem;
+    background: currentColor;
+}
+
 /* Tables */
 .table {
     width: 100%;
@@ -262,6 +334,10 @@ a {
 
 .table tr:hover {
     background: rgba(255, 255, 255, 0.04);
+}
+
+.table-wrapper {
+    overflow-x: auto;
 }
 
 /* Buttons */
@@ -303,6 +379,17 @@ a {
 
 .btn-secondary:hover {
     background: rgba(87, 161, 255, 0.28);
+}
+
+.btn-tertiary {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.25);
+    color: var(--muted);
+}
+
+.btn-tertiary:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: var(--ink);
 }
 
 /* Forms */
@@ -359,6 +446,22 @@ input[type="checkbox"] {
     margin-top: 1.25rem;
 }
 
+.filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.25rem;
+    align-items: flex-end;
+}
+
+.filters .form-group {
+    min-width: 160px;
+    margin-bottom: 0;
+}
+
+.filters .form-actions {
+    margin-top: 0;
+}
+
 /* Alerts */
 .alert {
     padding: 1rem 1.25rem;
@@ -392,6 +495,18 @@ input[type="checkbox"] {
     border-color: rgba(255, 107, 107, 0.45);
     background: rgba(255, 107, 107, 0.18);
     color: #FFD5D5;
+}
+
+.muted {
+    color: var(--muted);
+}
+
+.d-block {
+    display: block;
+}
+
+.text-danger {
+    color: var(--danger);
 }
 
 /* Footer */

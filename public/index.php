@@ -5,6 +5,7 @@
  * Last updated: 06/11/2024 14:45:00
  */
 
+use App\Http\Controllers\Admin\ExportsController;
 use App\Http\Controllers\Admin\ImportController;
 use App\Http\Controllers\Admin\SitesController;
 use App\Http\Controllers\Admin\TariffsController;
@@ -185,6 +186,13 @@ $container->set(SitesController::class, function(Container $c) {
 
 $container->set(ImportController::class, function(Container $c) {
     return new ImportController(
+        $c->get('view'),
+        $c->get('db')
+    );
+});
+
+$container->set(ExportsController::class, function(Container $c) {
+    return new ExportsController(
         $c->get('view'),
         $c->get('db')
     );
