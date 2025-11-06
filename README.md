@@ -264,6 +264,8 @@ Keeping this checklist handy avoids “Class not found” errors after refactors
 - [ ] Multi-tenancy support
 - [ ] Advanced user roles and permissions
 
+See also `docs/product_requirements.md` for a capability-by-capability gap analysis sourced from early product discovery.
+
 ## Inspiration & References
 
 This platform draws architectural inspiration from:

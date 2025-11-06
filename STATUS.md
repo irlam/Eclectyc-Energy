@@ -11,6 +11,7 @@ This document captures the current progress of the Eclectyc Energy platform so f
 - **Reports**: Consumption and cost dashboards now backed by controllers and live aggregates.
 - **APIs**: `/api/health` endpoint with database, filesystem, PHP, memory, and disk diagnostics.
 - **Access Control**: Session-backed auth service, role-aware middleware, and navigation that respects admin/manager/viewer capabilities.
+- **Requirements**: High-level capability matrix tracked in `docs/product_requirements.md`.
 
 ## ⚠️ Work Still Required
 
@@ -21,27 +22,35 @@ This document captures the current progress of the Eclectyc Energy platform so f
 - **Controller Layer**
   - Finish wiring dedicated controllers for dashboard, meters, imports, rather than anonymous closures (reports complete).
 
-- **Domain Services**
-  - Implement modules under `app/domain` for ingestion, aggregation, tariffs, analytics, and exports to centralise business logic.
+- **Data Aggregation & Analytics**
+  - Build ingestion → aggregation jobs (daily/weekly/monthly/annual) supporting import/export channels and baseload analytics.
+  - Introduce comparison snapshots (prev day/week/month/year) and missing-data detection.
+  - Integrate external datasets (temperature, calorific values) to power AI insights and carbon reporting.
 
 - **CRUD & Admin UI**
   - Add create/edit flows for sites, meters, tariffs; introduce validation, flash messaging, and REST endpoints.
+  - Support sub-meter vs boundary meter metadata, meter direction, and custom key metrics per site.
 
 - **Reporting & Visualisation**
   - Populate report templates with aggregated data, add charts (e.g., Chart.js) and AJAX filters.
+  - Deliver drill-down charts (48-period graphs, comparisons) and carbon/flexible-tariff dashboards.
 
-- **API Enhancements**
-  - Provide authenticated CRUD operations, input validation, pagination, and error contracts.
+- **Tariff Engine & Switching**
+  - Model complex tariff structures (time bands, flexible offers) and cost comparison workflows.
+  - Prepare for supplier integrations and customer switching analysis.
+
+- **Exports & Automation**
+  - Flesh out export scheduler (SFTP/email) supporting multiple granularities and report templates.
 
 - **Testing & QA**
   - Expand automated tests, fixtures, and sample data; ensure the health endpoint covers new dependencies.
 
 ## Recommended Next Milestones
 
-1. Finalise authentication (session hardening, middleware reuse, user management).
-2. Replace route closures with controllers (`DashboardController`, `MetersController`, `ImportController`).
-3. Deliver core domain logic starting with ingestion → aggregation → reporting pipeline.
-4. Ship admin CRUD flows and matching API endpoints.
-5. Layer on analytics, tariff engine, and export automation.
+1. Finalise authentication (session hardening, middleware reuse, role-scope authorisation).
+2. Replace remaining route closures with controllers (`DashboardController`, `MetersController`, `ImportController`).
+3. Stand up ingestion → aggregation pipeline (daily/weekly/monthly/annual snapshots + comparison cache).
+4. Build CRUD/editor flows for sites/meters/tariffs including metadata (direction, sub-meters, key metrics).
+5. Implement tariff engine, switching analysis, and automated exports; follow with carbon/flexible-tariff dashboards.
 
 Keep this file updated when major milestones are completed so the roadmap stays accurate.
