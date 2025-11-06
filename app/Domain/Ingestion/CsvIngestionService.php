@@ -211,16 +211,15 @@ class CsvIngestionService
     }
 
     /**
-     * Retry a failed import batch.
-     * 
-     * @param string $batchId Original batch ID to retry
-     * @param string $filePath Path to the CSV file
-     * @param string $format Format type
-     * @param int|null $userId User initiating the retry
-     * @return IngestionResult Result of the retry attempt
+     * Retry a failed import batch
      */
     public function retryBatch(string $batchId, string $filePath, string $format, ?int $userId = null): IngestionResult
     {
+        // Validate batch ID to prevent injection
+        if (!preg_match('/^[a-f0-9\-]{36}$/i', $batchId)) {
+            throw new Exception('Invalid batch identifier format');
+        }
+        
         // Fetch original batch info
         $stmt = $this->pdo->prepare('
             SELECT id, new_values, retry_count 
@@ -238,7 +237,7 @@ class CsvIngestionService
         $originalBatch = $stmt->fetch(PDO::FETCH_ASSOC);
         
         if (!$originalBatch) {
-            throw new Exception('Original batch not found: ' . $batchId);
+            throw new Exception('Original batch not found');
         }
         
         $retryCount = (int) ($originalBatch['retry_count'] ?? 0) + 1;

@@ -17,6 +17,8 @@ use Slim\Views\Twig;
 
 class SitesController
 {
+    private const UK_POSTCODE_PATTERN = '/^[A-Z]{1,2}\d{1,2}[A-Z]?\s?\d[A-Z]{2}$/i';
+    
     private Twig $view;
     private ?PDO $pdo;
 
@@ -293,7 +295,7 @@ class SitesController
 
         if (!empty($data['postcode'])) {
             $postcode = strtoupper(trim($data['postcode']));
-            if (!preg_match('/^[A-Z]{1,2}\d{1,2}[A-Z]?\s?\d[A-Z]{2}$/i', $postcode)) {
+            if (!preg_match(self::UK_POSTCODE_PATTERN, $postcode)) {
                 $errors[] = 'Invalid UK postcode format';
             }
         }

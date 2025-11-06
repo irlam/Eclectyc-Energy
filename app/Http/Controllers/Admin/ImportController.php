@@ -228,6 +228,11 @@ class ImportController
 
     /**
      * Retry a failed import batch
+     * 
+     * Note: This is a stub implementation. Full retry functionality requires:
+     * 1. Storing uploaded files persistently (e.g., in storage/imports/)
+     * 2. Tracking file paths in the database
+     * 3. Implementing background queue processing
      */
     public function retry(Request $request, Response $response): Response
     {
@@ -241,6 +246,12 @@ class ImportController
 
         if (!$batchId) {
             $this->setFlash('error', 'Batch ID is required for retry.');
+            return $this->redirect($response, '/admin/imports/history');
+        }
+
+        // Validate batch ID format
+        if (!preg_match('/^[a-f0-9\-]{36}$/i', $batchId)) {
+            $this->setFlash('error', 'Invalid batch ID format.');
             return $this->redirect($response, '/admin/imports/history');
         }
 
@@ -265,16 +276,17 @@ class ImportController
             return $this->redirect($response, '/admin/imports/history');
         }
 
-        // For now, we'll queue the retry but note that actual file processing requires the original file
-        // In a production system, you'd store the uploaded file for potential retries
+        // Queue the retry (stub implementation)
         $queue = new ImportQueueStub();
         $payload = json_decode($originalBatch['new_values'], true);
         $format = $payload['format'] ?? 'hh';
         
-        // Note: This is a stub - in production, you'd store the original file and retrieve it here
-        $queue->enqueueRetry($batchId, '/path/to/stored/file.csv', $format, $this->currentUserId());
-        
-        $this->setFlash('info', 'Import retry has been queued. Note: This is a stub implementation - full retry requires file storage.');
+        // TODO: In production, implement proper file storage and retrieval:
+        // 1. Store uploaded files with batch_id in filename
+        // 2. Retrieve file path from storage
+        // 3. Pass actual file path to queue
+        // For now, just mark the intent to retry
+        $this->setFlash('warning', 'Retry queued. Note: Full retry functionality requires file storage implementation. Original file must be re-uploaded for processing.');
         
         return $this->redirect($response, '/admin/imports/history');
     }
