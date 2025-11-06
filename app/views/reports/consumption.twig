@@ -5,6 +5,52 @@
 {% block content %}
 <section class="card">
     <h2>Energy Consumption Report</h2>
-    <p class="mb-2">Detailed consumption analytics will appear here. Connect meter ingestion to populate this view.</p>
+    <p class="mb-2">
+        Reporting window: {{ period.start|date("d/m/Y") }} to {{ period.end|date("d/m/Y") }}
+    </p>
+
+    {% if report.error is defined %}
+        <div class="alert alert-danger">{{ report.error }}</div>
+    {% endif %}
+
+    {% if report.rows is not empty %}
+        <div class="stats-grid">
+            <div class="stat">
+                <span>Total consumption</span>
+                <strong>{{ report.totalConsumption|number_format(1, '.', ',') }} kWh</strong>
+            </div>
+            <div class="stat">
+                <span>Sites with data</span>
+                <strong>{{ report.rows|length }}</strong>
+            </div>
+        </div>
+
+        <table class="table mt-3">
+            <thead>
+                <tr>
+                    <th>Site</th>
+                    <th class="text-right">Meters</th>
+                    <th class="text-right">Consumption (kWh)</th>
+                    <th>Data range</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in report.rows %}
+                    <tr>
+                        <td>{{ row.site_name }}</td>
+                        <td class="text-right">{{ row.meter_count }}</td>
+                        <td class="text-right">{{ row.total_consumption|number_format(1, '.', ',') }}</td>
+                        <td>
+                            {{ row.first_reading|date("d/m/Y") }}
+                            &ndash;
+                            {{ row.last_reading|date("d/m/Y") }}
+                        </td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No meter readings were found for the selected period.</p>
+    {% endif %}
 </section>
 {% endblock %}

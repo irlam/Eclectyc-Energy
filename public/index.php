@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\UsersController;
 use App\Http\Controllers\Api\HealthController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ReportsController;
 use App\Http\Middleware\AuthMiddleware;
 use App\Services\AuthService;
 use DI\Container;
@@ -146,6 +147,13 @@ $container->set(AuthController::class, function(Container $c) {
 
 $container->set(DashboardController::class, function(Container $c) {
     return new DashboardController(
+        $c->get('view'),
+        $c->get('db')
+    );
+});
+
+$container->set(ReportsController::class, function(Container $c) {
+    return new ReportsController(
         $c->get('view'),
         $c->get('db')
     );

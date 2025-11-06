@@ -5,6 +5,55 @@
 {% block content %}
 <section class="card">
     <h2>Cost Analysis</h2>
-    <p class="mb-2">Cost breakdowns and tariff comparisons will be available in a future update.</p>
+    <p class="mb-2">
+        Reporting window: {{ period.start|date("d/m/Y") }} to {{ period.end|date("d/m/Y") }}
+    </p>
+
+    {% if report.error is defined %}
+        <div class="alert alert-danger">{{ report.error }}</div>
+    {% endif %}
+
+    {% if report.rows is not empty %}
+        <div class="stats-grid">
+            <div class="stat">
+                <span>Total consumption</span>
+                <strong>{{ report.totalConsumption|number_format(1, '.', ',') }} kWh</strong>
+            </div>
+            <div class="stat">
+                <span>Estimated spend</span>
+                <strong>&pound;{{ (report.totalCost / 100)|number_format(2, '.', ',') }}</strong>
+                <small>Assumes tariff rates stored as pence per kWh.</small>
+            </div>
+        </div>
+
+        <table class="table mt-3">
+            <thead>
+                <tr>
+                    <th>Supplier</th>
+                    <th class="text-right">Consumption (kWh)</th>
+                    <th class="text-right">Avg Unit Rate (p/kWh)</th>
+                    <th class="text-right">Estimated Cost (&pound;)</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in report.rows %}
+                    <tr>
+                        <td>{{ row.supplier_name }}</td>
+                        <td class="text-right">{{ row.total_consumption|number_format(1, '.', ',') }}</td>
+                        <td class="text-right">
+                            {% if row.avg_unit_rate is not null %}
+                                {{ row.avg_unit_rate|number_format(2, '.', ',') }}
+                            {% else %}
+                                N/A
+                            {% endif %}
+                        </td>
+                        <td class="text-right">{{ (row.estimated_cost / 100)|number_format(2, '.', ',') }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No cost data is available for the selected period.</p>
+    {% endif %}
 </section>
 {% endblock %}

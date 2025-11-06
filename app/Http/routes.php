@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\UsersController;
 use App\Http\Controllers\Api\HealthController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ReportsController;
 use App\Http\Middleware\AuthMiddleware;
 use App\Services\AuthService;
 use Psr\Http\Message\ResponseInterface as Response;
@@ -175,23 +176,8 @@ $app->group('/admin', function ($group) {
 
 // Reports Routes
 $app->group('/reports', function ($group) {
-    // Energy consumption report
-    $group->get('/consumption', function (Request $request, Response $response) use ($group) {
-        $view = $group->getContainer()->get('view');
-        
-        return $view->render($response, 'reports/consumption.twig', [
-            'page_title' => 'Energy Consumption Report'
-        ]);
-    });
-    
-    // Cost analysis report
-    $group->get('/costs', function (Request $request, Response $response) use ($group) {
-        $view = $group->getContainer()->get('view');
-        
-        return $view->render($response, 'reports/costs.twig', [
-            'page_title' => 'Cost Analysis Report'
-        ]);
-    });
+    $group->get('/consumption', [ReportsController::class, 'consumption'])->setName('reports.consumption');
+    $group->get('/costs', [ReportsController::class, 'costs'])->setName('reports.costs');
 })->add(function ($request, $handler) use ($container) {
     $middleware = new AuthMiddleware($container->get(AuthService::class), ['admin', 'manager']);
     return $middleware->process($request, $handler);

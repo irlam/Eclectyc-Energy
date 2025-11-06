@@ -8,6 +8,7 @@ This document captures the current progress of the Eclectyc Energy platform so f
 - **Database**: Full 12-table schema with migrations, seeds, and PDO connection helpers.
 - **Tooling**: CLI utilities for migrations, seeding, CSV import, aggregation, SFTP export; structure and health check tools.
 - **UI**: Base layout, dashboard scaffold, login view, admin/report placeholders, consistent styling.
+- **Reports**: Consumption and cost dashboards now backed by controllers and live aggregates.
 - **APIs**: `/api/health` endpoint with database, filesystem, PHP, memory, and disk diagnostics.
 - **Access Control**: Session-backed auth service, role-aware middleware, and navigation that respects admin/manager/viewer capabilities.
 
@@ -18,7 +19,7 @@ This document captures the current progress of the Eclectyc Energy platform so f
   - Extend role-based policies to APIs and non-admin UIs (manager workflows, viewer read-only safeguards).
 
 - **Controller Layer**
-  - Finish wiring dedicated controllers for dashboard, meters, imports, rather than anonymous closures.
+  - Finish wiring dedicated controllers for dashboard, meters, imports, rather than anonymous closures (reports complete).
 
 - **Domain Services**
   - Implement modules under `app/domain` for ingestion, aggregation, tariffs, analytics, and exports to centralise business logic.

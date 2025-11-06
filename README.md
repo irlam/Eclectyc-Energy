@@ -160,6 +160,11 @@ Visit: https://eclectyc.energy/tools/show-structure.php
 - Visual tree of project structure
 - Helps verify deployment
 
+### Management Dashboards
+- `/reports/consumption` (manager+) summarises site demand for the selected window.
+- `/reports/costs` (manager+) estimates spend per supplier using tariff unit rates.
+- `/admin/users` (admin only) lists seeded accounts for quick role testing.
+
 ## CLI Scripts
 
 ### Import CSV Data
