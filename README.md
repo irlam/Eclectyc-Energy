@@ -153,10 +153,10 @@ Visit: https://eclectyc.energy/api/health
 ```bash
 php tools/check-structure.php
 ```
-Or visit: https://eclectyc.energy/tools/check-structure.php
+Or visit: https://eclectyc.energy/tools/check
 
 ### Structure Viewer
-Visit: https://eclectyc.energy/tools/show-structure.php
+Visit: https://eclectyc.energy/tools/show
 - Visual tree of project structure
 - Helps verify deployment
 

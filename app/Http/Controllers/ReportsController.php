@@ -37,14 +37,14 @@ class ReportsController
                 $stmt = $this->pdo->prepare('
                     SELECT
                         s.name AS site_name,
-                        COUNT(DISTINCT m.id) AS meter_count,
-                        SUM(mr.reading_value) AS total_consumption,
-                        MIN(mr.reading_date) AS first_reading,
-                        MAX(mr.reading_date) AS last_reading
-                    FROM meter_readings mr
-                    JOIN meters m ON mr.meter_id = m.id
+                        COUNT(DISTINCT da.meter_id) AS meter_count,
+                        SUM(da.total_consumption) AS total_consumption,
+                        MIN(da.date) AS first_reading,
+                        MAX(da.date) AS last_reading
+                    FROM daily_aggregations da
+                    JOIN meters m ON da.meter_id = m.id
                     JOIN sites s ON m.site_id = s.id
-                    WHERE mr.reading_date BETWEEN :start AND :end
+                    WHERE da.date BETWEEN :start AND :end
                     GROUP BY s.id, s.name
                     ORDER BY total_consumption DESC
                 ');
@@ -92,14 +92,17 @@ class ReportsController
                 $stmt = $this->pdo->prepare('
                     SELECT
                         COALESCE(sup.name, "Unknown Supplier") AS supplier_name,
-                        SUM(mr.reading_value) AS total_consumption,
+                        SUM(da.total_consumption) AS total_consumption,
                         AVG(COALESCE(t.unit_rate, 0)) AS avg_unit_rate,
-                        SUM(mr.reading_value * COALESCE(t.unit_rate, 0)) AS estimated_cost
-                    FROM meter_readings mr
-                    JOIN meters m ON mr.meter_id = m.id
+                        SUM(da.total_consumption * COALESCE(t.unit_rate, 0)) AS estimated_cost
+                    FROM daily_aggregations da
+                    JOIN meters m ON da.meter_id = m.id
                     LEFT JOIN suppliers sup ON m.supplier_id = sup.id
-                    LEFT JOIN tariffs t ON t.supplier_id = m.supplier_id AND t.unit_rate IS NOT NULL
-                    WHERE mr.reading_date BETWEEN :start AND :end
+                    LEFT JOIN tariffs t ON t.supplier_id = m.supplier_id
+                        AND t.unit_rate IS NOT NULL
+                        AND (t.valid_from IS NULL OR t.valid_from <= da.date)
+                        AND (t.valid_to IS NULL OR t.valid_to >= da.date)
+                    WHERE da.date BETWEEN :start AND :end
                     GROUP BY sup.id, sup.name
                     ORDER BY estimated_cost DESC
                 ');

@@ -13,9 +13,9 @@ use App\Http\Controllers\Api\ImportStatusController;
 use App\Http\Controllers\Api\MetersController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Middleware\AuthMiddleware;
 use App\Http\Controllers\ReportsController;
 use App\Http\Controllers\ToolsController;
-use App\Http\Middleware\AuthMiddleware;
 use App\Services\AuthService;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -37,7 +37,7 @@ $app->map(['GET', 'POST'], '/logout', [AuthController::class, 'logout'])
 $app->group('/api', function ($group) {
     // Health check endpoint
     $group->get('/health', HealthController::class . ':check');
-    
+
     $group->get('/meters', [MetersController::class, 'index']);
     $group->get('/meters/{mpan}/readings', [MetersController::class, 'readings']);
     $group->get('/import/status', [ImportStatusController::class, 'index']);

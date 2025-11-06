@@ -9,9 +9,12 @@ use App\Http\Controllers\Admin\SitesController;
 use App\Http\Controllers\Admin\TariffsController;
 use App\Http\Controllers\Admin\UsersController;
 use App\Http\Controllers\Api\HealthController;
+use App\Http\Controllers\Api\ImportStatusController;
+use App\Http\Controllers\Api\MetersController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ReportsController;
+use App\Http\Controllers\ToolsController;
 use App\Http\Middleware\AuthMiddleware;
 use App\Services\AuthService;
 use DI\Container;
@@ -180,6 +183,18 @@ $container->set(TariffsController::class, function(Container $c) {
         $c->get('view'),
         $c->get('db')
     );
+});
+
+$container->set(MetersController::class, function(Container $c) {
+    return new MetersController($c->get('db'));
+});
+
+$container->set(ImportStatusController::class, function(Container $c) {
+    return new ImportStatusController($c->get('db'));
+});
+
+$container->set(ToolsController::class, function(Container $c) {
+    return new ToolsController($c->get('view'));
 });
 
 $container->set(AuthMiddleware::class, function(Container $c) {
