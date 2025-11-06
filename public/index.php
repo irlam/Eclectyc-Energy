@@ -35,8 +35,12 @@ define('BASE_PATH', dirname(__DIR__));
 require BASE_PATH . '/vendor/autoload.php';
 
 // Load environment variables
-$dotenv = Dotenv::createImmutable(BASE_PATH);
-$dotenv->safeLoad();
+if (class_exists('Dotenv\\Dotenv')) {
+    $dotenv = Dotenv::createImmutable(BASE_PATH);
+    $dotenv->safeLoad();
+} else {
+    error_log('Dotenv library not available; skipping .env loading.');
+}
 
 // Set timezone to UK
 date_default_timezone_set($_ENV['APP_TIMEZONE'] ?? 'Europe/London');
