@@ -5,6 +5,7 @@
  * Last updated: 06/11/2024 14:45:00
  */
 
+use App\Http\Controllers\Admin\ImportController;
 use App\Http\Controllers\Admin\SitesController;
 use App\Http\Controllers\Admin\TariffsController;
 use App\Http\Controllers\Admin\UsersController;
@@ -177,6 +178,13 @@ $container->set(UsersController::class, function(Container $c) {
 
 $container->set(SitesController::class, function(Container $c) {
     return new SitesController(
+        $c->get('view'),
+        $c->get('db')
+    );
+});
+
+$container->set(ImportController::class, function(Container $c) {
+    return new ImportController(
         $c->get('view'),
         $c->get('db')
     );

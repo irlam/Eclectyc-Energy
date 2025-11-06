@@ -5,6 +5,7 @@
  * Last updated: 06/11/2024 14:45:00
  */
 
+use App\Http\Controllers\Admin\ImportController;
 use App\Http\Controllers\Admin\SitesController;
 use App\Http\Controllers\Admin\TariffsController;
 use App\Http\Controllers\Admin\UsersController;
@@ -54,6 +55,8 @@ $app->group('/tools', function ($group) {
 
 // Admin Routes (future expansion)
 $app->group('/admin', function ($group) {
+    $group->get('/imports', [ImportController::class, 'index'])->setName('admin.imports');
+    $group->post('/imports', [ImportController::class, 'upload'])->setName('admin.imports.upload');
     $group->get('/sites', [SitesController::class, 'index'])->setName('admin.sites');
     $group->get('/tariffs', [TariffsController::class, 'index'])->setName('admin.tariffs');
     $group->get('/users', [UsersController::class, 'index'])->setName('admin.users');
