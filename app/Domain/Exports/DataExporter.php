@@ -145,10 +145,22 @@ class DataExporter
         // Add data rows
         foreach ($data as $row) {
             $csv[] = implode(',', array_map(function ($value) {
-                // Escape values containing commas or quotes
-                if (strpos($value, ',') !== false || strpos($value, '"') !== false) {
+                // Convert null to empty string
+                if ($value === null) {
+                    return '';
+                }
+                
+                // Convert to string
+                $value = (string) $value;
+                
+                // Escape values containing commas, quotes, or newlines
+                if (strpos($value, ',') !== false || 
+                    strpos($value, '"') !== false || 
+                    strpos($value, "\n") !== false || 
+                    strpos($value, "\r") !== false) {
                     return '"' . str_replace('"', '""', $value) . '"';
                 }
+                
                 return $value;
             }, $row));
         }
