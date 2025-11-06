@@ -5,53 +5,28 @@
  * Last updated: 06/11/2024 14:45:00
  */
 
+use App\Http\Controllers\Admin\UsersController;
+use App\Http\Controllers\Api\HealthController;
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Middleware\AuthMiddleware;
+use App\Services\AuthService;
+use Exception;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
-use App\Http\Controllers\Api\HealthController;
-use App\Http\Controllers\DashboardController;
-use App\Http\Controllers\MetersController;
-use App\Http\Controllers\ImportController;
 
 // Homepage / Dashboard
-$app->get('/', function (Request $request, Response $response) use ($app) {
-    $view = $app->getContainer()->get('view');
-    
-    // Get some basic stats for dashboard
-    $db = $app->getContainer()->get('db');
-    $stats = [
-        'total_sites' => 0,
-        'total_meters' => 0,
-        'total_readings' => 0,
-        'last_import' => 'Never'
-    ];
-    
-    if ($db) {
-        try {
-            // Get stats from database
-            $stmt = $db->query("SELECT COUNT(*) as count FROM sites");
-            $stats['total_sites'] = $stmt->fetch()['count'] ?? 0;
-            
-            $stmt = $db->query("SELECT COUNT(*) as count FROM meters");
-            $stats['total_meters'] = $stmt->fetch()['count'] ?? 0;
-            
-            $stmt = $db->query("SELECT COUNT(*) as count FROM meter_readings");
-            $stats['total_readings'] = $stmt->fetch()['count'] ?? 0;
-            
-            $stmt = $db->query("SELECT MAX(created_at) as last FROM meter_readings");
-            $last = $stmt->fetch()['last'];
-            if ($last) {
-                $stats['last_import'] = date('d/m/Y H:i:s', strtotime($last));
-            }
-        } catch (Exception $e) {
-            // Database not initialized yet
-        }
-    }
-    
-    return $view->render($response, 'dashboard.twig', [
-        'page_title' => 'Dashboard',
-        'stats' => $stats
-    ]);
-});
+$container = $app->getContainer();
+
+$app->get('/', [DashboardController::class, 'index'])
+    ->setName('dashboard')
+    ->add(AuthMiddleware::class);
+
+$app->get('/login', [AuthController::class, 'showLoginForm'])->setName('auth.login');
+$app->post('/login', [AuthController::class, 'login'])->setName('auth.login.submit');
+$app->map(['GET', 'POST'], '/logout', [AuthController::class, 'logout'])
+    ->setName('auth.logout')
+    ->add(AuthMiddleware::class);
 
 // API Routes
 $app->group('/api', function ($group) {
@@ -193,13 +168,10 @@ $app->group('/admin', function ($group) {
     });
     
     // Users management
-    $group->get('/users', function (Request $request, Response $response) use ($group) {
-        $view = $group->getContainer()->get('view');
-        
-        return $view->render($response, 'admin/users.twig', [
-            'page_title' => 'Users Management'
-        ]);
-    });
+    $group->get('/users', [UsersController::class, 'index'])->setName('admin.users');
+})->add(function ($request, $handler) use ($container) {
+    $middleware = new AuthMiddleware($container->get(AuthService::class), ['admin']);
+    return $middleware->process($request, $handler);
 });
 
 // Reports Routes
@@ -221,7 +193,7 @@ $app->group('/reports', function ($group) {
             'page_title' => 'Cost Analysis Report'
         ]);
     });
-});
+})->add(AuthMiddleware::class);
 
 // Catch-all for 404
 $app->map(['GET', 'POST', 'PUT', 'DELETE', 'PATCH'], '/{routes:.+}', function (Request $request, Response $response) use ($app) {

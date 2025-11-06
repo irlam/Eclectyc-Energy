@@ -5,11 +5,16 @@
  * Last updated: 06/11/2024 14:45:00
  */
 
+use App\Http\Controllers\Admin\UsersController;
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Middleware\AuthMiddleware;
+use App\Services\AuthService;
 use DI\Container;
+use Dotenv\Dotenv;
 use Slim\Factory\AppFactory;
 use Slim\Views\Twig;
 use Slim\Views\TwigMiddleware;
-use Dotenv\Dotenv;
 
 // Set error reporting for development
 error_reporting(E_ALL);
@@ -27,6 +32,10 @@ $dotenv->safeLoad();
 
 // Set timezone to UK
 date_default_timezone_set($_ENV['APP_TIMEZONE'] ?? 'Europe/London');
+
+if (session_status() !== PHP_SESSION_ACTIVE) {
+    session_start();
+}
 
 // Environment-specific error handling
 $appEnv = $_ENV['APP_ENV'] ?? 'production';
@@ -48,13 +57,17 @@ $container = new Container();
 $container->set('view', function() {
     $twig = Twig::create(BASE_PATH . '/app/views', [
         'cache' => false, // Set to BASE_PATH . '/cache' in production
-        'debug' => $_ENV['APP_ENV'] === 'development'
+        'debug' => (($_ENV['APP_ENV'] ?? 'production') === 'development')
     ]);
     
     // Add global variables
     $twig->getEnvironment()->addGlobal('app_name', 'Eclectyc Energy');
     $twig->getEnvironment()->addGlobal('app_url', $_ENV['APP_URL'] ?? 'https://eclectyc.energy');
     $twig->getEnvironment()->addGlobal('current_year', date('Y'));
+    $twig->getEnvironment()->addGlobal('auth', [
+        'check' => isset($_SESSION['user']),
+        'user' => $_SESSION['user'] ?? null,
+    ]);
     
     return $twig;
 });
@@ -118,11 +131,52 @@ $container->set('logger', function() {
     return $logger;
 });
 
+$container->set(AuthService::class, function(Container $c) {
+    return new AuthService($c->get('db'));
+});
+
+$container->set(AuthController::class, function(Container $c) {
+    return new AuthController(
+        $c->get('view'),
+        $c->get(AuthService::class)
+    );
+});
+
+$container->set(DashboardController::class, function(Container $c) {
+    return new DashboardController(
+        $c->get('view'),
+        $c->get('db')
+    );
+});
+
+$container->set(UsersController::class, function(Container $c) {
+    return new UsersController(
+        $c->get('view'),
+        $c->get('db')
+    );
+});
+
+$container->set(AuthMiddleware::class, function(Container $c) {
+    return new AuthMiddleware($c->get(AuthService::class));
+});
+
 // Set container for AppFactory
 AppFactory::setContainer($container);
 
 // Create Slim app
 $app = AppFactory::create();
+
+$app->addRoutingMiddleware();
+
+$app->add(function ($request, $handler) use ($container) {
+    $twig = $container->get('view');
+    $twig->getEnvironment()->addGlobal('auth', [
+        'check' => isset($_SESSION['user']),
+        'user' => $_SESSION['user'] ?? null,
+    ]);
+
+    return $handler->handle($request);
+});
 
 // Add Twig middleware
 $app->add(TwigMiddleware::createFromContainer($app, 'view'));

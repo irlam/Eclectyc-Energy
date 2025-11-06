@@ -13,9 +13,9 @@ use Slim\Views\Twig;
 class UsersController
 {
     private Twig $view;
-    private \PDO $pdo;
+    private ?\PDO $pdo;
 
-    public function __construct(Twig $view, \PDO $pdo)
+    public function __construct(Twig $view, ?\PDO $pdo)
     {
         $this->view = $view;
         $this->pdo = $pdo;
@@ -24,11 +24,13 @@ class UsersController
     public function index(Request $request, Response $response): Response
     {
         $users = [];
-        try {
-            $stmt = $this->pdo->query('SELECT id, email, name, role, is_active, last_login, created_at FROM users ORDER BY created_at DESC');
-            $users = $stmt->fetchAll();
-        } catch (\Throwable $e) {
-            // If the table is missing or query fails show empty list
+        if ($this->pdo) {
+            try {
+                $stmt = $this->pdo->query('SELECT id, email, name, role, is_active, last_login, created_at FROM users ORDER BY created_at DESC');
+                $users = $stmt->fetchAll();
+            } catch (\Throwable $e) {
+                // If the table is missing or query fails show empty list
+            }
         }
 
         return $this->view->render($response, 'admin/users.twig', [

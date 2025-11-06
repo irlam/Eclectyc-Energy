@@ -1,0 +1,51 @@
+{% extends "base.twig" %}
+
+{% block title %}Users{% endblock %}
+
+{% block content %}
+<section class="card">
+    <h2>User Accounts</h2>
+    <p class="mb-2">Manage platform operators and administrators.</p>
+
+    {% if users is empty %}
+        <p>No users found. Run the database seed to create sample accounts.</p>
+    {% else %}
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Name</th>
+                    <th>Email</th>
+                    <th>Role</th>
+                    <th>Status</th>
+                    <th>Last Login</th>
+                    <th>Created</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for user in users %}
+                    <tr>
+                        <td>{{ user.name }}</td>
+                        <td>{{ user.email }}</td>
+                        <td>{{ user.role|title }}</td>
+                        <td>
+                            {% if user.is_active %}
+                                <span class="status status-success">Active</span>
+                            {% else %}
+                                <span class="status status-danger">Disabled</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if user.last_login %}
+                                {{ user.last_login|date("d/m/Y H:i") }}
+                            {% else %}
+                                Never
+                            {% endif %}
+                        </td>
+                        <td>{{ user.created_at|date("d/m/Y") }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% endif %}
+</section>
+{% endblock %}

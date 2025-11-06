@@ -32,10 +32,16 @@ class AuthController
 
         $queryParams = $request->getQueryParams();
         $error = $queryParams['error'] ?? null;
+        $redirect = isset($queryParams['redirect'])
+            ? $this->sanitizeRedirect($queryParams['redirect'])
+            : '';
+        $email = $queryParams['email'] ?? '';
 
         return $this->view->render($response, 'auth/login.twig', [
             'page_title' => 'Sign In',
             'error' => $error,
+            'redirect' => $redirect,
+            'old' => ['email' => $email],
         ]);
     }
 
@@ -45,18 +51,42 @@ class AuthController
         $email = trim($data['email'] ?? '');
         $password = $data['password'] ?? '';
 
-        if ($this->authService->attempt($email, $password)) {
-            $redirectUrl = $data['redirect'] ?? '/';
+        $redirectUrl = $this->sanitizeRedirect($data['redirect'] ?? '/');
 
+        if ($this->authService->attempt($email, $password)) {
             return $response
                 ->withHeader('Location', $redirectUrl ?: '/')
                 ->withStatus(302);
         }
 
-        $error = urlencode('Invalid credentials');
+        $query = ['error' => 'Invalid credentials'];
+
+        if ($email !== '') {
+            $query['email'] = $email;
+        }
+
+        if (!empty($data['redirect'])) {
+            $query['redirect'] = $this->sanitizeRedirect($data['redirect']);
+        }
+
+        $location = '/login?' . http_build_query($query);
+
         return $response
-            ->withHeader('Location', '/login?error=' . $error)
+            ->withHeader('Location', $location)
             ->withStatus(302);
+    }
+
+    private function sanitizeRedirect(?string $path): string
+    {
+        if (!$path) {
+            return '/';
+        }
+
+        if (str_starts_with($path, 'http') || str_starts_with($path, '//')) {
+            return '/';
+        }
+
+        return $path[0] === '/' ? $path : '/' . ltrim($path, '/');
     }
 
     public function logout(Request $request, Response $response): Response

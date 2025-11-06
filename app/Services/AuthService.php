@@ -8,15 +8,19 @@ namespace App\Services;
 
 class AuthService
 {
-    private \PDO $pdo;
+    private ?\PDO $pdo;
 
-    public function __construct(\PDO $pdo)
+    public function __construct(?\PDO $pdo)
     {
         $this->pdo = $pdo;
     }
 
     public function attempt(string $email, string $password): bool
     {
+        if (!$this->pdo) {
+            return false;
+        }
+
         if ($email === '' || $password === '') {
             return false;
         }
@@ -31,6 +35,10 @@ class AuthService
 
         if (!password_verify($password, $user['password_hash'])) {
             return false;
+        }
+
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_regenerate_id(true);
         }
 
         $_SESSION['user'] = [
@@ -48,6 +56,10 @@ class AuthService
     public function logout(): void
     {
         unset($_SESSION['user']);
+
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            session_regenerate_id(true);
+        }
     }
 
     public function check(): bool
@@ -72,6 +84,10 @@ class AuthService
 
     private function logLogin(int $userId): void
     {
+        if (!$this->pdo) {
+            return;
+        }
+
         try {
             $stmt = $this->pdo->prepare('UPDATE users SET last_login = NOW() WHERE id = :id');
             $stmt->execute(['id' => $userId]);

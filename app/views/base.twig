@@ -17,22 +17,32 @@
     <header class="header">
         <div class="container">
             <h1>{{ app_name }}</h1>
-            <div id="health-status" class="status status-success" style="float: right;">Checking...</div>
+            <div class="header__actions">
+                {% if auth.check %}
+                    <span>Signed in as {{ auth.user.name ?? auth.user.email }}</span>
+                    <a href="/logout">Sign out</a>
+                {% else %}
+                    <a href="/login">Sign in</a>
+                {% endif %}
+            </div>
+            <div id="health-status" class="status status-success">Checking...</div>
         </div>
     </header>
     
-    <nav class="nav">
-        <div class="container">
-            <ul>
-                <li><a href="/">Dashboard</a></li>
-                <li><a href="/admin/sites">Sites</a></li>
-                <li><a href="/admin/tariffs">Tariffs</a></li>
-                <li><a href="/reports/consumption">Reports</a></li>
-                <li><a href="/admin/users">Users</a></li>
-                <li><a href="/tools/show-structure">Tools</a></li>
-            </ul>
-        </div>
-    </nav>
+    {% if auth.check %}
+        <nav class="nav">
+            <div class="container">
+                <ul>
+                    <li><a href="/">Dashboard</a></li>
+                    <li><a href="/admin/sites">Sites</a></li>
+                    <li><a href="/admin/tariffs">Tariffs</a></li>
+                    <li><a href="/reports/consumption">Reports</a></li>
+                    <li><a href="/admin/users">Users</a></li>
+                    <li><a href="/tools/show-structure">Tools</a></li>
+                </ul>
+            </div>
+        </nav>
+    {% endif %}
     
     <main class="main">
         <div class="container">
