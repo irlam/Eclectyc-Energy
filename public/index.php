@@ -183,7 +183,7 @@ $app->add(TwigMiddleware::createFromContainer($app, 'view'));
 
 // Add error middleware
 $errorMiddleware = $app->addErrorMiddleware(
-    $debugMode,
+    true,
     true,
     true
 );
