@@ -214,7 +214,7 @@ $app->add(function ($request, $handler) {
 });
 
 // Load routes
-require BASE_PATH . '/app/http/routes.php';
+require BASE_PATH . '/app/Http/routes.php';
 
 // Run application
 try {
