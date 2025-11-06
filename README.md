@@ -169,6 +169,8 @@ Visit: https://eclectyc.energy/tools/show
 - `/admin/tariffs` (admin only) lists configured supply tariffs.
 - `/admin/users` (admin only) lists seeded accounts for quick role testing.
 - `/admin/imports` (admin only) provides CSV uploads with optional dry-run previews and batch summaries.
+- `/admin/imports/history` (admin only) lists recent ingestion runs with filters, decoded metadata, and surfaced errors.
+- `/admin/exports` (admin only) tracks SFTP export jobs, delivery status, and failure messages.
 
 ## CLI Scripts
 
@@ -269,7 +271,7 @@ Keeping this checklist handy avoids “Class not found” errors after refactors
 - [ ] Harden authentication flow (session regeneration, throttling, password reset)
 - [ ] Extend role matrix to APIs and non-admin surfaces
 - [ ] Implement Sites/Meters/Tariffs CRUD in UI and API
-- [ ] Operationalise ingestion pipeline (surface CSV importer beyond CLI, monitoring, dry-run support)
+- [ ] Operationalise ingestion pipeline (add background queueing, monitoring, and alerting for long-running jobs)
 - [ ] Complete reporting dashboards with charts and drill-downs
 - [ ] Add API validation and authentication (tokens/JWT)
 - [ ] Expand automated tests, fixtures, and seed data coverage

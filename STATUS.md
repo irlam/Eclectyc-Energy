@@ -12,7 +12,7 @@ This document captures the current progress of the Eclectyc Energy platform so f
 - **APIs**: `/api/health` endpoint plus controller-backed meter/import feeds returning aggregated roll-ups.
 - **Access Control**: Session-backed auth service, role-aware middleware, and navigation that respects admin/manager/viewer capabilities.
 - **Aggregation**: Domain services for daily and period roll-ups (weekly/monthly/annual), CLI wrappers, and audit logging feeding the aggregation tables.
-- **Imports & Exports**: Central CSV ingestion service shared by CLI and admin UI (dry-run support, batch flash messaging) plus operational SFTP export pipeline with phpseclib authentication.
+- **Imports & Exports**: Central CSV ingestion service shared by CLI and admin UI (dry-run support, batch flash messaging), import history dashboard, and operational SFTP export pipeline with phpseclib authentication and admin activity view.
 - **Health Monitoring**: `/api/health` now reports environment, SFTP, filesystem, and recent activity checks with graded status codes.
 - **Requirements**: High-level capability matrix tracked in `docs/product_requirements.md`.
 
@@ -32,7 +32,7 @@ This document captures the current progress of the Eclectyc Energy platform so f
   - Integrate external datasets (temperature, calorific values) to power AI insights and carbon reporting.
 
 - **Data Imports**
-  - Extend the new admin importer with batch history views, retry workflows, and user attribution.
+  - Add retry workflows, reprocessing, and richer attribution/notes for batches surfaced in the history dashboard.
   - Introduce background processing/queueing to avoid long-running requests for large files.
 
 - **CRUD & Admin UI**
@@ -57,7 +57,7 @@ This document captures the current progress of the Eclectyc Energy platform so f
 
 1. Finalise authentication (session hardening, middleware reuse, role-scope authorisation).
 2. Replace remaining route closures with controllers (`DashboardController`, `MetersController`, `ImportController`).
-3. Operationalise ingestion → aggregation (automate CSV imports, schedule multi-range aggregations, add comparison caches).
+3. Operationalise ingestion → aggregation (schedule multi-range aggregations, add comparison caches, automate ingestion retries/alerts).
 4. Build CRUD/editor flows for sites/meters/tariffs including metadata (direction, sub-meters, key metrics).
 5. Deliver the tariff engine, switching analysis, and production-grade exports (SFTP/email) before expanding to carbon/flexible dashboards.
 
