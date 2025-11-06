@@ -5,17 +5,45 @@
  * Last updated: 06/11/2024 14:45:00
  */
 
-// Check if running from CLI
-if (php_sapi_name() !== 'cli') {
-    die('This script can only be run from command line.');
-}
+// Determine context (CLI vs web)
+$isCli = php_sapi_name() === 'cli';
 
 // Autoloader
 require_once dirname(__DIR__) . '/vendor/autoload.php';
 
 // Load environment
-$dotenv = \Dotenv\Dotenv::createImmutable(dirname(__DIR__));
-$dotenv->safeLoad();
+$dotenvClass = '\\Dotenv\\Dotenv';
+if (class_exists($dotenvClass)) {
+    $dotenv = $dotenvClass::createImmutable(dirname(__DIR__));
+    $dotenv->safeLoad();
+} else {
+    $envFile = dirname(__DIR__) . '/.env';
+    if (is_readable($envFile)) {
+        $lines = file($envFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        foreach ($lines as $line) {
+            $line = trim($line);
+            if ($line === '' || str_starts_with($line, '#')) {
+                continue;
+            }
+            [$key, $value] = array_pad(explode('=', $line, 2), 2, '');
+            $value = trim($value, "\"' ");
+            $_ENV[$key] = $value;
+            putenv($key . '=' . $value);
+        }
+    }
+}
+
+// Protect web execution behind secret key
+if (!$isCli) {
+    $expectedKey = $_ENV['MIGRATION_KEY'] ?? '';
+    $providedKey = $_GET['key'] ?? ($_SERVER['HTTP_X_MIGRATION_KEY'] ?? '');
+    $valid = $expectedKey !== '' && $providedKey !== '' && hash_equals($expectedKey, $providedKey);
+    if (!$valid) {
+        http_response_code(403);
+        echo 'Forbidden';
+        exit(1);
+    }
+}
 
 echo "\n";
 echo "===========================================\n";
@@ -63,11 +91,18 @@ try {
     echo "✅ Migration completed successfully!\n\n";
     
     // Ask if user wants to seed data
-    echo "Would you like to seed the database with sample data? (y/n): ";
-    $handle = fopen("php://stdin", "r");
-    $line = fgets($handle);
+    $shouldSeed = false;
+    if ($isCli) {
+        echo "Would you like to seed the database with sample data? (y/n): ";
+        $handle = fopen("php://stdin", "r");
+        $line = fgets($handle);
+        $shouldSeed = trim($line) == 'y' || trim($line) == 'yes';
+    } else {
+        $seedParam = $_GET['seed'] ?? '0';
+        $shouldSeed = filter_var($seedParam, FILTER_VALIDATE_BOOLEAN);
+    }
     
-    if (trim($line) == 'y' || trim($line) == 'yes') {
+    if ($shouldSeed) {
         echo "\nRunning seed data...\n";
         
         $seedFile = dirname(__DIR__) . '/database/seeds/seed_data.sql';
