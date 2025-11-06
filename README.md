@@ -198,6 +198,22 @@ Linux servers are case-sensitive. Ensure:
 - `vendor/` not `Vendor/`
 Run `php tools/check-structure.php` to verify
 
+### Updating Autoloading After Structural Changes
+When adding new namespaced classes or moving directories, follow these steps to keep Composer’s PSR-4 autoloader and the production host in sync:
+
+1. **Match directory casing**: Namespace segments must mirror directory names (e.g. `App\Models` → `app/Models`). Rename any lowercase folders (`app/models`, `app/http`, `app/config`, etc.) so they match the namespace exactly.
+2. **Update internal references**: Adjust includes and tooling that reference the old paths, such as `public/index.php` (`require BASE_PATH . '/app/Http/routes.php';`) and `tools/check-structure.php`.
+3. **Regenerate the autoloader**:
+   ```bash
+   composer dump-autoload --optimize
+   # or, in a chrooted Plesk shell:
+   php /composer.phar dump-autoload --optimize
+   ```
+4. **Restart PHP/OPcache**: In Plesk, go to **Domains → eclectyc.energy → PHP Settings → Reload/Restart PHP** so the runtime picks up the new class map.
+5. **Verify endpoints**: Hit `https://eclectyc.energy/api/health` (or run `php tools/health.php`) to confirm controllers and middleware resolve correctly.
+
+Keeping this checklist handy avoids “Class not found” errors after refactors or deployments.
+
 ### 500 Errors
 1. Check `.env` file exists and is readable
 2. Verify database credentials
