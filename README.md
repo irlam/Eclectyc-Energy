@@ -102,17 +102,17 @@ php scripts/seed.php
 ```
 eclectyc-energy/
 ├── app/                    # Application core
-│   ├── config/            # Configuration files
-│   ├── http/              # HTTP layer
-│   │   ├── Controllers/   # Request controllers
-│   │   └── routes.php     # Route definitions
+│   ├── Config/           # Configuration files
+│   ├── Http/             # HTTP layer
+│   │   ├── Controllers/  # Request controllers
+│   │   └── routes.php    # Route definitions
 │   ├── domain/            # Business logic
 │   │   ├── ingestion/     # Data ingestion
 │   │   ├── aggregation/   # Data aggregation
 │   │   ├── tariffs/       # Tariff calculations
 │   │   ├── analytics/     # Analytics engine
 │   │   └── exports/       # Export handlers
-│   ├── models/            # Data models
+│   ├── Models/           # Data models
 │   └── views/             # Twig templates
 ├── database/              # Database files
 │   ├── migrations/        # Schema migrations
@@ -227,6 +227,15 @@ Keeping this checklist handy avoids “Class not found” errors after refactors
 4. Try `127.0.0.1` instead of `localhost`
 
 ## Development Roadmap
+
+- [ ] Finalise authentication flow (sessions, role enforcement)
+- [ ] Implement Sites/Meters/Tariffs CRUD in UI and API
+- [ ] Build domain services (ingestion, aggregation, tariffs, analytics, exports)
+- [ ] Complete reporting dashboards with charts
+- [ ] Add API validation and authentication
+- [ ] Expand test coverage and seed data
+- [ ] Polish front-end interactivity (AJAX forms, visualisations)
+- [ ] Harden deployment scripts and monitoring
 
 - [ ] AI-powered reporting layer (Python integration)
 - [ ] Advanced tariff engine
