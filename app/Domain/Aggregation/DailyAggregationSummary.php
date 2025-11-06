@@ -61,7 +61,17 @@ class DailyAggregationSummary
         return $this->metersWithReadings;
     }
 
+    public function getMetersWithData(): int
+    {
+        return $this->metersWithReadings;
+    }
+
     public function getMetersWithoutReadings(): int
+    {
+        return $this->metersWithoutReadings;
+    }
+
+    public function getMetersWithoutData(): int
     {
         return $this->metersWithoutReadings;
     }
@@ -85,7 +95,9 @@ class DailyAggregationSummary
             'date' => $this->date->format('Y-m-d'),
             'total_meters' => $this->totalMeters,
             'meters_with_readings' => $this->metersWithReadings,
+            'meters_with_data' => $this->metersWithReadings,
             'meters_without_readings' => $this->metersWithoutReadings,
+            'meters_without_data' => $this->metersWithoutReadings,
             'errors' => $this->errors,
             'error_messages' => $this->errorMessages,
         ];

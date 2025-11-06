@@ -24,7 +24,7 @@ This document captures the current progress of the Eclectyc Energy platform so f
   - Finish wiring dedicated controllers for dashboard, meters, imports, rather than anonymous closures (reports complete).
 
 - **Data Aggregation & Analytics**
-  - Build ingestion → aggregation jobs (daily/weekly/monthly/annual) supporting import/export channels and baseload analytics.
+  - Extend new aggregation pipeline to roll daily data into weekly/monthly/annual tables and support import/export channels plus baseload analytics.
   - Introduce comparison snapshots (prev day/week/month/year) and missing-data detection.
   - Integrate external datasets (temperature, calorific values) to power AI insights and carbon reporting.
 

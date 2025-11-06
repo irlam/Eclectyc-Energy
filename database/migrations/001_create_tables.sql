@@ -199,6 +199,66 @@ CREATE TABLE IF NOT EXISTS daily_aggregations (
     INDEX idx_date (date)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+-- Weekly aggregations table
+CREATE TABLE IF NOT EXISTS weekly_aggregations (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    meter_id INT UNSIGNED NOT NULL,
+    week_start DATE NOT NULL,
+    week_end DATE NOT NULL,
+    total_consumption DECIMAL(15, 3) NOT NULL,
+    peak_consumption DECIMAL(15, 3) NULL,
+    off_peak_consumption DECIMAL(15, 3) NULL,
+    min_daily_consumption DECIMAL(15, 3) NULL,
+    max_daily_consumption DECIMAL(15, 3) NULL,
+    day_count INT DEFAULT 0,
+    reading_count INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (meter_id) REFERENCES meters(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_week (meter_id, week_start),
+    INDEX idx_week (week_start, week_end)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Monthly aggregations table
+CREATE TABLE IF NOT EXISTS monthly_aggregations (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    meter_id INT UNSIGNED NOT NULL,
+    month_start DATE NOT NULL,
+    month_end DATE NOT NULL,
+    total_consumption DECIMAL(15, 3) NOT NULL,
+    peak_consumption DECIMAL(15, 3) NULL,
+    off_peak_consumption DECIMAL(15, 3) NULL,
+    min_daily_consumption DECIMAL(15, 3) NULL,
+    max_daily_consumption DECIMAL(15, 3) NULL,
+    day_count INT DEFAULT 0,
+    reading_count INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (meter_id) REFERENCES meters(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_month (meter_id, month_start),
+    INDEX idx_month (month_start, month_end)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Annual aggregations table
+CREATE TABLE IF NOT EXISTS annual_aggregations (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    meter_id INT UNSIGNED NOT NULL,
+    year_start DATE NOT NULL,
+    year_end DATE NOT NULL,
+    total_consumption DECIMAL(15, 3) NOT NULL,
+    peak_consumption DECIMAL(15, 3) NULL,
+    off_peak_consumption DECIMAL(15, 3) NULL,
+    min_daily_consumption DECIMAL(15, 3) NULL,
+    max_daily_consumption DECIMAL(15, 3) NULL,
+    day_count INT DEFAULT 0,
+    reading_count INT DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (meter_id) REFERENCES meters(id) ON DELETE CASCADE,
+    UNIQUE KEY unique_year (meter_id, year_start),
+    INDEX idx_year (year_start, year_end)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 -- Settings table for system configuration
 CREATE TABLE IF NOT EXISTS settings (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,

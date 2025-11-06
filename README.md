@@ -118,12 +118,12 @@ eclectyc-energy/
 │   ├── Http/             # HTTP layer
 │   │   ├── Controllers/  # Request controllers
 │   │   └── routes.php    # Route definitions
-│   ├── domain/            # Business logic
-│   │   ├── ingestion/     # Data ingestion
-│   │   ├── aggregation/   # Data aggregation
-│   │   ├── tariffs/       # Tariff calculations
-│   │   ├── analytics/     # Analytics engine
-│   │   └── exports/       # Export handlers
+│   ├── Domain/            # Business logic
+│   │   ├── Ingestion/     # Data ingestion
+│   │   ├── Aggregation/   # Data aggregation
+│   │   ├── Tariffs/       # Tariff calculations
+│   │   ├── Analytics/     # Analytics engine
+│   │   └── Exports/       # Export handlers
 │   ├── Models/           # Data models
 │   └── views/             # Twig templates
 ├── database/              # Database files
@@ -177,6 +177,8 @@ php scripts/import_csv.php /path/to/data.csv
 ### Run Aggregation (for cron)
 ```bash
 php scripts/aggregate_cron.php
+# or specify a mode/date, e.g. weekly roll-up for the week of 2024-11-04
+php scripts/aggregate_cron.php --range weekly --date 2024-11-10
 ```
 
 ### Export via SFTP

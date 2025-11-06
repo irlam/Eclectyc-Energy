@@ -13,6 +13,8 @@ Friend-supplied blueprint captured below so we can benchmark the current platfor
 | Flexible import adapters for multiple formats (HH, TOU) | Planned | `scripts/import_csv.php` exists but limited. |
 | Enrich data with external feeds (calorific values, temperatures) | Planned | No integration yet. |
 
+> Implementation note: `php scripts/aggregate_cron.php` now accepts `--range daily|weekly|monthly|annual`, enabling manual generation of the new summary tables once the upstream daily data exists.
+
 ## Organisational Hierarchy & Setup
 
 | Capability | Status | Notes |
