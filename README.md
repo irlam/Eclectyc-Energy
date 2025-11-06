@@ -2,7 +2,7 @@
 Self‑hosted energy intelligence for estates, construction &amp; industry
 # eclectyc-energy/.README.md  
 # Energy Management Platform Documentation
-# Last updated: 06/11/2025 14:05:00
+# Last updated: 06/11/2025 21:45:00
 
 # Eclectyc Energy Management Platform
 
@@ -98,6 +98,8 @@ Append `&seed=true` to load sample data when running from the browser.
 php scripts/seed.php
 ```
 
+This loads sample readings for 30 Oct–06 Nov 2025 alongside precomputed daily, weekly, monthly, and annual aggregation rows so dashboards have data immediately.
+
 ### Default Accounts & Roles
 
 Running the seeder creates three demo operators, all with the temporary password `admin123`:
@@ -169,29 +171,41 @@ Visit: https://eclectyc.energy/tools/show
 
 ## CLI Scripts
 
-### Import CSV Data
+### Import CSV Data (CLI only)
 ```bash
-php scripts/import_csv.php /path/to/data.csv
+php scripts/import_csv.php -f /path/to/readings.csv -t hh
 ```
+Run from the project root so the autoloader resolves; switch `-t` to `daily` for single-value totals. The importer always executes from the command line, assigns a UUID batch, and upserts rows in `meter_readings`.
 
-### Run Aggregation (for cron)
+### Run Aggregations
 ```bash
-php scripts/aggregate_cron.php
-# or specify a mode/date, e.g. weekly roll-up for the week of 2024-11-04
-php scripts/aggregate_cron.php --range weekly --date 2024-11-10
-```
+# Run all ranges (daily, weekly, monthly, annual) relative to a date
+php scripts/aggregate_cron.php --all --date 2025-11-06 --verbose
 
-### Export via SFTP
-```bash
-php scripts/export_sftp.php
+# Convenience wrappers for single ranges (default date = yesterday)
+php scripts/aggregate_daily.php --date 2025-11-06
+php scripts/aggregate_weekly.php --date 2025-11-06
+php scripts/aggregate_monthly.php --date 2025-11-01
+php scripts/aggregate_annual.php --date 2025-01-01
 ```
+Each script logs to `audit_logs` and reuses the shared aggregation helper, so you can schedule individual frequencies or run everything in one hit.
+
+### Export via SFTP (preview)
+```bash
+php scripts/export_sftp.php -t daily -d 2025-11-05 -f csv
+```
+Configure `SFTP_HOST`, `SFTP_PORT`, `SFTP_USERNAME`, `SFTP_PASSWORD`, and `SFTP_PATH` in `.env`. The current implementation simulates the upload; replace the placeholder block with phpseclib once credentials are provisioned.
 
 ## Cron Job Setup (Plesk)
 
 1. Go to "Scheduled Tasks" in Plesk
-2. Add new task:
-   - Command: `/usr/bin/php /path/to/eclectyc-energy/scripts/aggregate_cron.php`
-   - Schedule: Every hour (0 * * * *)
+2. Add a nightly aggregation task (e.g. 01:30):
+   - Command: `/usr/bin/php /path/to/eclectyc-energy/scripts/aggregate_cron.php --all --verbose`
+   - Schedule: `30 1 * * *`
+3. Optional: add additional tasks for dedicated ranges or exports, for example:
+   - Weekly roll-up every Monday at 02:15: `/usr/bin/php /path/to/eclectyc-energy/scripts/aggregate_weekly.php`
+   - Daily SFTP export once credentials are wired: `/usr/bin/php /path/to/eclectyc-energy/scripts/export_sftp.php -t daily`
+4. Ensure each task uses the same PHP version as the site and inherits the correct `.env` file (set `Working directory` to the project root).
 
 ## Security Considerations
 
@@ -249,15 +263,15 @@ Keeping this checklist handy avoids “Class not found” errors after refactors
 
 ## Development Roadmap
 
-- [ ] Finalise authentication flow (session regeneration, password policies)
-- [ ] Extend role matrix (non-admin admin UI, manager workflows)
+- [ ] Harden authentication flow (session regeneration, throttling, password reset)
+- [ ] Extend role matrix to APIs and non-admin surfaces
 - [ ] Implement Sites/Meters/Tariffs CRUD in UI and API
-- [ ] Build domain services (ingestion, aggregation, tariffs, analytics, exports)
-- [ ] Complete reporting dashboards with charts
-- [ ] Add API validation and authentication
-- [ ] Expand test coverage and seed data
-- [ ] Polish front-end interactivity (AJAX forms, visualisations)
-- [ ] Harden deployment scripts and monitoring
+- [ ] Operationalise ingestion pipeline (surface CSV importer beyond CLI, monitoring, dry-run support)
+- [ ] Complete reporting dashboards with charts and drill-downs
+- [ ] Add API validation and authentication (tokens/JWT)
+- [ ] Expand automated tests, fixtures, and seed data coverage
+- [ ] Polish front-end interactivity (AJAX filters, visualisations)
+- [ ] Harden deployment scripts, SFTP integration, and monitoring
 
 - [ ] AI-powered reporting layer (Python integration)
 - [ ] Advanced tariff engine
