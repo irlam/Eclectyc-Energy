@@ -1,6 +1,6 @@
 {# eclectyc-energy/app/views/base.twig #}
 {# Base template for all pages #}
-{# Last updated: 06/11/2024 14:45:00 #}
+{# Last updated: 06/11/2025 22:45:00 #}
 
 <!DOCTYPE html>
 <html lang="en">
@@ -14,9 +14,14 @@
     {% block styles %}{% endblock %}
 </head>
 <body>
+    <div class="grain" aria-hidden="true"></div>
+
     <header class="header">
         <div class="container">
-            <h1>{{ app_name }}</h1>
+            <a href="/" class="header__brand" aria-label="{{ app_name }} dashboard">
+                <span class="logo-mark" aria-hidden="true"></span>
+                <h1>{{ app_name }}</h1>
+            </a>
             <div class="header__actions">
                 {% if auth.check %}
                     <span>Signed in as {{ auth.user.name ?? auth.user.email }}</span>
