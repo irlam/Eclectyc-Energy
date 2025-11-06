@@ -2,7 +2,7 @@
 Self‑hosted energy intelligence for estates, construction &amp; industry
 # eclectyc-energy/.README.md  
 # Energy Management Platform Documentation
-# Last updated: 06/11/2024 14:45:00
+# Last updated: 06/11/2025 14:05:00
 
 # Eclectyc Energy Management Platform
 
@@ -22,7 +22,7 @@ A modern PHP-based energy management platform designed for deployment at https:/
 
 1. Log into your Plesk control panel
 2. Navigate to "Databases" → "Add Database"
-3. Create a new database named `energy_platform`
+3. Create a new database for the platform (e.g. `k87747_eclectyc` on production)
 4. Create a database user with full privileges
 5. Note down the credentials (you'll need them for .env)
 
@@ -49,10 +49,13 @@ cp .env.example .env
 2. Edit `.env` file with your database credentials:
 ```
 DB_HOST=localhost
-DB_DATABASE=energy_platform
+DB_DATABASE=k87747_eclectyc
 DB_USERNAME=your_db_user
 DB_PASSWORD=your_db_password
+MIGRATION_KEY=replace_with_long_random_string
 ```
+
+> `MIGRATION_KEY` secures the browser-triggered migration endpoint. Use a unique, high-entropy value for each environment and rotate it after use.
 
 ### 4. Install Dependencies
 
@@ -76,9 +79,19 @@ chmod 644 /path/to/eclectyc-energy/.env
 ```
 
 ### 7. Run Database Migrations
+Run migrations via either method:
+
 ```bash
 php scripts/migrate.php
 ```
+
+Or through the browser once your `MIGRATION_KEY` is configured:
+
+```
+https://your-domain/scripts/migrate.php?key=YOUR_MIGRATION_KEY
+```
+
+Append `&seed=true` to load sample data when running from the browser.
 
 ### 8. Seed Database (Optional)
 ```bash
@@ -166,6 +179,7 @@ php scripts/export_sftp.php
 - Regularly update dependencies: `composer update`
 - Monitor logs for suspicious activity
 - Use HTTPS only (configured in Plesk)
+- Rotate `MIGRATION_KEY` after each migration and keep it secret
 
 ## GDPR Compliance
 
