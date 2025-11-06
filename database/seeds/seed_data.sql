@@ -2,8 +2,6 @@
 -- Initial seed data for development and testing
 -- Last updated: 06/11/2024 14:45:00
 
-USE energy_platform;
-
 -- Insert default admin user (password: admin123)
 INSERT INTO users (email, password_hash, name, role) VALUES
 ('admin@eclectyc.energy', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'System Admin', 'admin');

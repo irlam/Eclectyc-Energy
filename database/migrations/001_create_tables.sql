@@ -2,13 +2,6 @@
 -- Initial database schema for Energy Management Platform
 -- Last updated: 06/11/2024 14:45:00
 
--- Create database if not exists
-CREATE DATABASE IF NOT EXISTS energy_platform 
-    CHARACTER SET utf8mb4 
-    COLLATE utf8mb4_unicode_ci;
-
-USE energy_platform;
-
 -- Users table
 CREATE TABLE IF NOT EXISTS users (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
