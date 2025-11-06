@@ -210,6 +210,107 @@ class CsvIngestionService
         return $reading;
     }
 
+    /**
+     * Retry a failed import batch.
+     * 
+     * @param string $batchId Original batch ID to retry
+     * @param string $filePath Path to the CSV file
+     * @param string $format Format type
+     * @param int|null $userId User initiating the retry
+     * @return IngestionResult Result of the retry attempt
+     */
+    public function retryBatch(string $batchId, string $filePath, string $format, ?int $userId = null): IngestionResult
+    {
+        // Fetch original batch info
+        $stmt = $this->pdo->prepare('
+            SELECT id, new_values, retry_count 
+            FROM audit_logs 
+            WHERE action = :action 
+            AND JSON_EXTRACT(new_values, "$.batch_id") = :batch_id
+            ORDER BY created_at DESC 
+            LIMIT 1
+        ');
+        $stmt->execute([
+            'action' => 'import_csv',
+            'batch_id' => $batchId,
+        ]);
+        
+        $originalBatch = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$originalBatch) {
+            throw new Exception('Original batch not found: ' . $batchId);
+        }
+        
+        $retryCount = (int) ($originalBatch['retry_count'] ?? 0) + 1;
+        
+        // Generate new batch ID for retry
+        $newBatchId = Uuid::uuid4()->toString();
+        
+        // Perform the ingestion
+        $result = $this->ingestFromCsv($filePath, $format, $newBatchId, false, $userId);
+        
+        // Log the retry with parent batch reference
+        $this->logRetry($userId, $result, $batchId, $retryCount);
+        
+        return $result;
+    }
+    
+    /**
+     * Log a retry attempt
+     */
+    private function logRetry(?int $userId, IngestionResult $result, string $parentBatchId, int $retryCount): void
+    {
+        try {
+            $stmt = $this->pdo->prepare('
+                INSERT INTO audit_logs (user_id, action, entity_type, new_values, status, retry_count, parent_batch_id)
+                VALUES (:user_id, :action, :entity_type, :new_values, :status, :retry_count, :parent_batch_id)
+            ');
+
+            // Determine status based on result
+            $status = 'completed';
+            if ($result->getRecordsFailed() === $result->getRecordsProcessed() && $result->getRecordsProcessed() > 0) {
+                $status = 'failed';
+            }
+
+            $payload = json_encode([
+                'batch_id' => $result->getBatchId(),
+                'format' => $result->getMeta()['format'] ?? null,
+                'records_processed' => $result->getRecordsProcessed(),
+                'records_imported' => $result->getRecordsImported(),
+                'records_failed' => $result->getRecordsFailed(),
+                'errors' => $result->getErrors(),
+                'is_retry' => true,
+                'parent_batch_id' => $parentBatchId,
+            ], JSON_THROW_ON_ERROR);
+
+            $stmt->execute([
+                'user_id' => $userId,
+                'action' => 'import_csv',
+                'entity_type' => 'import_batch',
+                'new_values' => $payload,
+                'status' => $status,
+                'retry_count' => $retryCount,
+                'parent_batch_id' => $parentBatchId,
+            ]);
+            
+            // Update original batch status to 'retrying'
+            $updateStmt = $this->pdo->prepare('
+                UPDATE audit_logs 
+                SET status = :status 
+                WHERE action = :action 
+                AND JSON_EXTRACT(new_values, "$.batch_id") = :batch_id
+                AND parent_batch_id IS NULL
+            ');
+            $updateStmt->execute([
+                'status' => 'retrying',
+                'action' => 'import_csv',
+                'batch_id' => $parentBatchId,
+            ]);
+        } catch (PDOException | Exception $exception) {
+            // Fallback logging suppressed to avoid interrupting ingestion
+        }
+    }
+
     private function normaliseString(string $value): string
     {
         return trim($value);
@@ -264,9 +365,17 @@ class CsvIngestionService
     {
         try {
             $stmt = $this->pdo->prepare('
-                INSERT INTO audit_logs (user_id, action, entity_type, new_values)
-                VALUES (:user_id, :action, :entity_type, :new_values)
+                INSERT INTO audit_logs (user_id, action, entity_type, new_values, status, retry_count)
+                VALUES (:user_id, :action, :entity_type, :new_values, :status, :retry_count)
             ');
+
+            // Determine status based on result
+            $status = 'completed';
+            if ($result->getRecordsFailed() === $result->getRecordsProcessed() && $result->getRecordsProcessed() > 0) {
+                $status = 'failed';
+            } elseif ($result->hasErrors()) {
+                $status = 'completed'; // Partial success still marked as completed
+            }
 
             $payload = json_encode([
                 'batch_id' => $result->getBatchId(),
@@ -282,6 +391,8 @@ class CsvIngestionService
                 'action' => 'import_csv',
                 'entity_type' => 'import_batch',
                 'new_values' => $payload,
+                'status' => $status,
+                'retry_count' => 0,
             ]);
         } catch (PDOException | Exception $exception) {
             // Fallback logging suppressed to avoid interrupting ingestion

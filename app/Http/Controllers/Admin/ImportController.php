@@ -7,6 +7,7 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Domain\Ingestion\CsvIngestionService;
+use App\Domain\Ingestion\ImportQueueStub;
 use App\Domain\Ingestion\IngestionResult;
 use PDO;
 use Psr\Http\Message\ResponseInterface as Response;
@@ -56,7 +57,7 @@ class ImportController
         $statusFilter = isset($query['status']) && $query['status'] !== '' ? strtolower($query['status']) : null;
         $typeFilter = isset($query['type']) && $query['type'] !== '' ? strtolower($query['type']) : null;
 
-        $stmt = $this->pdo->prepare('SELECT a.id, a.user_id, a.new_values, a.created_at, u.name, u.email
+        $stmt = $this->pdo->prepare('SELECT a.id, a.user_id, a.new_values, a.status, a.retry_count, a.parent_batch_id, a.created_at, u.name, u.email
             FROM audit_logs a
             LEFT JOIN users u ON a.user_id = u.id
             WHERE a.action = :action
@@ -80,7 +81,8 @@ class ImportController
                 }
             }
 
-            $status = $this->deriveStatus($payload);
+            // Use database status if available, otherwise derive from payload
+            $status = $row['status'] ?? $this->deriveStatus($payload);
             $importType = strtolower($payload['format'] ?? $payload['meta']['format'] ?? 'unknown');
 
             if ($statusFilter && $status !== $statusFilter) {
@@ -100,6 +102,9 @@ class ImportController
                 'batch_id' => $payload['batch_id'] ?? null,
                 'import_type' => $importType,
                 'status' => $status,
+                'retry_count' => (int) ($row['retry_count'] ?? 0),
+                'parent_batch_id' => $row['parent_batch_id'] ?? null,
+                'is_retry' => (bool) ($payload['is_retry'] ?? false),
                 'total_records' => $payload['records_processed'] ?? 0,
                 'imported_records' => $payload['records_imported'] ?? 0,
                 'failed_records' => $payload['records_failed'] ?? 0,
@@ -127,6 +132,11 @@ class ImportController
 
     private function deriveStatus(array $payload): string
     {
+        // Check for explicit status from audit log
+        if (isset($payload['status'])) {
+            return $payload['status'];
+        }
+        
         $imported = (int) ($payload['records_imported'] ?? 0);
         $failed = (int) ($payload['records_failed'] ?? 0);
 
@@ -214,6 +224,59 @@ class ImportController
         }
 
         return $this->redirect($response, '/admin/imports');
+    }
+
+    /**
+     * Retry a failed import batch
+     */
+    public function retry(Request $request, Response $response): Response
+    {
+        if (!$this->pdo) {
+            $this->setFlash('error', 'Database connection unavailable.');
+            return $this->redirect($response, '/admin/imports/history');
+        }
+
+        $data = $request->getParsedBody() ?? [];
+        $batchId = $data['batch_id'] ?? null;
+
+        if (!$batchId) {
+            $this->setFlash('error', 'Batch ID is required for retry.');
+            return $this->redirect($response, '/admin/imports/history');
+        }
+
+        // Fetch the original batch info
+        $stmt = $this->pdo->prepare('
+            SELECT id, new_values 
+            FROM audit_logs 
+            WHERE action = :action 
+            AND JSON_EXTRACT(new_values, "$.batch_id") = :batch_id
+            ORDER BY created_at DESC 
+            LIMIT 1
+        ');
+        $stmt->execute([
+            'action' => 'import_csv',
+            'batch_id' => $batchId,
+        ]);
+        
+        $originalBatch = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$originalBatch) {
+            $this->setFlash('error', 'Original batch not found.');
+            return $this->redirect($response, '/admin/imports/history');
+        }
+
+        // For now, we'll queue the retry but note that actual file processing requires the original file
+        // In a production system, you'd store the uploaded file for potential retries
+        $queue = new ImportQueueStub();
+        $payload = json_decode($originalBatch['new_values'], true);
+        $format = $payload['format'] ?? 'hh';
+        
+        // Note: This is a stub - in production, you'd store the original file and retrieve it here
+        $queue->enqueueRetry($batchId, '/path/to/stored/file.csv', $format, $this->currentUserId());
+        
+        $this->setFlash('info', 'Import retry has been queued. Note: This is a stub implementation - full retry requires file storage.');
+        
+        return $this->redirect($response, '/admin/imports/history');
     }
 
     private function redirect(Response $response, string $path): Response

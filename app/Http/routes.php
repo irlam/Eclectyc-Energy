@@ -59,6 +59,7 @@ $app->group('/admin', function ($group) {
     $group->get('/imports', [ImportController::class, 'index'])->setName('admin.imports');
     $group->post('/imports', [ImportController::class, 'upload'])->setName('admin.imports.upload');
     $group->get('/imports/history', [ImportController::class, 'history'])->setName('admin.imports.history');
+    $group->post('/imports/retry', [ImportController::class, 'retry'])->setName('admin.imports.retry');
     $group->get('/exports', [ExportsController::class, 'index'])->setName('admin.exports');
     $group->get('/sites', [SitesController::class, 'index'])->setName('admin.sites');
     $group->get('/tariffs', [TariffsController::class, 'index'])->setName('admin.tariffs');
