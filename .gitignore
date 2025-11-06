@@ -1,2 +1,10 @@
 .env
 vendor/
+composer.lock
+node_modules/
+.DS_Store
+*.log
+logs/*.log
+!logs/.gitkeep
+exports/
+!exports/.gitkeep
