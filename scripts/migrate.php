@@ -68,6 +68,20 @@ try {
     
     $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     
+    $databaseName = $_ENV['DB_DATABASE'] ?? 'energy_platform';
+    try {
+        $pdo->exec("USE `{$databaseName}`");
+    } catch (PDOException $pdoException) {
+        $errorInfo = $pdoException->errorInfo ?? [];
+        $driverCode = $errorInfo[1] ?? null;
+        if ($driverCode === 1049) {
+            $pdo->exec("CREATE DATABASE IF NOT EXISTS `{$databaseName}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+            $pdo->exec("USE `{$databaseName}`");
+        } else {
+            throw $pdoException;
+        }
+    }
+
     // Run migration SQL file
     $migrationFile = dirname(__DIR__) . '/database/migrations/001_create_tables.sql';
     
@@ -84,6 +98,9 @@ try {
     
     foreach ($statements as $statement) {
         if (!empty($statement)) {
+            if (stripos($statement, 'create database') === 0 || stripos($statement, 'use ') === 0) {
+                continue;
+            }
             $pdo->exec($statement);
         }
     }
