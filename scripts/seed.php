@@ -2,7 +2,7 @@
 /**
  * eclectyc-energy/scripts/seed.php
  * Database seeder runner (separate from migration)
- * Last updated: 06/11/2024 14:45:00
+ * Last updated: 06/11/2025 20:50:00
  */
 
 // Check if running from CLI
@@ -14,8 +14,11 @@ if (php_sapi_name() !== 'cli') {
 require_once dirname(__DIR__) . '/vendor/autoload.php';
 
 // Load environment
-$dotenv = \Dotenv\Dotenv::createImmutable(dirname(__DIR__));
-$dotenv->safeLoad();
+$dotenvClass = 'Dotenv\\Dotenv';
+if (class_exists($dotenvClass)) {
+    $dotenv = $dotenvClass::createImmutable(dirname(__DIR__));
+    $dotenv->safeLoad();
+}
 
 echo "\n";
 echo "===========================================\n";
@@ -85,6 +88,7 @@ try {
     echo "  - 4 Meters\n";
     echo "  - 4 Tariffs\n";
     echo "  - Sample meter readings\n";
+    echo "  - Aggregation tables pre-populated (daily/weekly/monthly/annual)\n";
     echo "  - System settings\n\n";
     
     echo "⚠️  Remember to change the default admin password!\n\n";

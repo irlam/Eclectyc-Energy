@@ -1,6 +1,6 @@
 -- eclectyc-energy/database/seeds/seed_data.sql
 -- Initial seed data for development and testing
--- Last updated: 06/11/2024 14:45:00
+-- Last updated: 06/11/2025 20:50:00
 
 -- Insert default platform users (password for all: admin123)
 INSERT INTO users (email, password_hash, name, role) VALUES
@@ -60,27 +60,107 @@ UPDATE tariffs
 SET peak_rate = 35.00, off_peak_rate = 15.00 
 WHERE code = 'BG-E7-01';
 
--- Insert some sample meter readings (last 7 days)
+-- Insert sample meter readings (30 Oct 2025 - 06 Nov 2025)
 INSERT INTO meter_readings (meter_id, reading_date, reading_time, reading_value, reading_type) VALUES
 -- Main Office electricity readings
-(1, DATE_SUB(CURDATE(), INTERVAL 7 DAY), '00:00:00', 100.5, 'actual'),
-(1, DATE_SUB(CURDATE(), INTERVAL 6 DAY), '00:00:00', 95.3, 'actual'),
-(1, DATE_SUB(CURDATE(), INTERVAL 5 DAY), '00:00:00', 110.2, 'actual'),
-(1, DATE_SUB(CURDATE(), INTERVAL 4 DAY), '00:00:00', 105.8, 'actual'),
-(1, DATE_SUB(CURDATE(), INTERVAL 3 DAY), '00:00:00', 98.6, 'actual'),
-(1, DATE_SUB(CURDATE(), INTERVAL 2 DAY), '00:00:00', 102.4, 'actual'),
-(1, DATE_SUB(CURDATE(), INTERVAL 1 DAY), '00:00:00', 99.7, 'actual'),
-(1, CURDATE(), '00:00:00', 101.3, 'actual'),
+(1, '2025-10-30', '00:00:00', 100.5, 'actual'),
+(1, '2025-10-31', '00:00:00', 95.3, 'actual'),
+(1, '2025-11-01', '00:00:00', 110.2, 'actual'),
+(1, '2025-11-02', '00:00:00', 105.8, 'actual'),
+(1, '2025-11-03', '00:00:00', 98.6, 'actual'),
+(1, '2025-11-04', '00:00:00', 102.4, 'actual'),
+(1, '2025-11-05', '00:00:00', 99.7, 'actual'),
+(1, '2025-11-06', '00:00:00', 101.3, 'actual'),
 
 -- Warehouse electricity readings
-(3, DATE_SUB(CURDATE(), INTERVAL 7 DAY), '00:00:00', 450.2, 'actual'),
-(3, DATE_SUB(CURDATE(), INTERVAL 6 DAY), '00:00:00', 425.8, 'actual'),
-(3, DATE_SUB(CURDATE(), INTERVAL 5 DAY), '00:00:00', 478.3, 'actual'),
-(3, DATE_SUB(CURDATE(), INTERVAL 4 DAY), '00:00:00', 462.5, 'actual'),
-(3, DATE_SUB(CURDATE(), INTERVAL 3 DAY), '00:00:00', 441.9, 'actual'),
-(3, DATE_SUB(CURDATE(), INTERVAL 2 DAY), '00:00:00', 455.6, 'actual'),
-(3, DATE_SUB(CURDATE(), INTERVAL 1 DAY), '00:00:00', 448.2, 'actual'),
-(3, CURDATE(), '00:00:00', 452.7, 'actual');
+(3, '2025-10-30', '00:00:00', 450.2, 'actual'),
+(3, '2025-10-31', '00:00:00', 425.8, 'actual'),
+(3, '2025-11-01', '00:00:00', 478.3, 'actual'),
+(3, '2025-11-02', '00:00:00', 462.5, 'actual'),
+(3, '2025-11-03', '00:00:00', 441.9, 'actual'),
+(3, '2025-11-04', '00:00:00', 455.6, 'actual'),
+(3, '2025-11-05', '00:00:00', 448.2, 'actual'),
+(3, '2025-11-06', '00:00:00', 452.7, 'actual');
+
+-- Seed daily aggregations aligned with the sample readings
+INSERT INTO daily_aggregations (
+	meter_id,
+	date,
+	total_consumption,
+	peak_consumption,
+	off_peak_consumption,
+	min_reading,
+	max_reading,
+	reading_count
+) VALUES
+	(1, '2025-10-30', 100.5, 0.0, 100.5, 100.5, 100.5, 1),
+	(1, '2025-10-31', 95.3, 0.0, 95.3, 95.3, 95.3, 1),
+	(1, '2025-11-01', 110.2, 0.0, 110.2, 110.2, 110.2, 1),
+	(1, '2025-11-02', 105.8, 0.0, 105.8, 105.8, 105.8, 1),
+	(1, '2025-11-03', 98.6, 0.0, 98.6, 98.6, 98.6, 1),
+	(1, '2025-11-04', 102.4, 0.0, 102.4, 102.4, 102.4, 1),
+	(1, '2025-11-05', 99.7, 0.0, 99.7, 99.7, 99.7, 1),
+	(1, '2025-11-06', 101.3, 0.0, 101.3, 101.3, 101.3, 1),
+	(3, '2025-10-30', 450.2, 0.0, 450.2, 450.2, 450.2, 1),
+	(3, '2025-10-31', 425.8, 0.0, 425.8, 425.8, 425.8, 1),
+	(3, '2025-11-01', 478.3, 0.0, 478.3, 478.3, 478.3, 1),
+	(3, '2025-11-02', 462.5, 0.0, 462.5, 462.5, 462.5, 1),
+	(3, '2025-11-03', 441.9, 0.0, 441.9, 441.9, 441.9, 1),
+	(3, '2025-11-04', 455.6, 0.0, 455.6, 455.6, 455.6, 1),
+	(3, '2025-11-05', 448.2, 0.0, 448.2, 448.2, 448.2, 1),
+	(3, '2025-11-06', 452.7, 0.0, 452.7, 452.7, 452.7, 1);
+
+-- Seed weekly aggregations for sample data
+INSERT INTO weekly_aggregations (
+	meter_id,
+	week_start,
+	week_end,
+	total_consumption,
+	peak_consumption,
+	off_peak_consumption,
+	min_daily_consumption,
+	max_daily_consumption,
+	day_count,
+	reading_count
+) VALUES
+	(1, '2025-10-27', '2025-11-02', 411.8, 0.0, 411.8, 95.3, 110.2, 4, 4),
+	(1, '2025-11-03', '2025-11-09', 402.0, 0.0, 402.0, 98.6, 102.4, 4, 4),
+	(3, '2025-10-27', '2025-11-02', 1816.8, 0.0, 1816.8, 425.8, 478.3, 4, 4),
+	(3, '2025-11-03', '2025-11-09', 1798.4, 0.0, 1798.4, 441.9, 455.6, 4, 4);
+
+-- Seed monthly aggregations for sample data
+INSERT INTO monthly_aggregations (
+	meter_id,
+	month_start,
+	month_end,
+	total_consumption,
+	peak_consumption,
+	off_peak_consumption,
+	min_daily_consumption,
+	max_daily_consumption,
+	day_count,
+	reading_count
+) VALUES
+	(1, '2025-10-01', '2025-10-31', 195.8, 0.0, 195.8, 95.3, 100.5, 2, 2),
+	(1, '2025-11-01', '2025-11-30', 618.0, 0.0, 618.0, 98.6, 110.2, 6, 6),
+	(3, '2025-10-01', '2025-10-31', 876.0, 0.0, 876.0, 425.8, 450.2, 2, 2),
+	(3, '2025-11-01', '2025-11-30', 2739.2, 0.0, 2739.2, 441.9, 478.3, 6, 6);
+
+-- Seed annual aggregations for sample data
+INSERT INTO annual_aggregations (
+	meter_id,
+	year_start,
+	year_end,
+	total_consumption,
+	peak_consumption,
+	off_peak_consumption,
+	min_daily_consumption,
+	max_daily_consumption,
+	day_count,
+	reading_count
+) VALUES
+	(1, '2025-01-01', '2025-12-31', 813.8, 0.0, 813.8, 95.3, 110.2, 8, 8),
+	(3, '2025-01-01', '2025-12-31', 3615.2, 0.0, 3615.2, 425.8, 478.3, 8, 8);
 
 -- Insert system settings
 INSERT INTO settings (setting_key, setting_value, setting_type, description) VALUES
