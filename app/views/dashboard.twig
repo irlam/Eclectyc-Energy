@@ -1,0 +1,89 @@
+{# eclectyc-energy/app/views/dashboard.twig #}
+{# Dashboard page template #}
+{# Last updated: 06/11/2024 14:45:00 #}
+
+{% extends "base.twig" %}
+
+{% block content %}
+<h2>Energy Management Dashboard</h2>
+
+<div class="grid grid-cols-4 mt-3">
+    <div class="card">
+        <h3>Total Sites</h3>
+        <p class="text-center" style="font-size: 2rem; font-weight: bold;">{{ stats.total_sites }}</p>
+    </div>
+    
+    <div class="card">
+        <h3>Total Meters</h3>
+        <p class="text-center" style="font-size: 2rem; font-weight: bold;">{{ stats.total_meters }}</p>
+    </div>
+    
+    <div class="card">
+        <h3>Total Readings</h3>
+        <p class="text-center" style="font-size: 2rem; font-weight: bold;">{{ stats.total_readings|number_format }}</p>
+    </div>
+    
+    <div class="card">
+        <h3>Last Import</h3>
+        <p class="text-center" style="font-size: 1rem;">{{ stats.last_import }}</p>
+    </div>
+</div>
+
+<div class="card mt-3">
+    <h2>System Overview</h2>
+    
+    <div class="alert alert-info">
+        Welcome to the Eclectyc Energy Management Platform. This system provides comprehensive energy monitoring, 
+        analysis, and reporting capabilities for your organisation.
+    </div>
+    
+    <h3>Quick Actions</h3>
+    <div class="mt-2">
+        <a href="/admin/sites" class="btn btn-primary">Manage Sites</a>
+        <a href="/reports/consumption" class="btn btn-secondary">View Reports</a>
+        <a href="/api/health" class="btn btn-secondary" target="_blank">API Health Check</a>
+        <a href="/tools/check-structure" class="btn btn-secondary">Check Structure</a>
+    </div>
+</div>
+
+<div class="card mt-3">
+    <h2>Recent Activity</h2>
+    <table class="table sortable-table">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Action</th>
+                <th>User</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>{{ "now"|date("d/m/Y H:i:s") }}</td>
+                <td>System Initialised</td>
+                <td>System</td>
+                <td><span class="status status-success">Success</span></td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<div class="card mt-3">
+    <h2>Energy Consumption Chart</h2>
+    <div id="consumption-chart" class="chart-container" style="height: 300px; background: #f3f4f6; display: flex; align-items: center; justify-content: center;">
+        <p>Chart will be rendered here</p>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Dashboard-specific JavaScript
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Dashboard loaded');
+    
+    // TODO: Initialize charts with actual data
+    // TODO: Setup WebSocket for real-time updates
+});
+</script>
+{% endblock %}

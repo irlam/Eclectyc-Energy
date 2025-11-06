@@ -1,0 +1,54 @@
+{# eclectyc-energy/app/views/base.twig #}
+{# Base template for all pages #}
+{# Last updated: 06/11/2024 14:45:00 #}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>{% block title %}{{ page_title|default('Dashboard') }}{% endblock %} - {{ app_name }}</title>
+    
+    <link rel="stylesheet" href="/assets/css/style.css">
+    {% block styles %}{% endblock %}
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <h1>{{ app_name }}</h1>
+            <div id="health-status" class="status status-success" style="float: right;">Checking...</div>
+        </div>
+    </header>
+    
+    <nav class="nav">
+        <div class="container">
+            <ul>
+                <li><a href="/">Dashboard</a></li>
+                <li><a href="/admin/sites">Sites</a></li>
+                <li><a href="/admin/tariffs">Tariffs</a></li>
+                <li><a href="/reports/consumption">Reports</a></li>
+                <li><a href="/admin/users">Users</a></li>
+                <li><a href="/tools/show-structure">Tools</a></li>
+            </ul>
+        </div>
+    </nav>
+    
+    <main class="main">
+        <div class="container">
+            <div id="notifications"></div>
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+    
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; {{ current_year }} {{ app_name }}. All rights reserved.</p>
+            <p><small id="last-check">System Status: Loading...</small></p>
+        </div>
+    </footer>
+    
+    <script src="/assets/js/app.js"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>
