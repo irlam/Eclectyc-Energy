@@ -15,12 +15,11 @@ use App\Http\Controllers\Api\ImportStatusController;
 use App\Http\Controllers\Api\MetersController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\NotFoundController;
 use App\Http\Controllers\ReportsController;
 use App\Http\Controllers\ToolsController;
 use App\Http\Middleware\AuthMiddleware;
 use App\Services\AuthService;
-use Psr\Http\Message\ResponseInterface as Response;
-use Psr\Http\Message\ServerRequestInterface as Request;
 
 // Homepage / Dashboard
 $container = $app->getContainer();
@@ -79,12 +78,4 @@ $app->group('/reports', function ($group) {
 });
 
 // Catch-all for 404
-$app->map(['GET', 'POST', 'PUT', 'DELETE', 'PATCH'], '/{routes:.+}', function (Request $request, Response $response) use ($app) {
-    $view = $app->getContainer()->get('view');
-    
-    return $view->render($response->withStatus(404), 'error.twig', [
-        'page_title' => 'Page Not Found',
-        'error_code' => 404,
-        'error_message' => 'The requested page could not be found.'
-    ]);
-});
+$app->map(['GET', 'POST', 'PUT', 'DELETE', 'PATCH'], '/{routes:.+}', NotFoundController::class);
