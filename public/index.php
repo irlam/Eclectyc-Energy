@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\ImportController;
 use App\Http\Controllers\Admin\MetersController as AdminMetersController;
 use App\Http\Controllers\Admin\SitesController;
 use App\Http\Controllers\Admin\TariffsController;
+use App\Http\Controllers\Admin\TariffSwitchingController;
 use App\Http\Controllers\Admin\UsersController;
 use App\Http\Controllers\Api\HealthController;
 use App\Http\Controllers\Api\ImportStatusController;
@@ -202,6 +203,13 @@ $container->set(ExportsController::class, function(Container $c) {
 
 $container->set(TariffsController::class, function(Container $c) {
     return new TariffsController(
+        $c->get('view'),
+        $c->get('db')
+    );
+});
+
+$container->set(TariffSwitchingController::class, function(Container $c) {
+    return new TariffSwitchingController(
         $c->get('view'),
         $c->get('db')
     );
