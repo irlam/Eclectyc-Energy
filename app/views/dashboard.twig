@@ -215,18 +215,29 @@
         </div>
         {% if trend is not empty %}
             <div class="trend-chart">
+                {% set max_total = 0 %}
+                {% for point in trend %}
+                    {% if point.total > max_total %}
+                        {% set max_total = point.total %}
+                    {% endif %}
+                {% endfor %}
                 {% for point in trend %}
                     <div class="trend-item">
                         <div class="trend-bar">
-                            <div class="trend-bar-fill" style="height: {{ (point.total / trend|map(p => p.total)|max * 100)|round }}%"></div>
+                            {% set height_percent = max_total > 0 ? ((point.total / max_total) * 100)|round : 0 %}
+                            <div class="trend-bar-fill" style="height: {{ height_percent }}%"></div>
                         </div>
                         <div class="trend-label">{{ point.date|date("d/m") }}</div>
                     </div>
                 {% endfor %}
             </div>
             <div class="trend-summary">
+                {% set total_consumption = 0 %}
+                {% for point in trend %}
+                    {% set total_consumption = total_consumption + point.total %}
+                {% endfor %}
                 <div class="trend-total">
-                    Total: {{ trend|map(p => p.total)|reduce((a, b) => a + b)|number_format(1, '.', ',') }} kWh
+                    Total: {{ total_consumption|number_format(1, '.', ',') }} kWh
                 </div>
             </div>
         {% else %}
