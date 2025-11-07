@@ -147,9 +147,11 @@ class CsvIngestionService
                 $meterStmt->execute(['mpan' => $mpan]);
                 $meter = $meterStmt->fetch();
                 if (!$meter) {
-                    throw new Exception('Meter not found for MPAN ' . $mpan);
+                    // Auto-create meter if it doesn't exist
+                    $meterId = $this->autoCreateMeter($mpan);
+                } else {
+                    $meterId = (int) $meter['id'];
                 }
-                $meterId = (int) $meter['id'];
 
                 $timestamp = $this->resolveDateTimeFromRecord($record, $headerMap);
                 if (!$timestamp) {
@@ -249,9 +251,11 @@ class CsvIngestionService
                 $meterStmt->execute(['mpan' => $mpan]);
                 $meter = $meterStmt->fetch();
                 if (!$meter) {
-                    throw new Exception('Meter not found for MPAN ' . $mpan);
+                    // Auto-create meter if it doesn't exist
+                    $meterId = $this->autoCreateMeter($mpan);
+                } else {
+                    $meterId = (int) $meter['id'];
                 }
-                $meterId = (int) $meter['id'];
 
                 $dateRaw = $this->getValueFromRecord($record, $headerMap, self::HEADER_ALIASES['date']);
                 $dateValue = $this->parseDate($dateRaw);
@@ -348,9 +352,11 @@ class CsvIngestionService
                 $meterStmt->execute(['mpan' => $mpan]);
                 $meter = $meterStmt->fetch();
                 if (!$meter) {
-                    throw new Exception('Meter not found for MPAN ' . $mpan);
+                    // Auto-create meter if it doesn't exist
+                    $meterId = $this->autoCreateMeter($mpan);
+                } else {
+                    $meterId = (int) $meter['id'];
                 }
-                $meterId = (int) $meter['id'];
 
                 $dateRaw = $this->getValueFromRecord($record, $headerMap, self::HEADER_ALIASES['date']);
                 $dateValue = $this->parseDate($dateRaw);
@@ -931,6 +937,107 @@ class CsvIngestionService
         }
 
         $errors[] = sprintf('Row %d: %s', $rowNumber, $message);
+    }
+
+    /**
+     * Auto-create a meter with a default site/company if it doesn't exist
+     * 
+     * @param string $mpan The MPAN to create
+     * @return int The ID of the newly created meter
+     * @throws Exception If meter creation fails
+     */
+    private function autoCreateMeter(string $mpan): int
+    {
+        try {
+            // Ensure we have a default company
+            $defaultCompanyId = $this->ensureDefaultCompany();
+            
+            // Ensure we have a default site for this company
+            $defaultSiteId = $this->ensureDefaultSite($defaultCompanyId);
+            
+            // Determine meter type from MPAN format (simplified heuristic)
+            $meterType = 'electricity'; // Default to electricity
+            if (preg_match('/^M/i', $mpan)) {
+                $meterType = 'gas'; // MPRN typically starts with M
+            }
+            
+            // Create the meter
+            $stmt = $this->pdo->prepare('
+                INSERT INTO meters (site_id, mpan, meter_type, is_half_hourly, is_active, created_at, updated_at)
+                VALUES (:site_id, :mpan, :meter_type, TRUE, TRUE, NOW(), NOW())
+            ');
+            
+            $stmt->execute([
+                'site_id' => $defaultSiteId,
+                'mpan' => $mpan,
+                'meter_type' => $meterType,
+            ]);
+            
+            return (int) $this->pdo->lastInsertId();
+        } catch (PDOException $e) {
+            throw new Exception('Failed to auto-create meter for MPAN ' . $mpan . ': ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Ensure a default company exists
+     * 
+     * @return int The ID of the default company
+     */
+    private function ensureDefaultCompany(): int
+    {
+        // Check if default company exists
+        $stmt = $this->pdo->prepare('SELECT id FROM companies WHERE name = :name LIMIT 1');
+        $stmt->execute(['name' => 'Default Company']);
+        $company = $stmt->fetch();
+        
+        if ($company) {
+            return (int) $company['id'];
+        }
+        
+        // Create default company
+        $stmt = $this->pdo->prepare('
+            INSERT INTO companies (name, is_active, created_at, updated_at)
+            VALUES (:name, TRUE, NOW(), NOW())
+        ');
+        $stmt->execute(['name' => 'Default Company']);
+        
+        return (int) $this->pdo->lastInsertId();
+    }
+
+    /**
+     * Ensure a default site exists for a company
+     * 
+     * @param int $companyId The company ID
+     * @return int The ID of the default site
+     */
+    private function ensureDefaultSite(int $companyId): int
+    {
+        // Check if default site exists for this company
+        $stmt = $this->pdo->prepare('SELECT id FROM sites WHERE company_id = :company_id AND name = :name LIMIT 1');
+        $stmt->execute([
+            'company_id' => $companyId,
+            'name' => 'Auto-imported Meters',
+        ]);
+        $site = $stmt->fetch();
+        
+        if ($site) {
+            return (int) $site['id'];
+        }
+        
+        // Create default site
+        $stmt = $this->pdo->prepare('
+            INSERT INTO sites (company_id, name, address, postcode, is_active, created_at, updated_at)
+            VALUES (:company_id, :name, :address, :postcode, TRUE, NOW(), NOW())
+        ');
+        $stmt->execute([
+            'company_id' => $companyId,
+            'name' => 'Auto-imported Meters',
+            'address' => 'Auto-generated during CSV import',
+            'postcode' => 'TBD',
+        ]);
+        
+        return (int) $this->pdo->lastInsertId();
     }
 
     private function logAudit(?int $userId, IngestionResult $result): void
