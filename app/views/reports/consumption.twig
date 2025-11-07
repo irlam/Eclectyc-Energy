@@ -4,10 +4,36 @@
 
 {% block content %}
 <section class="card">
-    <h2>Energy Consumption Report</h2>
-    <p class="mb-2">
-        Reporting window: {{ period.start|date("d/m/Y") }} to {{ period.end|date("d/m/Y") }}
-    </p>
+    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1.5rem;">
+        <div>
+            <h2>Energy Consumption Report</h2>
+            <p class="mb-2" style="color: #666; font-size: 0.9rem;">
+                Last updated: {{ "now"|date("d/m/Y H:i:s") }}
+            </p>
+        </div>
+        <button onclick="window.location.reload()" class="btn btn-secondary" style="white-space: nowrap;">
+            ↻ Refresh
+        </button>
+    </div>
+
+    <!-- Date Range Selector -->
+    <form method="GET" class="form-grid mb-3" style="background: #f8f9fa; padding: 1rem; border-radius: 4px;">
+        <div class="form-group">
+            <label for="start">Start Date</label>
+            <input type="date" id="start" name="start" value="{{ period.start|date('Y-m-d') }}" required>
+        </div>
+        <div class="form-group">
+            <label for="end">End Date</label>
+            <input type="date" id="end" name="end" value="{{ period.end|date('Y-m-d') }}" required>
+        </div>
+        <div class="form-group" style="display: flex; align-items: flex-end;">
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Update Report</button>
+        </div>
+        <div class="form-group" style="display: flex; align-items: flex-end; gap: 0.5rem;">
+            <button type="button" onclick="setQuickRange(7)" class="btn btn-secondary" style="flex: 1; font-size: 0.85rem;">Last 7 days</button>
+            <button type="button" onclick="setQuickRange(30)" class="btn btn-secondary" style="flex: 1; font-size: 0.85rem;">Last 30 days</button>
+        </div>
+    </form>
 
     {% if report.error is defined %}
         <div class="alert alert-danger">{{ report.error }}</div>
@@ -23,6 +49,14 @@
                 <span>Sites with data</span>
                 <strong>{{ report.rows|length }}</strong>
             </div>
+            <div class="stat">
+                <span>Reporting period</span>
+                <strong>{{ (period.end.diff(period.start).days + 1) }} days</strong>
+            </div>
+            <div class="stat">
+                <span>Average per day</span>
+                <strong>{{ (report.totalConsumption / (period.end.diff(period.start).days + 1))|number_format(1, '.', ',') }} kWh</strong>
+            </div>
         </div>
 
         <table class="table mt-3">
@@ -31,6 +65,7 @@
                     <th>Site</th>
                     <th class="text-right">Meters</th>
                     <th class="text-right">Consumption (kWh)</th>
+                    <th class="text-right">% of Total</th>
                     <th>Data range</th>
                 </tr>
             </thead>
@@ -40,6 +75,7 @@
                         <td>{{ row.site_name }}</td>
                         <td class="text-right">{{ row.meter_count }}</td>
                         <td class="text-right">{{ row.total_consumption|number_format(1, '.', ',') }}</td>
+                        <td class="text-right">{{ ((row.total_consumption / report.totalConsumption) * 100)|number_format(1) }}%</td>
                         <td>
                             {{ row.first_reading|date("d/m/Y") }}
                             &ndash;
@@ -50,7 +86,32 @@
             </tbody>
         </table>
     {% else %}
-        <p>No meter readings were found for the selected period.</p>
+        <div class="alert alert-warning">
+            <strong>No meter readings found for the selected period.</strong>
+            <p style="margin-top: 0.5rem;">This could mean:</p>
+            <ul style="margin: 0.5rem 0;">
+                <li>No data has been imported yet for this date range</li>
+                <li>The aggregation process hasn't run for this period</li>
+                <li>All meters are inactive or have no readings</li>
+            </ul>
+            <div style="margin-top: 1rem;">
+                <a href="/admin/imports" class="btn btn-primary">Import Data</a>
+                <a href="/admin/meters" class="btn btn-secondary" style="margin-left: 0.5rem;">Manage Meters</a>
+            </div>
+        </div>
     {% endif %}
 </section>
+
+<script>
+function setQuickRange(days) {
+    const end = new Date();
+    const start = new Date();
+    start.setDate(end.getDate() - days + 1);
+    
+    document.getElementById('start').value = start.toISOString().split('T')[0];
+    document.getElementById('end').value = end.toISOString().split('T')[0];
+    
+    document.querySelector('form').submit();
+}
+</script>
 {% endblock %}

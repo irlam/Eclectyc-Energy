@@ -4,18 +4,44 @@
 
 {% block content %}
 <section class="card">
-    <h2>Data Imports</h2>
-    <p class="mb-2">Upload CSV files for meter readings. Use dry-run mode to validate files without persisting data.</p>
+    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+        <div>
+            <h2>Data Imports</h2>
+            <p class="mb-2">Upload CSV files for meter readings. Use dry-run mode to validate files without persisting data.</p>
+        </div>
+        <a href="/admin/imports/history" class="btn btn-secondary">View History</a>
+    </div>
+
+    <!-- Help/Info Section -->
+    <div class="alert alert-info mb-3" style="background: #e8f4fd; border-left: 4px solid #0066cc;">
+        <strong>📋 CSV Format Requirements</strong>
+        <p style="margin: 0.5rem 0 0 0;">Your CSV must include:</p>
+        <ul style="margin: 0.5rem 0; padding-left: 1.5rem;">
+            <li><strong>Meter Identifier:</strong> MPAN, MeterCode, or Meter Serial Number</li>
+            <li><strong>Date/Time:</strong> Date or DateTime column</li>
+            <li><strong>Reading Values:</strong> Consumption, Reading, or Value column(s)</li>
+        </ul>
+        <details style="margin-top: 0.5rem;">
+            <summary style="cursor: pointer; font-weight: bold;">Show accepted column names</summary>
+            <div style="margin-top: 0.5rem; font-size: 0.9rem;">
+                <p><strong>Meter ID:</strong> MPAN, MPANCore, MeterCode, Meter, MeterID, SerialNumber, SupplyNumber, MPRN</p>
+                <p><strong>Date:</strong> Date, ReadDate, ReadingDate, PeriodDate</p>
+                <p><strong>Time:</strong> Time, ReadTime, ReadingTime</p>
+                <p><strong>DateTime:</strong> DateTime, Timestamp, ReadDateTime</p>
+                <p><strong>Value:</strong> Reading, ReadValue, Value, Consumption, kWh, Wh, Usage</p>
+            </div>
+        </details>
+    </div>
 
     {% if flash %}
         <div class="alert alert-{{ flash.type }}">
-            <p>{{ flash.message }}</p>
+            <p><strong>{{ flash.message }}</strong></p>
 
             {% if flash.payload %}
                 <dl class="mt-2 import-summary">
                     <div>
                         <dt>Batch ID</dt>
-                        <dd>{{ flash.payload.batch_id ?? 'n/a' }}</dd>
+                        <dd><code style="background: #f5f5f5; padding: 2px 6px; border-radius: 3px;">{{ flash.payload.batch_id ?? 'n/a' }}</code></dd>
                     </div>
                     <div>
                         <dt>File</dt>
@@ -31,11 +57,11 @@
                     </div>
                     <div>
                         <dt>Rows imported</dt>
-                        <dd>{{ flash.payload.records_imported }}</dd>
+                        <dd><strong style="color: #28a745;">{{ flash.payload.records_imported }}</strong></dd>
                     </div>
                     <div>
                         <dt>Rows failed</dt>
-                        <dd>{{ flash.payload.records_failed }}</dd>
+                        <dd><strong style="color: {{ flash.payload.records_failed > 0 ? '#dc3545' : '#6c757d' }};">{{ flash.payload.records_failed }}</strong></dd>
                     </div>
                     <div>
                         <dt>Data points</dt>
@@ -44,43 +70,115 @@
                 </dl>
 
                 {% if flash.payload.errors %}
-                    <div class="mt-2">
-                        <h3>Sample errors</h3>
-                        <ul>
+                    <div class="mt-2" style="background: #fff3cd; padding: 1rem; border-radius: 4px; border-left: 4px solid #ffc107;">
+                        <h3 style="margin-top: 0;">⚠️ Sample Errors (first {{ flash.payload.errors|length }})</h3>
+                        <ul style="margin-bottom: 0;">
                             {% for error in flash.payload.errors %}
-                                <li>{{ error }}</li>
+                                <li style="font-family: monospace; font-size: 0.9rem;">{{ error }}</li>
                             {% endfor %}
                         </ul>
+                        {% if flash.payload.records_failed > flash.payload.errors|length %}
+                            <p style="margin-top: 0.5rem; font-style: italic;">
+                                And {{ flash.payload.records_failed - flash.payload.errors|length }} more errors...
+                            </p>
+                        {% endif %}
+                        <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #ffc107;">
+                            <p><strong>💡 Common Solutions:</strong></p>
+                            <ul style="margin: 0;">
+                                <li>Ensure all meters exist in the system: <a href="/admin/meters">Manage Meters</a></li>
+                                <li>Check that MPANs in CSV match exactly (including case)</li>
+                                <li>Verify date formats are consistent (YYYY-MM-DD recommended)</li>
+                                <li>Use dry-run mode to test without importing</li>
+                            </ul>
+                        </div>
                     </div>
                 {% endif %}
             {% endif %}
         </div>
     {% endif %}
 
-    <form method="POST" enctype="multipart/form-data" class="form-grid mt-3">
-        <div class="form-group">
+    <form method="POST" enctype="multipart/form-data" class="form-grid mt-3" id="importForm">
+        <div class="form-group" style="grid-column: 1 / -1;">
             <label for="csv_file">CSV file</label>
-            <input type="file" id="csv_file" name="csv_file" accept=".csv" required>
+            <input type="file" id="csv_file" name="csv_file" accept=".csv" required onchange="handleFileSelect(event)">
+            <div id="fileInfo" style="margin-top: 0.5rem; font-size: 0.9rem; color: #666;"></div>
         </div>
 
         <div class="form-group">
             <label for="import_type">Import type</label>
             <select id="import_type" name="import_type" required>
-                <option value="hh">Half-hourly (48 periods)</option>
-                <option value="daily">Daily totals</option>
+                <option value="hh">Half-hourly (48 periods per day)</option>
+                <option value="daily">Daily totals (1 value per day)</option>
             </select>
+            <small style="color: #666; display: block; margin-top: 0.25rem;">
+                Choose based on your data granularity
+            </small>
         </div>
 
         <div class="form-group form-group-inline">
-            <label>
-                <input type="checkbox" name="dry_run" value="1">
-                Dry run (validate without saving)
+            <label style="display: flex; align-items: center; gap: 0.5rem;">
+                <input type="checkbox" name="dry_run" value="1" id="dry_run">
+                <span>
+                    <strong>Dry run</strong> (validate without saving)
+                    <small style="display: block; color: #666;">Recommended for first-time imports</small>
+                </span>
             </label>
         </div>
 
-        <div class="form-actions">
-            <button type="submit" class="btn btn-primary">Upload &amp; Process</button>
+        <div class="form-actions" style="grid-column: 1 / -1;">
+            <button type="submit" class="btn btn-primary" id="submitBtn">
+                <span id="btnText">📤 Upload &amp; Process</span>
+                <span id="btnLoading" style="display: none;">⏳ Processing...</span>
+            </button>
+            <a href="/admin/meters/create" class="btn btn-secondary" style="margin-left: 0.5rem;">
+                ➕ Add Meter First
+            </a>
         </div>
     </form>
+
+    <!-- Additional Help -->
+    <div style="margin-top: 2rem; padding: 1rem; background: #f8f9fa; border-radius: 4px;">
+        <h3 style="margin-top: 0;">Need Help?</h3>
+        <ul style="margin: 0.5rem 0;">
+            <li><a href="/admin/meters">View all meters</a> to check which MPANs are registered</li>
+            <li><a href="/admin/imports/history">View import history</a> to see previous uploads</li>
+            <li><a href="/reports/consumption">View consumption report</a> to verify imported data</li>
+        </ul>
+        <p style="margin: 0.5rem 0 0 0; font-size: 0.9rem; color: #666;">
+            <strong>Tip:</strong> The import process continues even if you close this page. 
+            Check the import history to see completion status.
+        </p>
+    </div>
 </section>
+
+<script>
+function handleFileSelect(event) {
+    const file = event.target.files[0];
+    const infoDiv = document.getElementById('fileInfo');
+    
+    if (file) {
+        const sizeMB = (file.size / (1024 * 1024)).toFixed(2);
+        infoDiv.innerHTML = `<strong>Selected:</strong> ${file.name} (${sizeMB} MB)`;
+    } else {
+        infoDiv.innerHTML = '';
+    }
+}
+
+document.getElementById('importForm').addEventListener('submit', function(e) {
+    const submitBtn = document.getElementById('submitBtn');
+    const btnText = document.getElementById('btnText');
+    const btnLoading = document.getElementById('btnLoading');
+    
+    btnText.style.display = 'none';
+    btnLoading.style.display = 'inline';
+    submitBtn.disabled = true;
+    
+    // Re-enable after a delay in case of error
+    setTimeout(function() {
+        btnText.style.display = 'inline';
+        btnLoading.style.display = 'none';
+        submitBtn.disabled = false;
+    }, 5000);
+});
+</script>
 {% endblock %}
