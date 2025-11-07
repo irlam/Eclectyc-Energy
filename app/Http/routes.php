@@ -15,12 +15,11 @@ use App\Http\Controllers\Api\ImportStatusController;
 use App\Http\Controllers\Api\MetersController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\NotFoundController;
 use App\Http\Controllers\ReportsController;
 use App\Http\Controllers\ToolsController;
 use App\Http\Middleware\AuthMiddleware;
 use App\Services\AuthService;
-use Psr\Http\Message\ResponseInterface as Response;
-use Psr\Http\Message\ServerRequestInterface as Request;
 
 // Homepage / Dashboard
 $container = $app->getContainer();
@@ -59,8 +58,17 @@ $app->group('/admin', function ($group) {
     $group->get('/imports', [ImportController::class, 'index'])->setName('admin.imports');
     $group->post('/imports', [ImportController::class, 'upload'])->setName('admin.imports.upload');
     $group->get('/imports/history', [ImportController::class, 'history'])->setName('admin.imports.history');
+    $group->post('/imports/retry', [ImportController::class, 'retry'])->setName('admin.imports.retry');
     $group->get('/exports', [ExportsController::class, 'index'])->setName('admin.exports');
+    
+    // Sites CRUD routes
     $group->get('/sites', [SitesController::class, 'index'])->setName('admin.sites');
+    $group->get('/sites/create', [SitesController::class, 'create'])->setName('admin.sites.create');
+    $group->post('/sites', [SitesController::class, 'store'])->setName('admin.sites.store');
+    $group->get('/sites/{id}/edit', [SitesController::class, 'edit'])->setName('admin.sites.edit');
+    $group->post('/sites/{id}', [SitesController::class, 'update'])->setName('admin.sites.update');
+    $group->post('/sites/{id}/delete', [SitesController::class, 'delete'])->setName('admin.sites.delete');
+    
     $group->get('/tariffs', [TariffsController::class, 'index'])->setName('admin.tariffs');
     $group->get('/users', [UsersController::class, 'index'])->setName('admin.users');
 })->add(function ($request, $handler) use ($container) {
@@ -78,12 +86,4 @@ $app->group('/reports', function ($group) {
 });
 
 // Catch-all for 404
-$app->map(['GET', 'POST', 'PUT', 'DELETE', 'PATCH'], '/{routes:.+}', function (Request $request, Response $response) use ($app) {
-    $view = $app->getContainer()->get('view');
-    
-    return $view->render($response->withStatus(404), 'error.twig', [
-        'page_title' => 'Page Not Found',
-        'error_code' => 404,
-        'error_message' => 'The requested page could not be found.'
-    ]);
-});
+$app->map(['GET', 'POST', 'PUT', 'DELETE', 'PATCH'], '/{routes:.+}', NotFoundController::class);

@@ -15,6 +15,7 @@ use App\Http\Controllers\Api\ImportStatusController;
 use App\Http\Controllers\Api\MetersController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\NotFoundController;
 use App\Http\Controllers\ReportsController;
 use App\Http\Controllers\ToolsController;
 use App\Http\Middleware\AuthMiddleware;
@@ -223,6 +224,10 @@ $container->set(AuthMiddleware::class, function(Container $c) {
 
 $container->set(HealthController::class, function(ContainerInterface $c) {
     return new HealthController($c);
+});
+
+$container->set(NotFoundController::class, function(Container $c) {
+    return new NotFoundController($c->get('view'));
 });
 
 // Set container for AppFactory

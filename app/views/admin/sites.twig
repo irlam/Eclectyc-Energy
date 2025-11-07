@@ -4,8 +4,19 @@
 
 {% block content %}
 <section class="card">
-    <h2>Sites Management</h2>
-    <p class="mb-2">Review registered estates and their connected metering.</p>
+    <div class="card-header">
+        <div>
+            <h2>Sites Management</h2>
+            <p class="mb-2">Review registered estates and their connected metering.</p>
+        </div>
+        <a class="btn btn-primary" href="/admin/sites/create">+ Create Site</a>
+    </div>
+
+    {% if flash %}
+        <div class="alert alert-{{ flash.type }}">
+            {{ flash.message }}
+        </div>
+    {% endif %}
 
     <div class="stats-grid">
         <div class="stat">
@@ -29,6 +40,7 @@
                     <th class="text-right">Meters</th>
                     <th>Status</th>
                     <th>Added</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -51,6 +63,12 @@
                             {% endif %}
                         </td>
                         <td>{{ site.created_at|date("d/m/Y") }}</td>
+                        <td>
+                            <a href="/admin/sites/{{ site.id }}/edit" class="btn btn-sm btn-secondary">Edit</a>
+                            <form method="post" action="/admin/sites/{{ site.id }}/delete" style="display:inline;" onsubmit="return confirm('Are you sure you want to delete this site?');">
+                                <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                            </form>
+                        </td>
                     </tr>
                 {% endfor %}
             </tbody>

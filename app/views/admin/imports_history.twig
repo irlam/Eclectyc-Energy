@@ -20,6 +20,7 @@
                 <option value="completed"{% if filters.status == 'completed' %} selected{% endif %}>Completed</option>
                 <option value="partial"{% if filters.status == 'partial' %} selected{% endif %}>Partial</option>
                 <option value="failed"{% if filters.status == 'failed' %} selected{% endif %}>Failed</option>
+                <option value="retrying"{% if filters.status == 'retrying' %} selected{% endif %}>Retrying</option>
                 <option value="dry-run"{% if filters.status == 'dry-run' %} selected{% endif %}>Dry run</option>
             </select>
         </div>
@@ -56,6 +57,7 @@
                         <th scope="col">Batch</th>
                         <th scope="col">Type</th>
                         <th scope="col">Status</th>
+                        <th scope="col">Retry</th>
                         <th scope="col">Records</th>
                         <th scope="col">Duration</th>
                         <th scope="col">Initiated</th>
@@ -66,10 +68,30 @@
                 <tbody>
                     {% for entry in entries %}
                         <tr>
-                            <td data-heading="Batch">{{ entry.batch_id }}</td>
+                            <td data-heading="Batch">
+                                {{ entry.batch_id }}
+                                {% if entry.is_retry %}
+                                    <br><small class="muted">Retry of {{ entry.parent_batch_id }}</small>
+                                {% endif %}
+                                {% if entry.retry_count > 0 %}
+                                    <br><small class="muted">Retry #{{ entry.retry_count }}</small>
+                                {% endif %}
+                            </td>
                             <td data-heading="Type">{{ entry.import_type|upper }}</td>
                             <td data-heading="Status">
                                 <span class="status-pill status-{{ entry.status }}">{{ entry.status|replace({'-':' '})|title }}</span>
+                            </td>
+                            <td data-heading="Retry">
+                                {% if entry.status == 'failed' or entry.status == 'partial' %}
+                                    <form method="post" action="/admin/imports/retry" style="display:inline;">
+                                        <input type="hidden" name="batch_id" value="{{ entry.batch_id }}">
+                                        <button type="submit" class="btn btn-sm btn-secondary" title="Retry this import">
+                                            Retry
+                                        </button>
+                                    </form>
+                                {% else %}
+                                    <span class="muted">—</span>
+                                {% endif %}
                             </td>
                             <td data-heading="Records">
                                 <span class="d-block">{{ entry.imported_records }} imported</span>
