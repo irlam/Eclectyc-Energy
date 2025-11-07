@@ -19,6 +19,20 @@ class CsvIngestionService
 {
     private PDO $pdo;
 
+    /**
+     * Normalised header aliases recognised by the ingestion service.
+     * Allows flexible CSV formats without forcing callers to rename columns.
+     * @var array<string, array<int, string>>
+     */
+    private const HEADER_ALIASES = [
+        'mpan' => ['mpan', 'metercode', 'meter_code', 'meter', 'meterid', 'meter_id'],
+        'date' => ['date', 'readdate', 'read_date', 'readingdate', 'perioddate', 'billdate', 'insertdate'],
+        'time' => ['time', 'readtime', 'read_time', 'readingtime', 'periodtime'],
+        'datetime' => ['datetime', 'timestamp', 'readdatetime', 'read_datetime', 'readingdatetime'],
+        'value' => ['reading', 'readvalue', 'read_value', 'value', 'consumption', 'kwh', 'wh', 'usage'],
+        'unit' => ['unit', 'units', 'uom'],
+    ];
+
     public function __construct(PDO $pdo)
     {
         $this->pdo = $pdo;
@@ -29,8 +43,8 @@ class CsvIngestionService
      * 
      * @param string $filePath Path to the CSV file
      * @param string $format Format type: 'hh' (half-hourly), 'daily', or 'minute'
-     * @param string|null $batchId Optional batch identifier for tracking imports
-     * @return array Statistics about the ingestion process
+    * @param string|null $batchId Optional batch identifier for tracking imports
+    * @return IngestionResult Statistics about the ingestion process
      * @throws Exception If file cannot be processed
      */
     public function ingestFromCsv(string $filePath, string $format = 'hh', ?string $batchId = null, bool $dryRun = false, ?int $userId = null): IngestionResult
@@ -49,9 +63,132 @@ class CsvIngestionService
         $reader = Reader::createFromPath($filePath);
         $reader->setHeaderOffset(0);
 
-        $headers = array_map('strtolower', $reader->getHeader());
-        if (!in_array('mpan', $headers, true) || !in_array('date', $headers, true)) {
-            throw new Exception('CSV must include "MPAN" and "Date" columns.');
+        $headerRow = $reader->getHeader();
+        if (!$headerRow) {
+            throw new Exception('CSV file must include a header row.');
+        }
+
+        $headerMap = $this->buildHeaderMap($headerRow);
+        if (!$this->hasAlias($headerMap, self::HEADER_ALIASES['mpan'])) {
+            throw new Exception('CSV must include a column containing the meter identifier (e.g. MPAN or MeterCode).');
+        }
+
+        if ($format === 'hh') {
+            if ($this->isIntervalRecordFormat($headerMap)) {
+                $result = $this->ingestHalfHourlyIntervalRecords($reader, $headerMap, $batchId, $dryRun);
+            } else {
+                $result = $this->ingestHalfHourlyMatrixRecords($reader, $headerRow, $headerMap, $batchId, $dryRun);
+            }
+        } else {
+            $result = $this->ingestDailyTotals($reader, $headerMap, $batchId, $dryRun);
+        }
+
+        if (!$dryRun) {
+            $this->logAudit($userId, $result);
+        }
+
+        return $result;
+    }
+
+    private function ingestHalfHourlyIntervalRecords(Reader $reader, array $headerMap, string $batchId, bool $dryRun): IngestionResult
+    {
+        $meterStmt = $this->pdo->prepare('SELECT id FROM meters WHERE mpan = :mpan LIMIT 1');
+        $insertStmt = $this->pdo->prepare('
+            INSERT INTO meter_readings
+                (meter_id, reading_date, reading_time, period_number, reading_value, reading_type, import_batch_id)
+            VALUES (:meter_id, :reading_date, :reading_time, :period_number, :reading_value, :reading_type, :batch_id)
+            ON DUPLICATE KEY UPDATE
+                reading_value = VALUES(reading_value),
+                updated_at = CURRENT_TIMESTAMP
+        ');
+
+        $processed = 0;
+        $successfulRows = 0;
+        $totalValues = 0;
+        $errors = [];
+        $unitCounts = [];
+
+        foreach ($reader->getRecords() as $rowNumber => $record) {
+            $processed++;
+
+            try {
+                $mpanRaw = $this->getValueFromRecord($record, $headerMap, self::HEADER_ALIASES['mpan']);
+                $mpan = $this->normaliseString($mpanRaw ?? '');
+                if ($mpan === '') {
+                    throw new Exception('Missing MPAN');
+                }
+
+                $meterStmt->execute(['mpan' => $mpan]);
+                $meter = $meterStmt->fetch();
+                if (!$meter) {
+                    throw new Exception('Meter not found for MPAN ' . $mpan);
+                }
+                $meterId = (int) $meter['id'];
+
+                $timestamp = $this->resolveDateTimeFromRecord($record, $headerMap);
+                if (!$timestamp) {
+                    throw new Exception('Invalid reading timestamp');
+                }
+
+                $valueRaw = $this->getValueFromRecord($record, $headerMap, self::HEADER_ALIASES['value']);
+                if ($valueRaw === null || $this->normaliseString($valueRaw) === '') {
+                    throw new Exception('Missing reading value');
+                }
+
+                if (!is_numeric($valueRaw)) {
+                    throw new Exception('Non-numeric reading value "' . $valueRaw . '"');
+                }
+
+                $unitRaw = $this->getValueFromRecord($record, $headerMap, self::HEADER_ALIASES['unit']);
+                $value = $this->normaliseEnergyValue((float) $valueRaw, $unitRaw);
+                $unitKey = strtolower(trim((string) ($unitRaw ?? 'kWh')));
+                $unitCounts[$unitKey] = ($unitCounts[$unitKey] ?? 0) + 1;
+
+                $periodNumber = $this->determinePeriodNumber($timestamp);
+
+                if (!$dryRun) {
+                    $insertStmt->execute([
+                        'meter_id' => $meterId,
+                        'reading_date' => $timestamp->format('Y-m-d'),
+                        'reading_time' => $timestamp->format('H:i:s'),
+                        'period_number' => $periodNumber,
+                        'reading_value' => $value,
+                        'reading_type' => 'actual',
+                        'batch_id' => $batchId,
+                    ]);
+                }
+
+                $successfulRows++;
+                $totalValues++;
+            } catch (PDOException $pdoException) {
+                $this->addError($errors, $processed, $pdoException->getMessage());
+            } catch (Exception $exception) {
+                $this->addError($errors, $processed, $exception->getMessage());
+            }
+        }
+
+        return new IngestionResult($processed, $successfulRows, $errors, $batchId, $dryRun, [
+            'format' => 'hh-interval',
+            'total_values_processed' => $totalValues,
+            'column_mapping' => $this->buildColumnMappingReport($headerMap, [
+                'mpan' => self::HEADER_ALIASES['mpan'],
+                'datetime' => array_merge(self::HEADER_ALIASES['datetime'], self::HEADER_ALIASES['date'], self::HEADER_ALIASES['time']),
+                'value' => self::HEADER_ALIASES['value'],
+                'unit' => self::HEADER_ALIASES['unit'],
+            ]),
+            'unit_counts' => $unitCounts,
+        ]);
+    }
+
+    private function ingestHalfHourlyMatrixRecords(Reader $reader, array $headerRow, array $headerMap, string $batchId, bool $dryRun): IngestionResult
+    {
+        if (!$this->hasAlias($headerMap, self::HEADER_ALIASES['date'])) {
+            throw new Exception('Half-hourly CSV must include a date column.');
+        }
+
+        $halfHourlyColumns = $this->extractHalfHourlyColumns($headerRow);
+        if (empty($halfHourlyColumns)) {
+            throw new Exception('Half-hourly CSV must include columns HH01..HH48 or provide a timestamp column.');
         }
 
         $meterStmt = $this->pdo->prepare('SELECT id FROM meters WHERE mpan = :mpan LIMIT 1');
@@ -73,7 +210,8 @@ class CsvIngestionService
             $processed++;
 
             try {
-                $mpan = $this->normaliseString($record['MPAN'] ?? $record['mpan'] ?? '');
+                $mpanRaw = $this->getValueFromRecord($record, $headerMap, self::HEADER_ALIASES['mpan']);
+                $mpan = $this->normaliseString($mpanRaw ?? '');
                 if ($mpan === '') {
                     throw new Exception('Missing MPAN');
                 }
@@ -85,62 +223,33 @@ class CsvIngestionService
                 }
                 $meterId = (int) $meter['id'];
 
-                $dateValue = $this->parseDate($record['Date'] ?? $record['date'] ?? null);
+                $dateRaw = $this->getValueFromRecord($record, $headerMap, self::HEADER_ALIASES['date']);
+                $dateValue = $this->parseDate($dateRaw);
                 if (!$dateValue) {
-                    throw new Exception('Invalid date');
+                    throw new Exception('Invalid date value');
                 }
 
                 $rowValues = 0;
 
-                if ($format === 'hh') {
-                    for ($period = 1; $period <= 48; $period++) {
-                        $column = sprintf('HH%02d', $period);
-                        $raw = $record[$column] ?? $record[strtolower($column)] ?? null;
-
-                        if ($raw === null || $this->normaliseString((string) $raw) === '') {
-                            continue;
-                        }
-
-                        if (!is_numeric($raw)) {
-                            throw new Exception(sprintf('Non-numeric value "%s" in %s', (string) $raw, $column));
-                        }
-
-                        $value = (float) $raw;
-                        $time = $this->periodToTime($period);
-
-                        if (!$dryRun) {
-                            $insertStmt->execute([
-                                'meter_id' => $meterId,
-                                'reading_date' => $dateValue->format('Y-m-d'),
-                                'reading_time' => $time,
-                                'period_number' => $period,
-                                'reading_value' => $value,
-                                'reading_type' => 'actual',
-                                'batch_id' => $batchId,
-                            ]);
-                        }
-
-                        $rowValues++;
-                        $totalValues++;
-                    }
-                } else {
-                    $raw = $record['Reading'] ?? $record['reading'] ?? null;
-                    if ($raw === null || $this->normaliseString((string) $raw) === '') {
-                        throw new Exception('Missing reading value');
+                foreach ($halfHourlyColumns as $period => $columnName) {
+                    $rawValue = $record[$columnName] ?? null;
+                    if ($rawValue === null || $this->normaliseString((string) $rawValue) === '') {
+                        continue;
                     }
 
-                    if (!is_numeric($raw)) {
-                        throw new Exception('Non-numeric reading value "' . (string) $raw . '"');
+                    if (!is_numeric($rawValue)) {
+                        throw new Exception(sprintf('Non-numeric value "%s" in column %s', (string) $rawValue, $columnName));
                     }
 
-                    $value = (float) $raw;
+                    $value = (float) $rawValue;
+                    $time = $this->periodToTime($period);
 
                     if (!$dryRun) {
                         $insertStmt->execute([
                             'meter_id' => $meterId,
                             'reading_date' => $dateValue->format('Y-m-d'),
-                            'reading_time' => '00:00:00',
-                            'period_number' => null,
+                            'reading_time' => $time,
+                            'period_number' => $period,
                             'reading_value' => $value,
                             'reading_type' => 'actual',
                             'batch_id' => $batchId,
@@ -161,16 +270,372 @@ class CsvIngestionService
             }
         }
 
-        $result = new IngestionResult($processed, $successfulRows, $errors, $batchId, $dryRun, [
-            'format' => $format,
+        return new IngestionResult($processed, $successfulRows, $errors, $batchId, $dryRun, [
+            'format' => 'hh-matrix',
             'total_values_processed' => $totalValues,
+            'column_mapping' => $this->buildColumnMappingReport($headerMap, [
+                'mpan' => self::HEADER_ALIASES['mpan'],
+                'date' => self::HEADER_ALIASES['date'],
+            ]),
         ]);
+    }
 
-        if (!$dryRun) {
-            $this->logAudit($userId, $result);
+    private function ingestDailyTotals(Reader $reader, array $headerMap, string $batchId, bool $dryRun): IngestionResult
+    {
+        if (!$this->hasAlias($headerMap, self::HEADER_ALIASES['date'])) {
+            throw new Exception('Daily CSV must include a date column.');
         }
 
-        return $result;
+        $meterStmt = $this->pdo->prepare('SELECT id FROM meters WHERE mpan = :mpan LIMIT 1');
+        $insertStmt = $this->pdo->prepare('
+            INSERT INTO meter_readings
+                (meter_id, reading_date, reading_time, period_number, reading_value, reading_type, import_batch_id)
+            VALUES (:meter_id, :reading_date, :reading_time, :period_number, :reading_value, :reading_type, :batch_id)
+            ON DUPLICATE KEY UPDATE
+                reading_value = VALUES(reading_value),
+                updated_at = CURRENT_TIMESTAMP
+        ');
+
+        $processed = 0;
+        $successfulRows = 0;
+        $errors = [];
+        $unitCounts = [];
+
+        foreach ($reader->getRecords() as $rowNumber => $record) {
+            $processed++;
+
+            try {
+                $mpanRaw = $this->getValueFromRecord($record, $headerMap, self::HEADER_ALIASES['mpan']);
+                $mpan = $this->normaliseString($mpanRaw ?? '');
+                if ($mpan === '') {
+                    throw new Exception('Missing MPAN');
+                }
+
+                $meterStmt->execute(['mpan' => $mpan]);
+                $meter = $meterStmt->fetch();
+                if (!$meter) {
+                    throw new Exception('Meter not found for MPAN ' . $mpan);
+                }
+                $meterId = (int) $meter['id'];
+
+                $dateRaw = $this->getValueFromRecord($record, $headerMap, self::HEADER_ALIASES['date']);
+                $dateValue = $this->parseDate($dateRaw);
+                if (!$dateValue) {
+                    throw new Exception('Invalid date value');
+                }
+
+                $valueRaw = $this->getValueFromRecord($record, $headerMap, self::HEADER_ALIASES['value']);
+                if ($valueRaw === null || $this->normaliseString($valueRaw) === '') {
+                    throw new Exception('Missing reading value');
+                }
+
+                if (!is_numeric($valueRaw)) {
+                    throw new Exception('Non-numeric reading value "' . $valueRaw . '"');
+                }
+
+                $unitRaw = $this->getValueFromRecord($record, $headerMap, self::HEADER_ALIASES['unit']);
+                $value = $this->normaliseEnergyValue((float) $valueRaw, $unitRaw);
+                $unitKey = strtolower(trim((string) ($unitRaw ?? 'kWh')));
+                $unitCounts[$unitKey] = ($unitCounts[$unitKey] ?? 0) + 1;
+
+                if (!$dryRun) {
+                    $insertStmt->execute([
+                        'meter_id' => $meterId,
+                        'reading_date' => $dateValue->format('Y-m-d'),
+                        'reading_time' => '00:00:00',
+                        'period_number' => null,
+                        'reading_value' => $value,
+                        'reading_type' => 'actual',
+                        'batch_id' => $batchId,
+                    ]);
+                }
+
+                $successfulRows++;
+            } catch (PDOException $pdoException) {
+                $this->addError($errors, $processed, $pdoException->getMessage());
+            } catch (Exception $exception) {
+                $this->addError($errors, $processed, $exception->getMessage());
+            }
+        }
+
+        return new IngestionResult($processed, $successfulRows, $errors, $batchId, $dryRun, [
+            'format' => 'daily',
+            'total_values_processed' => $successfulRows,
+            'column_mapping' => $this->buildColumnMappingReport($headerMap, [
+                'mpan' => self::HEADER_ALIASES['mpan'],
+                'date' => self::HEADER_ALIASES['date'],
+                'value' => self::HEADER_ALIASES['value'],
+                'unit' => self::HEADER_ALIASES['unit'],
+            ]),
+            'unit_counts' => $unitCounts,
+        ]);
+    }
+
+    /**
+     * @param array<int, string> $headers
+     * @return array<string, string>
+     */
+    private function buildHeaderMap(array $headers): array
+    {
+        $map = [];
+        foreach ($headers as $header) {
+            $map[$this->normaliseHeaderKey($header)] = $header;
+        }
+
+        return $map;
+    }
+
+    private function normaliseHeaderKey(string $value): string
+    {
+        return strtolower(preg_replace('/[^a-z0-9]+/', '', $value));
+    }
+
+    private function hasAlias(array $headerMap, array $aliases): bool
+    {
+        foreach ($aliases as $alias) {
+            if (isset($headerMap[$this->normaliseHeaderKey($alias)])) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private function getValueFromRecord(array $record, array $headerMap, array $aliases): ?string
+    {
+        foreach ($aliases as $alias) {
+            $normalised = $this->normaliseHeaderKey($alias);
+            if (!isset($headerMap[$normalised])) {
+                continue;
+            }
+
+            $columnName = $headerMap[$normalised];
+            if (!array_key_exists($columnName, $record)) {
+                continue;
+            }
+
+            $value = $record[$columnName];
+            if (is_string($value)) {
+                $value = trim($value);
+            }
+
+            return $value === null ? null : (string) $value;
+        }
+
+        return null;
+    }
+
+    /**
+     * @param array<string, string> $headerMap
+     * @param array<string, array<int, string>> $requested
+     * @return array<string, string>
+     */
+    private function buildColumnMappingReport(array $headerMap, array $requested): array
+    {
+        $report = [];
+
+        foreach ($requested as $field => $aliases) {
+            foreach ($aliases as $alias) {
+                $normalised = $this->normaliseHeaderKey($alias);
+                if (isset($headerMap[$normalised])) {
+                    $report[$field] = $headerMap[$normalised];
+                    break;
+                }
+            }
+        }
+
+        return $report;
+    }
+
+    private function isIntervalRecordFormat(array $headerMap): bool
+    {
+        return $this->hasAlias($headerMap, self::HEADER_ALIASES['mpan'])
+            && $this->hasAlias($headerMap, self::HEADER_ALIASES['value'])
+            && (
+                $this->hasAlias($headerMap, self::HEADER_ALIASES['datetime'])
+                || (
+                    $this->hasAlias($headerMap, self::HEADER_ALIASES['date'])
+                    && $this->hasAlias($headerMap, self::HEADER_ALIASES['time'])
+                )
+            );
+    }
+
+    private function resolveDateTimeFromRecord(array $record, array $headerMap): ?DateTimeImmutable
+    {
+        $dateTimeValue = $this->getValueFromRecord($record, $headerMap, self::HEADER_ALIASES['datetime']);
+        if ($dateTimeValue !== null && $dateTimeValue !== '') {
+            $dateTime = $this->parseDateTimeValue($dateTimeValue);
+            if ($dateTime) {
+                return $dateTime;
+            }
+        }
+
+        $dateValueRaw = $this->getValueFromRecord($record, $headerMap, self::HEADER_ALIASES['date']);
+        if ($dateValueRaw === null || $dateValueRaw === '') {
+            return null;
+        }
+
+        $dateValue = $this->parseDate($dateValueRaw);
+        if (!$dateValue) {
+            return null;
+        }
+
+        $timeValue = $this->getValueFromRecord($record, $headerMap, self::HEADER_ALIASES['time']);
+        if ($timeValue === null || $timeValue === '') {
+            return $dateValue;
+        }
+
+        $timeComponents = $this->parseTimeComponents($timeValue);
+        if ($timeComponents === null) {
+            return $dateValue;
+        }
+
+        return $dateValue->setTime($timeComponents[0], $timeComponents[1], $timeComponents[2]);
+    }
+
+    private function parseDateTimeValue(string $value): ?DateTimeImmutable
+    {
+        $value = $this->normaliseString($value);
+        if ($value === '') {
+            return null;
+        }
+
+        $formats = [
+            'Y-m-d H:i:s',
+            'Y-m-d H:i',
+            'd/m/Y H:i:s',
+            'd/m/Y H:i',
+            'd-m-Y H:i:s',
+            'd-m-Y H:i',
+            DateTime::ATOM,
+            DateTime::RFC3339,
+        ];
+
+        foreach ($formats as $format) {
+            $date = DateTimeImmutable::createFromFormat($format, $value);
+            if ($date instanceof DateTimeImmutable) {
+                return $date;
+            }
+        }
+
+        $timestamp = strtotime($value);
+        if ($timestamp !== false) {
+            return (new DateTimeImmutable())->setTimestamp($timestamp);
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function extractHalfHourlyColumns(array $headerRow): array
+    {
+        $columns = [];
+
+        foreach ($headerRow as $header) {
+            $lower = strtolower($header);
+            if (preg_match('/^hh(\d{1,2})$/', $lower, $matches)) {
+                $period = (int) $matches[1];
+                if ($period >= 1 && $period <= 48) {
+                    $columns[$period] = $header;
+                }
+            }
+        }
+
+        ksort($columns);
+
+        return $columns;
+    }
+
+    /**
+     * @return array<int, int>
+     */
+    private function parseTimeComponents(string $value): ?array
+    {
+        $value = $this->normaliseString($value);
+        if ($value === '') {
+            return null;
+        }
+
+        if (is_numeric($value) && (float) $value >= 0 && (float) $value <= 1) {
+            $minutes = (float) $value * 24 * 60;
+            $hours = (int) floor($minutes / 60);
+            $minutes = (int) round($minutes % 60);
+            return [$hours % 24, $minutes, 0];
+        }
+
+        $normalised = str_replace(['.', '-'], [':', ':'], $value);
+
+        $patterns = ['H:i:s', 'H:i', 'H:i:s.u'];
+        foreach ($patterns as $pattern) {
+            $time = DateTimeImmutable::createFromFormat($pattern, $normalised);
+            if ($time instanceof DateTimeImmutable) {
+                return [(int) $time->format('H'), (int) $time->format('i'), (int) $time->format('s')];
+            }
+        }
+
+        if (preg_match('/^(\d{1,3}):(\d{2})$/', $normalised, $matches)) {
+            $first = (int) $matches[1];
+            $second = (int) $matches[2];
+
+            if ($first < 24) {
+                return [$first, $second, 0];
+            }
+
+            $totalMinutes = ($first * 60) + $second;
+            $hours = (int) floor($totalMinutes / 60);
+            $minutes = $totalMinutes % 60;
+
+            return [$hours % 24, $minutes, 0];
+        }
+
+        $timestamp = strtotime($value);
+        if ($timestamp !== false) {
+            $time = (new DateTimeImmutable())->setTimestamp($timestamp);
+            return [(int) $time->format('H'), (int) $time->format('i'), (int) $time->format('s')];
+        }
+
+        return null;
+    }
+
+    private function determinePeriodNumber(DateTimeImmutable $dateTime): int
+    {
+        $minutes = ((int) $dateTime->format('H') * 60) + (int) $dateTime->format('i');
+        $period = (int) floor($minutes / 30) + 1;
+
+        if ($period < 1) {
+            return 1;
+        }
+
+        if ($period > 48) {
+            return 48;
+        }
+
+        return $period;
+    }
+
+    private function normaliseEnergyValue(float $value, ?string $unit): float
+    {
+        if ($unit === null) {
+            return $value;
+        }
+
+        $unit = strtolower(trim($unit));
+
+        if ($unit === '' || $unit === 'kwh') {
+            return $value;
+        }
+
+        if ($unit === 'wh') {
+            return $value / 1000;
+        }
+
+        if ($unit === 'mwh') {
+            return $value * 1000;
+        }
+
+        return $value;
     }
 
     /**
