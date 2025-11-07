@@ -193,6 +193,7 @@ Visit: https://eclectyc.energy/tools/show
 - `/admin/tariffs` (admin only) lists configured supply tariffs.
 - `/admin/users` (admin only) lists seeded accounts for quick role testing.
 - `/admin/imports` (admin only) provides CSV uploads with optional dry-run previews and batch summaries.
+- `/admin/imports/jobs` (admin only) shows all import jobs with real-time progress tracking and filtering.
 - `/admin/imports/history` (admin only) lists recent ingestion runs with filters, decoded metadata, and surfaced errors.
 - `/admin/exports` (admin only) tracks SFTP export jobs, delivery status, and failure messages.
 
@@ -209,6 +210,30 @@ Run from the project root so the autoloader resolves; switch `-t` to `daily` for
 - **Admin uploader parity**: the same alias-aware ingestion and progress metadata power `/admin/imports`, which now receives richer batch summaries.
 
 The same ingestion service powers the admin console at `/admin/imports`, giving administrators a browser-based uploader with dry-run support and flash summaries covering processed/imported/failed rows plus sample errors.
+
+#### Web-Triggered Background Imports (NEW)
+The platform now supports asynchronous, web-triggered CSV imports that can run in the background:
+
+- Upload CSV files through `/admin/imports` with the "Process in background" option
+- Close the browser and track progress later at `/admin/imports/jobs`
+- Real-time progress updates with auto-refresh
+- Multiple imports can be queued and processed sequentially
+- Background worker processes jobs: `php scripts/process_import_jobs.php`
+
+See `docs/web_triggered_import.md` for detailed documentation on setup and usage.
+
+### Process Import Jobs (Background Worker)
+```bash
+# Run continuously to process queued imports
+php scripts/process_import_jobs.php
+
+# Process jobs once and exit (suitable for cron)
+php scripts/process_import_jobs.php --once
+
+# Limit number of jobs per iteration
+php scripts/process_import_jobs.php --limit=5
+```
+This background worker processes CSV import jobs that are queued via the web interface. Required for async imports to work. Can be run as a cron job (recommended) or as a long-running process with supervisord.
 
 ### Run Aggregations
 ```bash
@@ -275,11 +300,14 @@ Configure `SFTP_HOST`, `SFTP_PORT`, `SFTP_USERNAME`, and either `SFTP_PASSWORD` 
 3. Add a daily data quality check task (e.g. 02:00):
    - Command: `/usr/bin/php /path/to/eclectyc-energy/scripts/run_data_quality_checks.php --verbose`
    - Schedule: `0 2 * * *`
-4. Optional: add additional tasks for dedicated ranges or exports, for example:
+4. Add import job processor (e.g. every minute) - **Required for async imports**:
+   - Command: `/usr/bin/php /path/to/eclectyc-energy/scripts/process_import_jobs.php --once`
+   - Schedule: `* * * * *`
+5. Optional: add additional tasks for dedicated ranges or exports, for example:
    - Legacy aggregation: `/usr/bin/php /path/to/eclectyc-energy/scripts/aggregate_cron.php --all --verbose`
    - Weekly roll-up every Monday at 02:15: `/usr/bin/php /path/to/eclectyc-energy/scripts/aggregate_weekly.php`
    - Daily SFTP export once credentials are wired: `/usr/bin/php /path/to/eclectyc-energy/scripts/export_sftp.php -t daily`
-5. Ensure each task uses the same PHP version as the site and inherits the correct `.env` file (set `Working directory` to the project root).
+6. Ensure each task uses the same PHP version as the site and inherits the correct `.env` file (set `Working directory` to the project root).
 
 **Note:** The orchestrated aggregation script (`aggregate_orchestrated.php`) provides enhanced monitoring, telemetry, and failure alerts. Use it instead of `aggregate_cron.php` for production deployments.
 
