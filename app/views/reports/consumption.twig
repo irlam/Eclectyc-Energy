@@ -3,11 +3,11 @@
 {% block title %}Consumption Report{% endblock %}
 
 {% block content %}
-<section class="card">
-    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1.5rem;">
+<section class="card consumption-card">
+    <div class="card-header consumption-card__header">
         <div>
             <h2>Energy Consumption Report</h2>
-            <p class="mb-2" style="color: #666; font-size: 0.9rem;">
+            <p class="mb-2">
                 Last updated: {{ "now"|date("d/m/Y H:i:s") }}
             </p>
         </div>
@@ -17,7 +17,7 @@
     </div>
 
     <!-- Date Range Selector -->
-    <form method="GET" class="form-grid mb-3" style="background: #f8f9fa; padding: 1rem; border-radius: 4px;">
+    <form method="GET" class="consumption-filters">
         <div class="form-group">
             <label for="start">Start Date</label>
             <input type="date" id="start" name="start" value="{{ period.start|date('Y-m-d') }}" required>
@@ -40,54 +40,56 @@
     {% endif %}
 
     {% if report.rows is not empty %}
-        <div class="stats-grid">
-            <div class="stat">
+        <div class="consumption-stats">
+            <div class="consumption-stat">
                 <span>Total consumption</span>
                 <strong>{{ report.totalConsumption|number_format(1, '.', ',') }} kWh</strong>
             </div>
-            <div class="stat">
+            <div class="consumption-stat">
                 <span>Sites with data</span>
                 <strong>{{ report.rows|length }}</strong>
             </div>
-            <div class="stat">
+            <div class="consumption-stat">
                 <span>Reporting period</span>
                 <strong>{{ (period.end.diff(period.start).days + 1) }} days</strong>
             </div>
-            <div class="stat">
+            <div class="consumption-stat">
                 <span>Average per day</span>
                 {% set dayCount = period.end.diff(period.start).days + 1 %}
                 <strong>{{ (report.totalConsumption > 0 and dayCount > 0) ? (report.totalConsumption / dayCount)|number_format(1, '.', ',') : '0.0' }} kWh</strong>
             </div>
         </div>
 
-        <table class="table mt-3">
-            <thead>
-                <tr>
-                    <th>Site</th>
-                    <th class="text-right">Meters</th>
-                    <th class="text-right">Consumption (kWh)</th>
-                    <th class="text-right">% of Total</th>
-                    <th>Data range</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for row in report.rows %}
+        <div class="consumption-table-wrapper">
+            <table class="table consumption-table">
+                <thead>
                     <tr>
-                        <td>{{ row.site_name }}</td>
-                        <td class="text-right">{{ row.meter_count }}</td>
-                        <td class="text-right">{{ row.total_consumption|number_format(1, '.', ',') }}</td>
-                        <td class="text-right">{{ (report.totalConsumption > 0 and row.total_consumption is defined) ? ((row.total_consumption / report.totalConsumption) * 100)|number_format(1) : '0.0' }}%</td>
-                        <td>
-                            {{ row.first_reading|date("d/m/Y") }}
-                            &ndash;
-                            {{ row.last_reading|date("d/m/Y") }}
-                        </td>
+                        <th>Site</th>
+                        <th class="text-right">Meters</th>
+                        <th class="text-right">Consumption (kWh)</th>
+                        <th class="text-right">% of Total</th>
+                        <th>Data range</th>
                     </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    {% for row in report.rows %}
+                        <tr>
+                            <td>{{ row.site_name }}</td>
+                            <td class="text-right">{{ row.meter_count }}</td>
+                            <td class="text-right">{{ row.total_consumption|number_format(1, '.', ',') }}</td>
+                            <td class="text-right">{{ (report.totalConsumption > 0 and row.total_consumption is defined) ? ((row.total_consumption / report.totalConsumption) * 100)|number_format(1) : '0.0' }}%</td>
+                            <td>
+                                {{ row.first_reading|date("d/m/Y") }}
+                                &ndash;
+                                {{ row.last_reading|date("d/m/Y") }}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     {% else %}
-        <div class="alert alert-warning">
+        <div class="consumption-no-data">
             <strong>No meter readings found for the selected period.</strong>
             <p style="margin-top: 0.5rem;">This could mean:</p>
             <ul style="margin: 0.5rem 0;">
@@ -101,6 +103,113 @@
             </div>
         </div>
     {% endif %}
+
+    <style>
+    .consumption-card {
+        background: linear-gradient(180deg, #0f172a 0%, #111827 45%, #0b1120 100%);
+        color: #e2e8f0;
+        border: none;
+        box-shadow: 0 25px 45px rgba(15, 23, 42, 0.45);
+    }
+
+    .consumption-card__header {
+        border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+    }
+
+    .consumption-filters {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.25rem;
+        margin-bottom: 1.5rem;
+        padding: 1rem 1.25rem;
+        background: rgba(30, 41, 59, 0.6);
+        border-radius: 12px;
+        box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.15);
+    }
+
+    .consumption-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 1rem;
+        margin: 1.5rem 0;
+    }
+
+    .consumption-stat {
+        padding: 1rem;
+        border-radius: 12px;
+        background: rgba(30, 41, 59, 0.6);
+        box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.15);
+    }
+
+    .consumption-stat span {
+        display: block;
+        font-size: 0.85rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: #94a3b8;
+    }
+
+    .consumption-stat strong {
+        font-size: 1.65rem;
+        line-height: 1.2;
+        color: #f8fafc;
+    }
+
+    .consumption-table-wrapper {
+        border-radius: 14px;
+        overflow: hidden;
+        box-shadow: inset 0 0 0 1px rgba(51, 65, 85, 0.45);
+        background: rgba(15, 23, 42, 0.6);
+    }
+
+    .consumption-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        color: #e2e8f0;
+        margin-top: 0;
+    }
+
+    .consumption-table thead {
+        background: rgba(30, 41, 59, 0.85);
+    }
+
+    .consumption-table th {
+        padding: 0.85rem 1.1rem;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.08em;
+        color: #94a3b8;
+        border-bottom: 1px solid rgba(71, 85, 105, 0.45);
+    }
+
+    .consumption-table td {
+        padding: 0.9rem 1.1rem;
+        border-bottom: 1px solid rgba(51, 65, 85, 0.45);
+        vertical-align: middle;
+        font-size: 0.95rem;
+    }
+
+    .consumption-table tbody tr:hover {
+        background: rgba(79, 70, 229, 0.14);
+    }
+
+    .consumption-no-data {
+        padding: 1.5rem;
+        border-radius: 12px;
+        background: rgba(244, 183, 64, 0.18);
+        border: 1px solid rgba(244, 183, 64, 0.45);
+        color: #FFE9C4;
+    }
+
+    .consumption-no-data strong {
+        color: #fef3c7;
+    }
+
+    .consumption-no-data a {
+        margin-top: 0.5rem;
+    }
+    </style>
 </section>
 
 <script>
