@@ -4,11 +4,22 @@
 
 {% block content %}
 <section class="card">
-    <h2>User Accounts</h2>
-    <p class="mb-2">Manage platform operators and administrators.</p>
+    <div class="card-header">
+        <div>
+            <h2>User Accounts</h2>
+            <p class="mb-2">Manage platform operators and administrators.</p>
+        </div>
+        <a class="btn btn-primary" href="/admin/users/create">+ Create User</a>
+    </div>
+
+    {% if flash %}
+        <div class="alert alert-{{ flash.type }}">
+            {{ flash.message }}
+        </div>
+    {% endif %}
 
     {% if users is empty %}
-        <p>No users found. Run the database seed to create sample accounts.</p>
+        <p>No users found. Run the database seed to create sample accounts or create a new user above.</p>
     {% else %}
         <table class="table">
             <thead>
@@ -19,6 +30,7 @@
                     <th>Status</th>
                     <th>Last Login</th>
                     <th>Created</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -42,6 +54,12 @@
                             {% endif %}
                         </td>
                         <td>{{ user.created_at|date("d/m/Y") }}</td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="btn btn-sm btn-secondary" title="Edit user (Coming soon)" disabled>Edit</button>
+                                <button class="btn btn-sm btn-danger" title="Delete user (Coming soon)" disabled>Delete</button>
+                            </div>
+                        </td>
                     </tr>
                 {% endfor %}
             </tbody>

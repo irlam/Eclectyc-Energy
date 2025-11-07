@@ -70,7 +70,11 @@ $app->group('/admin', function ($group) {
     $group->post('/sites/{id}/delete', [SitesController::class, 'delete'])->setName('admin.sites.delete');
     
     $group->get('/tariffs', [TariffsController::class, 'index'])->setName('admin.tariffs');
+    
+    // Users CRUD routes
     $group->get('/users', [UsersController::class, 'index'])->setName('admin.users');
+    $group->get('/users/create', [UsersController::class, 'create'])->setName('admin.users.create');
+    $group->post('/users', [UsersController::class, 'store'])->setName('admin.users.store');
 })->add(function ($request, $handler) use ($container) {
     $middleware = new AuthMiddleware($container->get(AuthService::class), ['admin']);
     return $middleware->process($request, $handler);
