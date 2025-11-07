@@ -456,37 +456,22 @@ class CsvIngestionService
 
     private function hasAlias(array $headerMap, array $aliases): bool
     {
-        foreach ($aliases as $alias) {
-            if (isset($headerMap[$this->normaliseHeaderKey($alias)])) {
-                return true;
-            }
-        }
-
-        return false;
+        return $this->resolveColumnName($headerMap, $aliases) !== null;
     }
 
     private function getValueFromRecord(array $record, array $headerMap, array $aliases): ?string
     {
-        foreach ($aliases as $alias) {
-            $normalised = $this->normaliseHeaderKey($alias);
-            if (!isset($headerMap[$normalised])) {
-                continue;
-            }
-
-            $columnName = $headerMap[$normalised];
-            if (!array_key_exists($columnName, $record)) {
-                continue;
-            }
-
-            $value = $record[$columnName];
-            if (is_string($value)) {
-                $value = trim($value);
-            }
-
-            return $value === null ? null : (string) $value;
+        $columnName = $this->resolveColumnName($headerMap, $aliases);
+        if ($columnName === null || !array_key_exists($columnName, $record)) {
+            return null;
         }
 
-        return null;
+        $value = $record[$columnName];
+        if (is_string($value)) {
+            $value = trim($value);
+        }
+
+        return $value === null ? null : (string) $value;
     }
 
     /**
@@ -499,16 +484,35 @@ class CsvIngestionService
         $report = [];
 
         foreach ($requested as $field => $aliases) {
-            foreach ($aliases as $alias) {
-                $normalised = $this->normaliseHeaderKey($alias);
-                if (isset($headerMap[$normalised])) {
-                    $report[$field] = $headerMap[$normalised];
-                    break;
-                }
+            $column = $this->resolveColumnName($headerMap, $aliases);
+            if ($column !== null) {
+                $report[$field] = $column;
             }
         }
 
         return $report;
+    }
+
+    private function resolveColumnName(array $headerMap, array $aliases): ?string
+    {
+        $normalisedValues = [];
+        foreach ($headerMap as $column) {
+            $normalisedValues[$this->normaliseHeaderKey($column)] = $column;
+        }
+
+        foreach ($aliases as $alias) {
+            $normalised = $this->normaliseHeaderKey($alias);
+
+            if (isset($headerMap[$normalised])) {
+                return $headerMap[$normalised];
+            }
+
+            if (isset($normalisedValues[$normalised])) {
+                return $normalisedValues[$normalised];
+            }
+        }
+
+        return null;
     }
 
     private function isIntervalRecordFormat(array $headerMap): bool
