@@ -588,83 +588,1409 @@ public function ingest(
         <!-- (Additional sections would follow the same pattern) -->
         
         <!-- Placeholder for remaining sections -->
+        <!-- Aggregation Flow Section -->
         <section class="content-section" id="aggregation-flow">
             <div class="section-header">
                 <h2>📊 Data Aggregation Flow</h2>
-                <p class="section-subtitle">From raw readings to insights</p>
+                <p class="section-subtitle">From raw half-hourly readings to daily, weekly, monthly, and annual insights</p>
             </div>
-            <div class="coming-soon">
-                <p>Full interactive content for this section coming in next update...</p>
+            
+            <div class="voice-over-box">
+                <div class="voice-over-header">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M10 2a8 8 0 100 16 8 8 0 000-16zm0 14a6 6 0 110-12 6 6 0 010 12z"/>
+                        <path d="M8 6v8l6-4-6-4z"/>
+                    </svg>
+                    <span>Aggregation Process</span>
+                </div>
+                <div class="voice-over-content">
+                    <p><strong>Data aggregation is the backbone of our analytics...</strong></p>
+                    
+                    <p>Raw meter readings come in every 30 minutes - that's 48 readings per day per meter. 
+                    For a portfolio of 100 meters, that's 175,000 readings per month! We can't expect users 
+                    to make sense of that volume of data.</p>
+                    
+                    <p>That's where our multi-level aggregation system comes in. We progressively roll up 
+                    data through four levels: <strong>Daily</strong>, <strong>Weekly</strong>, 
+                    <strong>Monthly</strong>, and <strong>Annual</strong>.</p>
+                    
+                    <p>The <strong>Daily Aggregator</strong> runs every night at 2 AM. It takes all 
+                    half-hourly readings from the previous day and computes totals, peaks, off-peaks, 
+                    minimums, and maximums. It also calculates baseload - the minimum constant consumption 
+                    throughout the day.</p>
+                    
+                    <p>The <strong>Period Aggregators</strong> then roll these daily summaries into 
+                    weekly, monthly, and annual views. Each level preserves important metrics like 
+                    peak consumption and minimum values, giving you insights at every time scale.</p>
+                    
+                    <p>All of this happens automatically through our <strong>Orchestrated Scheduler</strong>, 
+                    which monitors every aggregation run, tracks performance metrics, and alerts you if 
+                    anything goes wrong. Complete visibility, complete reliability.</p>
+                </div>
+            </div>
+            
+            <div class="aggregation-hierarchy">
+                <h3>Four-Level Aggregation Hierarchy</h3>
+                <div class="hierarchy-diagram">
+                    <div class="hierarchy-level level-0">
+                        <div class="level-badge">Raw Data</div>
+                        <div class="level-title">Half-Hourly Readings</div>
+                        <div class="level-stats">
+                            <span>48 readings/day/meter</span>
+                            <span>~1.75M readings/month (100 meters)</span>
+                        </div>
+                    </div>
+                    
+                    <div class="hierarchy-arrow">⬇️ Daily Aggregation (2 AM)</div>
+                    
+                    <div class="hierarchy-level level-1">
+                        <div class="level-badge">Level 1</div>
+                        <div class="level-title">Daily Aggregations</div>
+                        <div class="level-stats">
+                            <span>Total, Peak, Off-Peak consumption</span>
+                            <span>Min/Max values, Baseload analysis</span>
+                        </div>
+                    </div>
+                    
+                    <div class="hierarchy-arrow">⬇️ Period Rollup (3 AM)</div>
+                    
+                    <div class="hierarchy-level level-2">
+                        <div class="level-badge">Level 2</div>
+                        <div class="level-title">Weekly Aggregations</div>
+                        <div class="level-stats">
+                            <span>7-day summaries</span>
+                            <span>ISO week numbering</span>
+                        </div>
+                    </div>
+                    
+                    <div class="hierarchy-arrow">⬇️</div>
+                    
+                    <div class="hierarchy-level level-3">
+                        <div class="level-badge">Level 3</div>
+                        <div class="level-title">Monthly Aggregations</div>
+                        <div class="level-stats">
+                            <span>Calendar month summaries</span>
+                            <span>Trend analysis ready</span>
+                        </div>
+                    </div>
+                    
+                    <div class="hierarchy-arrow">⬇️</div>
+                    
+                    <div class="hierarchy-level level-4">
+                        <div class="level-badge">Level 4</div>
+                        <div class="level-title">Annual Aggregations</div>
+                        <div class="level-stats">
+                            <span>Yearly totals</span>
+                            <span>Long-term planning data</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="code-showcase">
+                <div class="code-header">
+                    <span>📁 scripts/aggregate_orchestrated.php</span>
+                    <span class="code-lang">CLI</span>
+                </div>
+                <pre><code class="language-php">/**
+ * Orchestrated Aggregation with Full Monitoring
+ * 
+ * This script coordinates all aggregation tasks with:
+ * - Telemetry tracking in scheduler_executions table
+ * - Email alerts on failures and warnings
+ * - Performance metrics and timing data
+ * - Graceful error handling with detailed logging
+ */
+
+// Run all aggregation levels for yesterday
+php scripts/aggregate_orchestrated.php --all --date yesterday
+
+// Sample output:
+// [2025-11-07 02:00:01] Starting orchestrated aggregation...
+// [2025-11-07 02:00:01] Daily aggregation: Processing 100 meters...
+// [2025-11-07 02:00:45] ✓ Daily complete: 100/100 meters (44.2s)
+// [2025-11-07 02:00:45] Weekly aggregation: Processing...
+// [2025-11-07 02:01:12] ✓ Weekly complete: 15 weeks (27.1s)
+// [2025-11-07 02:01:12] Monthly aggregation: Processing...
+// [2025-11-07 02:01:28] ✓ Monthly complete: 3 months (16.4s)
+// [2025-11-07 02:01:28] Annual aggregation: Processing...
+// [2025-11-07 02:01:35] ✓ Annual complete: 1 year (7.2s)
+// [2025-11-07 02:01:35] Total execution time: 94.9s
+// [2025-11-07 02:01:35] Telemetry recorded to scheduler_executions</code></pre>
             </div>
         </section>
 
+        <!-- Tariff Analysis Section -->
         <section class="content-section" id="tariff-analysis">
             <div class="section-header">
                 <h2>💰 Tariff Analysis Engine</h2>
-                <p class="section-subtitle">Finding savings opportunities</p>
+                <p class="section-subtitle">Intelligent tariff switching recommendations that save money</p>
             </div>
-            <div class="coming-soon">
-                <p>Full interactive content for this section coming in next update...</p>
+            
+            <div class="voice-over-box">
+                <div class="voice-over-header">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M10 2a8 8 0 100 16 8 8 0 000-16zm0 14a6 6 0 110-12 6 6 0 010 12z"/>
+                        <path d="M8 6v8l6-4-6-4z"/>
+                    </svg>
+                    <span>Tariff Switching Intelligence</span>
+                </div>
+                <div class="voice-over-content">
+                    <p><strong>One of our most powerful features is the Tariff Switching Analyzer...</strong></p>
+                    
+                    <p>Energy tariffs are complex. You've got flat rates, time-of-use rates with peak and 
+                    off-peak periods, weekend rates, standing charges - it's a maze. And choosing the wrong 
+                    tariff can cost thousands of pounds per year.</p>
+                    
+                    <p>Our Tariff Switching Analyzer takes the guesswork out. Here's how it works: 
+                    First, you select a meter and specify your current tariff. Then you choose an analysis 
+                    period - typically 90 days to capture seasonal variations.</p>
+                    
+                    <p>The analyzer pulls your actual consumption data for that period and calculates 
+                    exactly what you paid on your current tariff. Then it runs the same consumption through 
+                    <strong>every available alternative tariff</strong> in the system.</p>
+                    
+                    <p>Within seconds, you get a ranked list showing potential savings. Each alternative 
+                    shows the total cost, the absolute savings in pounds, and the percentage reduction. 
+                    The results might surprise you - we've seen cases where switching saved over 30 percent!</p>
+                    
+                    <p>All analyses are saved in the database for audit purposes, and you can review 
+                    historical analyses to track how recommendations change over time. It's tariff 
+                    intelligence at your fingertips.</p>
+                </div>
+            </div>
+            
+            <div class="tariff-comparison-demo">
+                <h3>Sample Switching Analysis</h3>
+                <div class="tariff-cards">
+                    <div class="tariff-card current-tariff">
+                        <div class="card-badge current">Current Tariff</div>
+                        <h4>Standard Variable Rate</h4>
+                        <div class="tariff-details">
+                            <div class="detail-row">
+                                <span>Unit Rate:</span>
+                                <strong>£0.28/kWh</strong>
+                            </div>
+                            <div class="detail-row">
+                                <span>Standing Charge:</span>
+                                <strong>£0.45/day</strong>
+                            </div>
+                            <div class="detail-row total">
+                                <span>90-Day Total:</span>
+                                <strong>£2,847.50</strong>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="tariff-card recommended-tariff">
+                        <div class="card-badge recommended">Best Alternative</div>
+                        <h4>Economy 7 Time-of-Use</h4>
+                        <div class="tariff-details">
+                            <div class="detail-row">
+                                <span>Peak Rate:</span>
+                                <strong>£0.31/kWh</strong>
+                            </div>
+                            <div class="detail-row">
+                                <span>Off-Peak Rate:</span>
+                                <strong>£0.12/kWh</strong>
+                            </div>
+                            <div class="detail-row">
+                                <span>Standing Charge:</span>
+                                <strong>£0.48/day</strong>
+                            </div>
+                            <div class="detail-row total savings">
+                                <span>90-Day Total:</span>
+                                <strong>£2,234.20</strong>
+                            </div>
+                        </div>
+                        <div class="savings-highlight">
+                            <div class="savings-amount">Save £613.30</div>
+                            <div class="savings-percent">21.5% reduction</div>
+                            <div class="annual-projection">Annual savings: ~£2,453</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="analysis-breakdown">
+                    <h4>Why This Works</h4>
+                    <p>Your consumption pattern shows <strong>62% off-peak usage</strong> (overnight and 
+                    weekends). Even though the peak rate is slightly higher, the dramatic reduction in 
+                    off-peak rates more than compensates, resulting in substantial savings.</p>
+                </div>
+            </div>
+            
+            <div class="code-showcase">
+                <div class="code-header">
+                    <span>📁 app/Domain/Tariffs/TariffSwitchingAnalyzer.php</span>
+                    <span class="code-lang">PHP</span>
+                </div>
+                <pre><code class="language-php">/**
+ * Analyze all tariff switching opportunities
+ * 
+ * Compares current tariff costs against all alternatives
+ * using actual consumption data over specified period
+ */
+public function analyzeSwitchingOpportunities(
+    int $meterId,
+    int $currentTariffId,
+    string $startDate,
+    string $endDate
+): array {
+    // Get actual consumption with time-of-use breakdown
+    $consumption = $this->getConsumptionData($meterId, $startDate, $endDate);
+    
+    // Calculate current tariff cost
+    $currentCost = $this->calculateTariffCost($currentTariffId, $consumption);
+    
+    // Get all alternative tariffs
+    $alternatives = $this->getAlternativeTariffs($currentTariffId);
+    
+    // Calculate cost for each alternative
+    foreach ($alternatives as $tariff) {
+        $cost = $this->calculateTariffCost($tariff['id'], $consumption);
+        $savings = $currentCost['total_cost'] - $cost['total_cost'];
+        
+        $results[] = [
+            'tariff' => $tariff,
+            'cost' => $cost,
+            'savings' => $savings,
+            'savings_percent' => ($savings / $currentCost['total_cost']) * 100
+        ];
+    }
+    
+    // Sort by savings (highest first)
+    usort($results, fn($a, $b) => $b['savings'] <=> $a['savings']);
+    
+    return $results;
+}</code></pre>
             </div>
         </section>
 
+        <!-- Carbon Intensity Section -->
         <section class="content-section" id="carbon-intensity">
             <div class="section-header">
                 <h2>🌍 Carbon Intensity Tracking</h2>
-                <p class="section-subtitle">Real-time grid carbon monitoring</p>
+                <p class="section-subtitle">Real-time UK grid carbon monitoring integrated into your dashboard</p>
             </div>
-            <div class="coming-soon">
-                <p>Full interactive content for this section coming in next update...</p>
+            
+            <div class="voice-over-box">
+                <div class="voice-over-header">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M10 2a8 8 0 100 16 8 8 0 000-16zm0 14a6 6 0 110-12 6 6 0 010 12z"/>
+                        <path d="M8 6v8l6-4-6-4z"/>
+                    </svg>
+                    <span>Carbon Tracking Integration</span>
+                </div>
+                <div class="voice-over-content">
+                    <p><strong>Energy consumption isn't just about cost - it's about environmental impact too...</strong></p>
+                    
+                    <p>The UK National Grid's carbon intensity varies dramatically throughout the day. 
+                    When the sun is shining and wind is blowing, renewables flood the grid and carbon 
+                    intensity drops to as low as 50 grams per kilowatt-hour. But on calm winter evenings 
+                    when demand peaks, gas plants fire up and intensity can spike to 400 grams or more.</p>
+                    
+                    <p>We've integrated the <strong>National Grid ESO Carbon Intensity API</strong> 
+                    directly into the platform. A background script fetches current and forecast data 
+                    every 30 minutes, keeping your dashboard always up to date.</p>
+                    
+                    <p>The main dashboard displays the current intensity with a color-coded classification: 
+                    <strong>Very Low</strong> (green), <strong>Low</strong> (light green), 
+                    <strong>Moderate</strong> (yellow), <strong>High</strong> (orange), and 
+                    <strong>Very High</strong> (red).</p>
+                    
+                    <p>But we go beyond just showing the number. Our system calculates the actual carbon 
+                    emissions from your consumption by multiplying your energy usage by the intensity 
+                    at the time of use. This gives you a complete picture: kilowatt-hours consumed 
+                    <em>and</em> kilograms of CO2 emitted.</p>
+                    
+                    <p>For organizations with sustainability goals, this is invaluable. You can track 
+                    progress, identify high-carbon periods, and even shift flexible loads to cleaner times 
+                    of day. Energy intelligence meets environmental responsibility.</p>
+                </div>
+            </div>
+            
+            <div class="carbon-dashboard-preview">
+                <h3>Live Carbon Intensity Display</h3>
+                <div class="carbon-widgets">
+                    <div class="carbon-widget current">
+                        <div class="widget-label">Current Intensity</div>
+                        <div class="intensity-display moderate">
+                            <div class="intensity-value">187</div>
+                            <div class="intensity-unit">gCO₂/kWh</div>
+                        </div>
+                        <div class="intensity-classification moderate">Moderate</div>
+                        <div class="widget-timestamp">Updated 2 minutes ago</div>
+                    </div>
+                    
+                    <div class="carbon-widget forecast">
+                        <div class="widget-label">Next 3 Hours Forecast</div>
+                        <div class="forecast-chart">
+                            <div class="forecast-bar" style="height: 60%; background: #fbbf24;" title="14:00 - 215 gCO₂/kWh"></div>
+                            <div class="forecast-bar" style="height: 75%; background: #f97316;" title="14:30 - 245 gCO₂/kWh"></div>
+                            <div class="forecast-bar" style="height: 65%; background: #fbbf24;" title="15:00 - 220 gCO₂/kWh"></div>
+                            <div class="forecast-bar" style="height: 50%; background: #84cc16;" title="15:30 - 165 gCO₂/kWh"></div>
+                            <div class="forecast-bar" style="height: 40%; background: #22c55e;" title="16:00 - 132 gCO₂/kWh"></div>
+                            <div class="forecast-bar" style="height: 30%; background: #10b981;" title="16:30 - 98 gCO₂/kWh"></div>
+                        </div>
+                        <div class="forecast-labels">
+                            <span>14:00</span>
+                            <span>15:00</span>
+                            <span>16:00</span>
+                            <span>17:00</span>
+                        </div>
+                    </div>
+                    
+                    <div class="carbon-widget emissions">
+                        <div class="widget-label">Today's Emissions</div>
+                        <div class="emissions-display">
+                            <div class="emissions-value">342.7</div>
+                            <div class="emissions-unit">kg CO₂</div>
+                        </div>
+                        <div class="emissions-comparison">
+                            <span class="comparison-icon">↓</span>
+                            <span>12% lower than yesterday</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="classification-legend">
+                    <h4>Carbon Intensity Classifications</h4>
+                    <div class="legend-items">
+                        <div class="legend-item">
+                            <span class="legend-color very-low"></span>
+                            <span class="legend-label">Very Low</span>
+                            <span class="legend-range">0-100 g</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-color low"></span>
+                            <span class="legend-label">Low</span>
+                            <span class="legend-range">100-150 g</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-color moderate"></span>
+                            <span class="legend-label">Moderate</span>
+                            <span class="legend-range">150-200 g</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-color high"></span>
+                            <span class="legend-label">High</span>
+                            <span class="legend-range">200-250 g</span>
+                        </div>
+                        <div class="legend-item">
+                            <span class="legend-color very-high"></span>
+                            <span class="legend-label">Very High</span>
+                            <span class="legend-range">250+ g</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="code-showcase">
+                <div class="code-header">
+                    <span>📁 scripts/fetch_carbon_intensity.php</span>
+                    <span class="code-lang">CLI</span>
+                </div>
+                <pre><code class="language-php">/**
+ * Automated Carbon Intensity Data Fetching
+ * Runs every 30 minutes via cron
+ */
+
+// Fetch current and forecast data from National Grid ESO API
+php scripts/fetch_carbon_intensity.php
+
+// Sample API response:
+// {
+//   "intensity": {
+//     "forecast": 187,
+//     "actual": 185,
+//     "index": "moderate"
+//   },
+//   "generationmix": [
+//     {"fuel": "wind", "perc": 28.4},
+//     {"fuel": "solar", "perc": 12.1},
+//     {"fuel": "gas", "perc": 35.7},
+//     {"fuel": "nuclear", "perc": 18.2}
+//   ]
+// }
+
+// Cron schedule (every 30 minutes):
+// */30 * * * * cd /path/to/eclectyc && php scripts/fetch_carbon_intensity.php</code></pre>
             </div>
         </section>
 
+        <!-- Analytics Engine Section -->
         <section class="content-section" id="analytics">
             <div class="section-header">
                 <h2>📈 Analytics Engine</h2>
-                <p class="section-subtitle">Turning data into insights</p>
+                <p class="section-subtitle">Turning raw data into actionable insights with trend analysis and forecasting</p>
             </div>
-            <div class="coming-soon">
-                <p>Full interactive content for this section coming in next update...</p>
+            
+            <div class="voice-over-box">
+                <div class="voice-over-header">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M10 2a8 8 0 100 16 8 8 0 000-16zm0 14a6 6 0 110-12 6 6 0 010 12z"/>
+                        <path d="M8 6v8l6-4-6-4z"/>
+                    </svg>
+                    <span>Advanced Analytics</span>
+                </div>
+                <div class="voice-over-content">
+                    <p><strong>The Analytics Engine is where data becomes intelligence...</strong></p>
+                    
+                    <p>We've built a sophisticated analytics layer that goes far beyond simple reporting. 
+                    The engine provides five core capabilities: <strong>consumption trends</strong>, 
+                    <strong>baseload analysis</strong>, <strong>comparison snapshots</strong>, 
+                    <strong>anomaly detection</strong>, and <strong>consumption forecasting</strong>.</p>
+                    
+                    <p>Let's start with <strong>Baseload Analysis</strong>. Every site has a baseline 
+                    consumption - the constant load from refrigeration, lighting, servers, HVAC systems 
+                    running 24/7. Our analyzer identifies this by examining the minimum consumption across 
+                    each day. Typically, baseload is 30 to 60 percent of total consumption. If yours is 
+                    higher, there might be opportunities to reduce waste.</p>
+                    
+                    <p><strong>Comparison Snapshots</strong> let you compare any period against the same 
+                    period in the past. Day-over-day, week-over-week, month-over-month, or year-over-year. 
+                    The system calculates both absolute changes in kilowatt-hours and percentage changes, 
+                    helping you spot trends immediately.</p>
+                    
+                    <p><strong>Consumption Trends</strong> use time-series analysis to identify patterns. 
+                    Is consumption increasing or decreasing over time? Are there seasonal variations? 
+                    The trend analyzer fits regression models to your data and projects future consumption.</p>
+                    
+                    <p><strong>Anomaly Detection</strong> flags unusual consumption events. A sudden spike 
+                    might indicate equipment malfunction. A sustained increase could signal a process change. 
+                    Early detection means early action.</p>
+                    
+                    <p>All these analytics are available through web interfaces and API endpoints, 
+                    giving you flexible access to insights exactly when and where you need them.</p>
+                </div>
+            </div>
+            
+            <div class="analytics-features">
+                <h3>Core Analytics Capabilities</h3>
+                <div class="features-grid">
+                    <div class="analytics-feature">
+                        <div class="feature-icon">📊</div>
+                        <h4>Baseload Analysis</h4>
+                        <p>Identify constant minimum consumption and optimization opportunities</p>
+                        <div class="feature-metrics">
+                            <div class="metric">
+                                <span class="metric-label">Typical Baseload</span>
+                                <span class="metric-value">30-60%</span>
+                            </div>
+                            <div class="metric">
+                                <span class="metric-label">Sample Site</span>
+                                <span class="metric-value">42.3%</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="analytics-feature">
+                        <div class="feature-icon">🔄</div>
+                        <h4>Comparison Snapshots</h4>
+                        <p>Period-over-period analysis with absolute and percentage changes</p>
+                        <div class="feature-metrics">
+                            <div class="metric">
+                                <span class="metric-label">Yesterday vs Today</span>
+                                <span class="metric-value trend-down">-8.4%</span>
+                            </div>
+                            <div class="metric">
+                                <span class="metric-label">This Week vs Last</span>
+                                <span class="metric-value trend-up">+3.2%</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="analytics-feature">
+                        <div class="feature-icon">📈</div>
+                        <h4>Trend Analysis</h4>
+                        <p>Time-series pattern detection and regression modeling</p>
+                        <div class="feature-metrics">
+                            <div class="metric">
+                                <span class="metric-label">30-Day Trend</span>
+                                <span class="metric-value">Increasing</span>
+                            </div>
+                            <div class="metric">
+                                <span class="metric-label">Growth Rate</span>
+                                <span class="metric-value">+2.1% /mo</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="analytics-feature">
+                        <div class="feature-icon">🔔</div>
+                        <h4>Anomaly Detection</h4>
+                        <p>Automatic flagging of unusual consumption patterns</p>
+                        <div class="feature-metrics">
+                            <div class="metric">
+                                <span class="metric-label">Detection Method</span>
+                                <span class="metric-value">Statistical</span>
+                            </div>
+                            <div class="metric">
+                                <span class="metric-label">Threshold</span>
+                                <span class="metric-value">±3σ</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="analytics-visualization">
+                <h3>Sample: Baseload vs Total Consumption</h3>
+                <div class="chart-placeholder">
+                    <div class="chart-bars">
+                        <div class="bar-group">
+                            <div class="bar total" style="height: 80%;" title="Total: 850 kWh"></div>
+                            <div class="bar baseload" style="height: 35%;" title="Baseload: 360 kWh"></div>
+                            <span class="bar-label">Mon</span>
+                        </div>
+                        <div class="bar-group">
+                            <div class="bar total" style="height: 75%;" title="Total: 820 kWh"></div>
+                            <div class="bar baseload" style="height: 33%;" title="Baseload: 340 kWh"></div>
+                            <span class="bar-label">Tue</span>
+                        </div>
+                        <div class="bar-group">
+                            <div class="bar total" style="height: 85%;" title="Total: 890 kWh"></div>
+                            <div class="bar baseload" style="height: 36%;" title="Baseload: 370 kWh"></div>
+                            <span class="bar-label">Wed</span>
+                        </div>
+                        <div class="bar-group">
+                            <div class="bar total" style="height: 78%;" title="Total: 840 kWh"></div>
+                            <div class="bar baseload" style="height: 34%;" title="Baseload: 355 kWh"></div>
+                            <span class="bar-label">Thu</span>
+                        </div>
+                        <div class="bar-group">
+                            <div class="bar total" style="height: 82%;" title="Total: 865 kWh"></div>
+                            <div class="bar baseload" style="height: 35%;" title="Baseload: 365 kWh"></div>
+                            <span class="bar-label">Fri</span>
+                        </div>
+                        <div class="bar-group">
+                            <div class="bar total" style="height: 45%;" title="Total: 520 kWh"></div>
+                            <div class="bar baseload" style="height: 31%;" title="Baseload: 330 kWh"></div>
+                            <span class="bar-label">Sat</span>
+                        </div>
+                        <div class="bar-group">
+                            <div class="bar total" style="height: 40%;" title="Total: 480 kWh"></div>
+                            <div class="bar baseload" style="height: 29%;" title="Baseload: 315 kWh"></div>
+                            <span class="bar-label">Sun</span>
+                        </div>
+                    </div>
+                    <div class="chart-legend">
+                        <div class="legend-item"><span class="legend-box total"></span> Total Consumption</div>
+                        <div class="legend-item"><span class="legend-box baseload"></span> Baseload (42.3% avg)</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="code-showcase">
+                <div class="code-header">
+                    <span>📁 app/Domain/Analytics/BaseloadAnalyzer.php</span>
+                    <span class="code-lang">PHP</span>
+                </div>
+                <pre><code class="language-php">/**
+ * Calculate baseload for a meter over a date range
+ * 
+ * Baseload = minimum constant consumption throughout each day
+ * Important for identifying optimization opportunities
+ */
+public function calculateBaseload(
+    int $meterId,
+    DateTimeImmutable $startDate,
+    DateTimeImmutable $endDate
+): array {
+    // Get daily minimum consumption values
+    $stmt = $this->pdo->prepare('
+        SELECT 
+            date,
+            min_consumption as baseload,
+            total_consumption
+        FROM daily_aggregations
+        WHERE meter_id = :meter_id
+          AND date BETWEEN :start AND :end
+        ORDER BY date
+    ');
+    
+    $stmt->execute([
+        'meter_id' => $meterId,
+        'start' => $startDate->format('Y-m-d'),
+        'end' => $endDate->format('Y-m-d')
+    ]);
+    
+    $days = $stmt->fetchAll();
+    $avgBaseload = array_sum(array_column($days, 'baseload')) / count($days);
+    $totalConsumption = array_sum(array_column($days, 'total_consumption'));
+    
+    return [
+        'average_baseload' => $avgBaseload,
+        'baseload_percentage' => ($avgBaseload * count($days)) / $totalConsumption * 100,
+        'total_consumption' => $totalConsumption,
+        'days_analyzed' => count($days)
+    ];
+}</code></pre>
             </div>
         </section>
 
+        <!-- Security Section -->
         <section class="content-section" id="security">
             <div class="section-header">
                 <h2>🔐 Security & Access Control</h2>
-                <p class="section-subtitle">Keeping your data safe</p>
+                <p class="section-subtitle">Enterprise-grade security protecting your energy data</p>
             </div>
-            <div class="coming-soon">
-                <p>Full interactive content for this section coming in next update...</p>
+            
+            <div class="voice-over-box">
+                <div class="voice-over-header">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M10 2a8 8 0 100 16 8 8 0 000-16zm0 14a6 6 0 110-12 6 6 0 010 12z"/>
+                        <path d="M8 6v8l6-4-6-4z"/>
+                    </svg>
+                    <span>Security Architecture</span>
+                </div>
+                <div class="voice-over-content">
+                    <p><strong>Security is built into every layer of the platform...</strong></p>
+                    
+                    <p>We implement <strong>defense in depth</strong> - multiple overlapping layers of 
+                    security controls. At the application level, all database queries use 
+                    <strong>PDO prepared statements</strong> to prevent SQL injection. User input is 
+                    sanitized and validated before processing.</p>
+                    
+                    <p><strong>Role-based access control</strong> governs what users can do. We have 
+                    three roles: <strong>Admin</strong> (full system access), <strong>Manager</strong> 
+                    (read-write on sites and meters), and <strong>Viewer</strong> (read-only access). 
+                    Permissions are checked on every request.</p>
+                    
+                    <p><strong>Audit logging</strong> tracks every significant action. User logins, 
+                    data imports, configuration changes, tariff analyses - all recorded with timestamps 
+                    and user attribution. The audit trail is immutable and stored indefinitely for 
+                    compliance purposes.</p>
+                    
+                    <p><strong>Session management</strong> uses secure, httpOnly cookies with CSRF 
+                    protection. Sessions expire after 24 hours of inactivity. Password requirements 
+                    enforce minimum complexity: at least 12 characters with mixed case and numbers.</p>
+                    
+                    <p>For <strong>GDPR compliance</strong>, we provide data export and deletion 
+                    capabilities. Personal data is minimized - we only collect what's necessary for 
+                    energy management. All data is stored within the EU, and we maintain a data 
+                    processing register.</p>
+                    
+                    <p>The platform is production-hardened and security-tested. Your data is safe.</p>
+                </div>
+            </div>
+            
+            <div class="security-features">
+                <h3>Security Controls</h3>
+                <div class="security-grid">
+                    <div class="security-item">
+                        <div class="security-icon">🛡️</div>
+                        <h4>SQL Injection Protection</h4>
+                        <p>100% PDO prepared statements</p>
+                        <div class="security-status">✓ Implemented</div>
+                    </div>
+                    
+                    <div class="security-item">
+                        <div class="security-icon">👥</div>
+                        <h4>Role-Based Access</h4>
+                        <p>Admin, Manager, Viewer roles</p>
+                        <div class="security-status">✓ Implemented</div>
+                    </div>
+                    
+                    <div class="security-item">
+                        <div class="security-icon">📝</div>
+                        <h4>Audit Logging</h4>
+                        <p>Complete activity trail</p>
+                        <div class="security-status">✓ Implemented</div>
+                    </div>
+                    
+                    <div class="security-item">
+                        <div class="security-icon">🔒</div>
+                        <h4>Session Security</h4>
+                        <p>Secure cookies, CSRF tokens</p>
+                        <div class="security-status">✓ Implemented</div>
+                    </div>
+                    
+                    <div class="security-item">
+                        <div class="security-icon">🔑</div>
+                        <h4>Password Policy</h4>
+                        <p>12+ chars, complexity requirements</p>
+                        <div class="security-status">✓ Implemented</div>
+                    </div>
+                    
+                    <div class="security-item">
+                        <div class="security-icon">⚖️</div>
+                        <h4>GDPR Compliance</h4>
+                        <p>Data export, deletion, minimization</p>
+                        <div class="security-status">✓ Implemented</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="rbac-matrix">
+                <h3>Role-Based Access Control Matrix</h3>
+                <table class="permissions-table">
+                    <thead>
+                        <tr>
+                            <th>Permission</th>
+                            <th>Admin</th>
+                            <th>Manager</th>
+                            <th>Viewer</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>View Dashboard</td>
+                            <td class="allowed">✓</td>
+                            <td class="allowed">✓</td>
+                            <td class="allowed">✓</td>
+                        </tr>
+                        <tr>
+                            <td>View Reports</td>
+                            <td class="allowed">✓</td>
+                            <td class="allowed">✓</td>
+                            <td class="allowed">✓</td>
+                        </tr>
+                        <tr>
+                            <td>Create/Edit Sites</td>
+                            <td class="allowed">✓</td>
+                            <td class="allowed">✓</td>
+                            <td class="denied">✗</td>
+                        </tr>
+                        <tr>
+                            <td>Import Data</td>
+                            <td class="allowed">✓</td>
+                            <td class="allowed">✓</td>
+                            <td class="denied">✗</td>
+                        </tr>
+                        <tr>
+                            <td>Manage Users</td>
+                            <td class="allowed">✓</td>
+                            <td class="denied">✗</td>
+                            <td class="denied">✗</td>
+                        </tr>
+                        <tr>
+                            <td>System Configuration</td>
+                            <td class="allowed">✓</td>
+                            <td class="denied">✗</td>
+                            <td class="denied">✗</td>
+                        </tr>
+                        <tr>
+                            <td>View Audit Logs</td>
+                            <td class="allowed">✓</td>
+                            <td class="denied">✗</td>
+                            <td class="denied">✗</td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </section>
 
+        <!-- Monitoring Section -->
         <section class="content-section" id="monitoring">
             <div class="section-header">
                 <h2>🛠️ Monitoring & Operations</h2>
-                <p class="section-subtitle">Production-ready monitoring</p>
+                <p class="section-subtitle">Production-ready observability and operational excellence</p>
             </div>
-            <div class="coming-soon">
-                <p>Full interactive content for this section coming in next update...</p>
+            
+            <div class="voice-over-box">
+                <div class="voice-over-header">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M10 2a8 8 0 100 16 8 8 0 000-16zm0 14a6 6 0 110-12 6 6 0 010 12z"/>
+                        <path d="M8 6v8l6-4-6-4z"/>
+                    </svg>
+                    <span>Production Operations</span>
+                </div>
+                <div class="voice-over-content">
+                    <p><strong>A production system needs production-grade operations...</strong></p>
+                    
+                    <p>We've built comprehensive monitoring into the platform. The <strong>health 
+                    endpoint</strong> at <code>/api/health</code> provides multi-tier diagnostics: 
+                    database connectivity, disk space, recent import success rates, and aggregation 
+                    completion status. Load balancers and uptime monitors can query this endpoint 
+                    every 60 seconds for instant problem detection.</p>
+                    
+                    <p>The <strong>Import Monitoring Service</strong> watches the import queue 
+                    continuously. It detects stuck jobs - those that have been processing for more 
+                    than 30 minutes without progress. It tracks retry rates, failure patterns, and 
+                    throughput metrics. If anything looks wrong, alerts fire immediately.</p>
+                    
+                    <p><strong>Alert Service</strong> supports multiple channels. Email alerts go to 
+                    admin addresses on critical failures. Slack webhooks provide real-time notifications 
+                    to operations channels. Alert messages include context: what failed, when, why, 
+                    and suggested remediation steps.</p>
+                    
+                    <p>The <strong>Scheduler Telemetry System</strong> records every aggregation run. 
+                    When did it start? How long did it take? How many meters were processed? Were there 
+                    any errors? All stored in <code>scheduler_executions</code> table for trend analysis.</p>
+                    
+                    <p>For <strong>maintenance</strong>, we provide cleanup scripts, data quality 
+                    checkers, and database optimization tools. The <code>cleanup_import_jobs.php</code> 
+                    script enforces retention policies, keeping 30 days of completed jobs while archiving 
+                    older records.</p>
+                    
+                    <p>Everything you need to run a bulletproof production energy management platform.</p>
+                </div>
+            </div>
+            
+            <div class="monitoring-dashboard">
+                <h3>System Health Dashboard</h3>
+                <div class="health-metrics">
+                    <div class="health-metric healthy">
+                        <div class="metric-icon">✓</div>
+                        <div class="metric-content">
+                            <div class="metric-label">Database</div>
+                            <div class="metric-value">Connected</div>
+                            <div class="metric-detail">Response time: 2ms</div>
+                        </div>
+                    </div>
+                    
+                    <div class="health-metric healthy">
+                        <div class="metric-icon">✓</div>
+                        <div class="metric-content">
+                            <div class="metric-label">Import Queue</div>
+                            <div class="metric-value">2 jobs queued</div>
+                            <div class="metric-detail">0 failed in last hour</div>
+                        </div>
+                    </div>
+                    
+                    <div class="health-metric healthy">
+                        <div class="metric-icon">✓</div>
+                        <div class="metric-content">
+                            <div class="metric-label">Disk Space</div>
+                            <div class="metric-value">67% available</div>
+                            <div class="metric-detail">42 GB free of 125 GB</div>
+                        </div>
+                    </div>
+                    
+                    <div class="health-metric healthy">
+                        <div class="metric-icon">✓</div>
+                        <div class="metric-content">
+                            <div class="metric-label">Last Aggregation</div>
+                            <div class="metric-value">2 hours ago</div>
+                            <div class="metric-detail">Completed successfully</div>
+                        </div>
+                    </div>
+                    
+                    <div class="health-metric warning">
+                        <div class="metric-icon">⚠</div>
+                        <div class="metric-content">
+                            <div class="metric-label">Carbon API</div>
+                            <div class="metric-value">Stale Data</div>
+                            <div class="metric-detail">Last update: 2 hours ago</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="operational-scripts">
+                <h3>Operational Scripts</h3>
+                <div class="scripts-list">
+                    <div class="script-item">
+                        <div class="script-name">
+                            <code>monitor_import_system.php</code>
+                        </div>
+                        <div class="script-desc">
+                            Comprehensive health checks: stuck jobs, failure rates, throughput metrics
+                        </div>
+                        <div class="script-schedule">Run: Every 5 minutes via cron</div>
+                    </div>
+                    
+                    <div class="script-item">
+                        <div class="script-name">
+                            <code>cleanup_import_jobs.php</code>
+                        </div>
+                        <div class="script-desc">
+                            Enforce retention policies, archive completed jobs older than 30 days
+                        </div>
+                        <div class="script-schedule">Run: Daily at 3 AM</div>
+                    </div>
+                    
+                    <div class="script-item">
+                        <div class="script-name">
+                            <code>run_data_quality_checks.php</code>
+                        </div>
+                        <div class="script-desc">
+                            Detect missing data, outliers, anomalies across all meters
+                        </div>
+                        <div class="script-schedule">Run: Daily at 6 AM</div>
+                    </div>
+                    
+                    <div class="script-item">
+                        <div class="script-name">
+                            <code>aggregate_orchestrated.php</code>
+                        </div>
+                        <div class="script-desc">
+                            Run all aggregation levels with telemetry and alerting
+                        </div>
+                        <div class="script-schedule">Run: Daily at 2 AM</div>
+                    </div>
+                    
+                    <div class="script-item">
+                        <div class="script-name">
+                            <code>fetch_carbon_intensity.php</code>
+                        </div>
+                        <div class="script-desc">
+                            Update carbon intensity data from National Grid ESO API
+                        </div>
+                        <div class="script-schedule">Run: Every 30 minutes</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="code-showcase">
+                <div class="code-header">
+                    <span>📁 API Health Endpoint Response</span>
+                    <span class="code-lang">JSON</span>
+                </div>
+                <pre><code>{
+  "status": "healthy",
+  "timestamp": "2025-11-07T14:45:23Z",
+  "checks": {
+    "database": {
+      "status": "healthy",
+      "response_time_ms": 2,
+      "last_query": "2025-11-07T14:45:23Z"
+    },
+    "import_queue": {
+      "status": "healthy",
+      "queued_jobs": 2,
+      "processing_jobs": 1,
+      "failed_last_hour": 0,
+      "oldest_queued_age_minutes": 3
+    },
+    "disk_space": {
+      "status": "healthy",
+      "total_gb": 125,
+      "used_gb": 83,
+      "available_gb": 42,
+      "percent_used": 66
+    },
+    "aggregations": {
+      "status": "healthy",
+      "last_run": "2025-11-07T02:01:35Z",
+      "age_hours": 12.7,
+      "last_status": "completed"
+    }
+  },
+  "version": "1.0.0"
+}</code></pre>
             </div>
         </section>
 
+        <!-- Best Practices Section -->
         <section class="content-section" id="best-practices">
             <div class="section-header">
                 <h2>🎯 Best Practices</h2>
-                <p class="section-subtitle">Optimization tips and tricks</p>
+                <p class="section-subtitle">Proven techniques for optimal platform performance</p>
             </div>
-            <div class="coming-soon">
-                <p>Full interactive content for this section coming in next update...</p>
+            
+            <div class="voice-over-box">
+                <div class="voice-over-header">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M10 2a8 8 0 100 16 8 8 0 000-16zm0 14a6 6 0 110-12 6 6 0 010 12z"/>
+                        <path d="M8 6v8l6-4-6-4z"/>
+                    </svg>
+                    <span>Optimization Tips</span>
+                </div>
+                <div class="voice-over-content">
+                    <p><strong>Let me share some best practices we've learned...</strong></p>
+                    
+                    <p>First, <strong>import scheduling</strong>. Run large imports during off-peak hours - 
+                    typically overnight or early morning. This minimizes impact on users accessing the 
+                    platform during business hours. Use the priority system: mark urgent imports as 
+                    high priority, routine uploads as normal.</p>
+                    
+                    <p>For <strong>data quality</strong>, establish a validation process before importing. 
+                    Check that meter codes match expected formats - UK MPANs are 13 digits. Verify date 
+                    ranges make sense. Use the dry-run feature to preview imports before committing. 
+                    Run quality checks regularly to catch missing data or anomalies early.</p>
+                    
+                    <p><strong>Database maintenance</strong> is crucial. The daily aggregations table 
+                    grows steadily - plan for this. Archive or summarize data older than 2 years if full 
+                    granularity isn't needed. Run OPTIMIZE TABLE quarterly to reclaim space and rebuild 
+                    indexes. Keep at least 20 percent disk space free as a buffer.</p>
+                    
+                    <p>For <strong>tariff management</strong>, update tariff rates when suppliers change 
+                    prices - usually quarterly. Keep historical tariffs in the database even if they're 
+                    no longer active; you need them for historical cost calculations. Document any custom 
+                    tariff structures in the notes field.</p>
+                    
+                    <p><strong>Monitoring and alerts</strong> should be proactive, not reactive. Set up 
+                    email alerts for import failures. Monitor the health endpoint externally - we recommend 
+                    a service like UptimeRobot or Pingdom checking every 5 minutes. Review the 
+                    scheduler telemetry weekly to spot performance degradation before it becomes critical.</p>
+                    
+                    <p>Finally, <strong>backup everything</strong>. Daily database backups with at least 
+                    30 days retention. Test your restore procedure quarterly - a backup you can't restore 
+                    is worthless. Keep backups offsite for disaster recovery.</p>
+                </div>
+            </div>
+            
+            <div class="best-practices-grid">
+                <div class="practice-category">
+                    <h3>📥 Data Import</h3>
+                    <ul class="practice-list">
+                        <li>
+                            <strong>Schedule large imports overnight</strong>
+                            <p>Minimize impact on daytime users</p>
+                        </li>
+                        <li>
+                            <strong>Use priority levels appropriately</strong>
+                            <p>High for urgent, normal for routine</p>
+                        </li>
+                        <li>
+                            <strong>Validate data before importing</strong>
+                            <p>Check formats, ranges, and duplicates</p>
+                        </li>
+                        <li>
+                            <strong>Use dry-run mode for large imports</strong>
+                            <p>Preview results before committing</p>
+                        </li>
+                        <li>
+                            <strong>Add descriptive notes to batches</strong>
+                            <p>Document source and purpose</p>
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="practice-category">
+                    <h3>🗄️ Database Management</h3>
+                    <ul class="practice-list">
+                        <li>
+                            <strong>Archive data older than 2 years</strong>
+                            <p>Keep database size manageable</p>
+                        </li>
+                        <li>
+                            <strong>Run OPTIMIZE TABLE quarterly</strong>
+                            <p>Reclaim space, rebuild indexes</p>
+                        </li>
+                        <li>
+                            <strong>Maintain 20% free disk space</strong>
+                            <p>Buffer for growth and operations</p>
+                        </li>
+                        <li>
+                            <strong>Monitor table sizes monthly</strong>
+                            <p>Track growth trends proactively</p>
+                        </li>
+                        <li>
+                            <strong>Daily automated backups</strong>
+                            <p>30-day retention, test restores</p>
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="practice-category">
+                    <h3>💰 Tariff Management</h3>
+                    <ul class="practice-list">
+                        <li>
+                            <strong>Update rates quarterly</strong>
+                            <p>Match supplier price changes</p>
+                        </li>
+                        <li>
+                            <strong>Keep historical tariffs active</strong>
+                            <p>Needed for historical calculations</p>
+                        </li>
+                        <li>
+                            <strong>Document custom structures</strong>
+                            <p>Use notes field for special cases</p>
+                        </li>
+                        <li>
+                            <strong>Run switching analysis regularly</strong>
+                            <p>Quarterly or when contracts renew</p>
+                        </li>
+                        <li>
+                            <strong>Verify calculations manually</strong>
+                            <p>Spot-check against actual bills</p>
+                        </li>
+                    </ul>
+                </div>
+                
+                <div class="practice-category">
+                    <h3>🔍 Monitoring</h3>
+                    <ul class="practice-list">
+                        <li>
+                            <strong>External health checks every 5 min</strong>
+                            <p>Use UptimeRobot or Pingdom</p>
+                        </li>
+                        <li>
+                            <strong>Email alerts for failures</strong>
+                            <p>Configure in import alert service</p>
+                        </li>
+                        <li>
+                            <strong>Review telemetry weekly</strong>
+                            <p>Spot performance trends early</p>
+                        </li>
+                        <li>
+                            <strong>Monitor disk space daily</strong>
+                            <p>Alert at 80% threshold</p>
+                        </li>
+                        <li>
+                            <strong>Check error logs regularly</strong>
+                            <p>Address issues before they escalate</p>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="performance-tips">
+                <h3>⚡ Performance Optimization</h3>
+                <div class="tips-grid">
+                    <div class="tip-card">
+                        <h4>Import Performance</h4>
+                        <p>Large CSV files (100K+ rows) should use background processing. 
+                        Enable progress tracking to monitor status. Consider splitting files 
+                        over 1M rows into smaller batches of 500K for better reliability.</p>
+                    </div>
+                    
+                    <div class="tip-card">
+                        <h4>Query Performance</h4>
+                        <p>Add indexes on frequently filtered columns. The platform includes 
+                        indexes on meter_id, date, and site_id. For custom queries, analyze 
+                        with EXPLAIN and add appropriate indexes.</p>
+                    </div>
+                    
+                    <div class="tip-card">
+                        <h4>Aggregation Timing</h4>
+                        <p>Daily aggregations at 2 AM work well for most deployments. 
+                        If you have very large meter counts (1000+), consider running 
+                        at 1 AM to allow more processing time before business hours.</p>
+                    </div>
+                    
+                    <div class="tip-card">
+                        <h4>Report Generation</h4>
+                        <p>Pre-aggregate data where possible. Use daily/weekly/monthly 
+                        aggregations instead of raw readings for reports. Cache frequently 
+                        accessed reports with 1-hour TTL.</p>
+                    </div>
+                </div>
             </div>
         </section>
 
+        <!-- Advanced Workflows Section -->
         <section class="content-section" id="workflows">
             <div class="section-header">
                 <h2>🚀 Advanced Workflows</h2>
-                <p class="section-subtitle">Power-user techniques</p>
+                <p class="section-subtitle">Power-user techniques for maximum efficiency</p>
             </div>
-            <div class="coming-soon">
-                <p>Full interactive content for this section coming in next update...</p>
+            
+            <div class="voice-over-box">
+                <div class="voice-over-header">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M10 2a8 8 0 100 16 8 8 0 000-16zm0 14a6 6 0 110-12 6 6 0 010 12z"/>
+                        <path d="M8 6v8l6-4-6-4z"/>
+                    </svg>
+                    <span>Advanced Techniques</span>
+                </div>
+                <div class="voice-over-content">
+                    <p><strong>Now for some advanced workflows that power users love...</strong></p>
+                    
+                    <p>First, <strong>automated SFTP export</strong>. You can configure the platform 
+                    to automatically push reports to external systems via SFTP. The 
+                    <code>export_sftp.php</code> script supports scheduled exports of consumption data, 
+                    cost reports, and carbon metrics in CSV or JSON format. Set it up on a cron job 
+                    to feed downstream systems like business intelligence tools or building management 
+                    systems.</p>
+                    
+                    <p><strong>API-driven integration</strong> lets you build custom applications on top 
+                    of the platform. All core functionality is exposed via RESTful APIs. Need to display 
+                    real-time consumption on digital signage? Query the meters API. Building a mobile 
+                    app? Use the readings endpoint with date range filters. Want to trigger imports from 
+                    another system? POST to the import endpoint with authentication tokens.</p>
+                    
+                    <p>For <strong>bulk operations</strong>, we provide CLI scripts that are much faster 
+                    than web interfaces. Need to import 50 CSV files? Write a simple bash loop calling 
+                    <code>import_csv.php</code>. Want to recalculate aggregations for an entire year? 
+                    Use <code>aggregate_orchestrated.php</code> with date range parameters.</p>
+                    
+                    <p><strong>Custom analytics</strong> can be built by querying the aggregation tables 
+                    directly. The database schema is well-documented and designed for analytics. 
+                    Connect your preferred BI tool - Tableau, Power BI, Looker - directly to the MySQL 
+                    database. Build custom dashboards, create executive reports, perform advanced 
+                    statistical analysis.</p>
+                    
+                    <p>The <strong>audit log</strong> can be mined for operational insights. Who's using 
+                    the platform most? What times are imports typically run? Which tariff analyses led to 
+                    actual switches? SQL queries on the audit_logs table reveal usage patterns that inform 
+                    training and process improvements.</p>
+                    
+                    <p>These advanced workflows transform the platform from a tool into a complete 
+                    energy data ecosystem.</p>
+                </div>
+            </div>
+            
+            <div class="workflows-showcase">
+                <div class="workflow-item">
+                    <h3>🔄 Automated SFTP Export Workflow</h3>
+                    <div class="workflow-diagram">
+                        <div class="workflow-step">
+                            <div class="step-num">1</div>
+                            <div class="step-desc">
+                                <strong>Cron Trigger</strong>
+                                <p>Daily at 6 AM</p>
+                            </div>
+                        </div>
+                        <span class="workflow-arrow">→</span>
+                        <div class="workflow-step">
+                            <div class="step-num">2</div>
+                            <div class="step-desc">
+                                <strong>Generate Report</strong>
+                                <p>Yesterday's consumption data</p>
+                            </div>
+                        </div>
+                        <span class="workflow-arrow">→</span>
+                        <div class="workflow-step">
+                            <div class="step-num">3</div>
+                            <div class="step-desc">
+                                <strong>SFTP Upload</strong>
+                                <p>Push to external BMS</p>
+                            </div>
+                        </div>
+                        <span class="workflow-arrow">→</span>
+                        <div class="workflow-step">
+                            <div class="step-num">4</div>
+                            <div class="step-desc">
+                                <strong>Alert on Success</strong>
+                                <p>Slack notification</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="code-example">
+                        <pre><code># Cron configuration
+0 6 * * * cd /path/to/platform && php scripts/export_sftp.php \
+  --format csv \
+  --date yesterday \
+  --destination bms-server</code></pre>
+                    </div>
+                </div>
+                
+                <div class="workflow-item">
+                    <h3>🔌 API-Driven Mobile App Integration</h3>
+                    <div class="api-endpoints-grid">
+                        <div class="api-endpoint">
+                            <div class="http-method get">GET</div>
+                            <div class="endpoint-path">/api/meters</div>
+                            <div class="endpoint-desc">List all meters with metadata</div>
+                        </div>
+                        <div class="api-endpoint">
+                            <div class="http-method get">GET</div>
+                            <div class="endpoint-path">/api/meters/{mpan}/readings</div>
+                            <div class="endpoint-desc">Consumption data with date filters</div>
+                        </div>
+                        <div class="api-endpoint">
+                            <div class="http-method get">GET</div>
+                            <div class="endpoint-path">/api/carbon-intensity/current</div>
+                            <div class="endpoint-desc">Real-time grid carbon intensity</div>
+                        </div>
+                        <div class="api-endpoint">
+                            <div class="http-method post">POST</div>
+                            <div class="endpoint-path">/api/tariff-analysis</div>
+                            <div class="endpoint-desc">Trigger switching analysis</div>
+                        </div>
+                    </div>
+                    <div class="code-example">
+                        <pre><code>// Example: Fetch last 7 days of consumption
+fetch('/api/meters/1234567890123/readings?days=7', {
+  headers: {
+    'Authorization': 'Bearer ' + token,
+    'Content-Type': 'application/json'
+  }
+})
+.then(r => r.json())
+.then(data => displayChart(data));</code></pre>
+                    </div>
+                </div>
+                
+                <div class="workflow-item">
+                    <h3>📊 Custom BI Dashboard Integration</h3>
+                    <div class="bi-connection-info">
+                        <h4>Direct Database Connection</h4>
+                        <table class="connection-table">
+                            <tr>
+                                <td><strong>Connection Type:</strong></td>
+                                <td>MySQL / MariaDB</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Host:</strong></td>
+                                <td>localhost (or remote IP)</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Port:</strong></td>
+                                <td>3306</td>
+                            </tr>
+                            <tr>
+                                <td><strong>Key Tables:</strong></td>
+                                <td>
+                                    <code>daily_aggregations</code>, 
+                                    <code>weekly_aggregations</code>, 
+                                    <code>monthly_aggregations</code>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>Recommended Views:</strong></td>
+                                <td>Pre-built for common reports</td>
+                            </tr>
+                        </table>
+                        <p><strong>Pro Tip:</strong> Use aggregation tables instead of raw readings 
+                        for faster dashboard performance. Query optimization is already built in!</p>
+                    </div>
+                </div>
+                
+                <div class="workflow-item">
+                    <h3>⚙️ Bulk Import Automation</h3>
+                    <div class="code-example">
+                        <pre><code>#!/bin/bash
+# Bulk import all CSV files from a directory
+# Perfect for initial data migration
+
+IMPORT_DIR="/path/to/csv/files"
+LOG_FILE="/var/log/bulk-import.log"
+
+for csvfile in "$IMPORT_DIR"/*.csv; do
+    echo "Importing $csvfile..." | tee -a "$LOG_FILE"
+    
+    php scripts/import_csv.php \
+        --file "$csvfile" \
+        --type "half_hourly" \
+        --batch-notes "Bulk migration $(date +%Y-%m-%d)" \
+        --priority normal \
+        >> "$LOG_FILE" 2>&1
+    
+    # Check exit code
+    if [ $? -eq 0 ]; then
+        echo "✓ Success: $csvfile" | tee -a "$LOG_FILE"
+    else
+        echo "✗ Failed: $csvfile" | tee -a "$LOG_FILE"
+    fi
+    
+    # Rate limiting: wait 10 seconds between imports
+    sleep 10
+done
+
+echo "Bulk import complete. Check $LOG_FILE for details."</code></pre>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="workflow-tips">
+                <h3>🎓 Expert Tips</h3>
+                <div class="expert-tips-grid">
+                    <div class="tip">
+                        <strong>Tip #1: Chain Operations</strong>
+                        <p>Combine CLI scripts with && to create workflows: 
+                        <code>import_csv.php && aggregate_daily.php && export_sftp.php</code></p>
+                    </div>
+                    <div class="tip">
+                        <strong>Tip #2: Use Webhooks</strong>
+                        <p>Configure import completion webhooks to trigger downstream processes 
+                        automatically when data arrives.</p>
+                    </div>
+                    <div class="tip">
+                        <strong>Tip #3: Database Views</strong>
+                        <p>Create SQL views for complex queries you run frequently. 
+                        Simplifies BI tool configuration and improves performance.</p>
+                    </div>
+                    <div class="tip">
+                        <strong>Tip #4: API Rate Limiting</strong>
+                        <p>Implement exponential backoff in API clients. Platform returns 
+                        429 status when rate limits are exceeded (100 req/min).</p>
+                    </div>
+                </div>
             </div>
         </section>
     </main>
