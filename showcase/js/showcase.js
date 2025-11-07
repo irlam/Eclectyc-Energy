@@ -25,6 +25,11 @@ class ShowcaseTour {
         this.tourInterval = null;
         this.sectionDuration = 15000; // 15 seconds per section
         
+        // Audio narration support
+        this.speechSynthesis = window.speechSynthesis;
+        this.currentUtterance = null;
+        this.audioEnabled = true;
+        
         this.init();
     }
     
@@ -32,8 +37,102 @@ class ShowcaseTour {
         this.setupNavigation();
         this.setupTourControls();
         this.setupHashNavigation();
+        this.setupAudioControls();
         this.animateWorkerConsole();
         this.updateProgress();
+    }
+    
+    setupAudioControls() {
+        // Create audio toggle button in the sidebar
+        const audioToggle = document.createElement('div');
+        audioToggle.className = 'audio-toggle';
+        audioToggle.innerHTML = `
+            <button class="btn btn-secondary" id="audioToggle">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M8 2l-4 4H1v4h3l4 4V2z"/>
+                    <path d="M12 4c.5.5 1 1.5 1 4s-.5 3.5-1 4"/>
+                </svg>
+                Audio Narration: ON
+            </button>
+        `;
+        
+        const tourControls = document.querySelector('.tour-controls');
+        if (tourControls) {
+            tourControls.appendChild(audioToggle);
+        }
+        
+        const audioBtn = document.getElementById('audioToggle');
+        if (audioBtn) {
+            audioBtn.addEventListener('click', () => this.toggleAudio());
+        }
+    }
+    
+    toggleAudio() {
+        this.audioEnabled = !this.audioEnabled;
+        const audioBtn = document.getElementById('audioToggle');
+        
+        if (this.audioEnabled) {
+            audioBtn.innerHTML = `
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M8 2l-4 4H1v4h3l4 4V2z"/>
+                    <path d="M12 4c.5.5 1 1.5 1 4s-.5 3.5-1 4"/>
+                </svg>
+                Audio Narration: ON
+            `;
+        } else {
+            audioBtn.innerHTML = `
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M8 2l-4 4H1v4h3l4 4V2z"/>
+                    <line x1="12" y1="6" x2="15" y2="10" stroke="currentColor" stroke-width="2"/>
+                    <line x1="15" y1="6" x2="12" y2="10" stroke="currentColor" stroke-width="2"/>
+                </svg>
+                Audio Narration: OFF
+            `;
+            this.stopNarration();
+        }
+    }
+    
+    speak(text) {
+        if (!this.audioEnabled || !this.speechSynthesis) {
+            return;
+        }
+        
+        // Stop any current narration
+        this.stopNarration();
+        
+        // Create new utterance
+        this.currentUtterance = new SpeechSynthesisUtterance(text);
+        this.currentUtterance.rate = 0.9; // Slightly slower for clarity
+        this.currentUtterance.pitch = 1.0;
+        this.currentUtterance.volume = 1.0;
+        
+        // Use a pleasant voice if available
+        const voices = this.speechSynthesis.getVoices();
+        const preferredVoice = voices.find(voice => 
+            voice.lang.startsWith('en') && 
+            (voice.name.includes('Female') || voice.name.includes('Samantha') || voice.name.includes('Google'))
+        );
+        if (preferredVoice) {
+            this.currentUtterance.voice = preferredVoice;
+        }
+        
+        this.speechSynthesis.speak(this.currentUtterance);
+    }
+    
+    stopNarration() {
+        if (this.speechSynthesis) {
+            this.speechSynthesis.cancel();
+        }
+        this.currentUtterance = null;
+    }
+    
+    getNarrationText(sectionId) {
+        const voiceOverBox = document.querySelector(`#${sectionId} .voice-over-content`);
+        if (voiceOverBox) {
+            // Extract text content, removing HTML tags and extra whitespace
+            return voiceOverBox.textContent.replace(/\s+/g, ' ').trim();
+        }
+        return '';
     }
     
     setupNavigation() {
@@ -80,6 +179,9 @@ class ShowcaseTour {
         this.currentIndex = index;
         const sectionId = this.sections[index];
         
+        // Stop any current narration when navigating
+        this.stopNarration();
+        
         // Update active states
         document.querySelectorAll('.content-section').forEach(section => {
             section.classList.remove('active');
@@ -110,6 +212,17 @@ class ShowcaseTour {
         
         // Trigger section-specific animations
         this.triggerSectionAnimations(sectionId);
+        
+        // Start audio narration if enabled and tour is playing
+        if (this.isPlaying && this.audioEnabled) {
+            const narrationText = this.getNarrationText(sectionId);
+            if (narrationText) {
+                // Small delay to let the page settle before speaking
+                setTimeout(() => {
+                    this.speak(narrationText);
+                }, 500);
+            }
+        }
     }
     
     toggleTour() {
@@ -149,6 +262,9 @@ class ShowcaseTour {
             clearInterval(this.tourInterval);
             this.tourInterval = null;
         }
+        
+        // Stop any playing narration
+        this.stopNarration();
         
         const startBtn = document.getElementById('startTour');
         startBtn.innerHTML = `
