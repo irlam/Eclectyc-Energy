@@ -51,11 +51,16 @@ cp .env.example .env
 DB_HOST=localhost
 DB_DATABASE=k87747_eclectyc
 DB_USERNAME=your_db_user
-DB_PASSWORD=your_db_password
+DB_PASSWORD=your_actual_password
 MIGRATION_KEY=replace_with_long_random_string
+
+# Optional: Carbon Intensity API (National Grid ESO)
+CARBON_API_URL=https://api.carbonintensity.org.uk
 ```
 
 > `MIGRATION_KEY` secures the browser-triggered migration endpoint. Use a unique, high-entropy value for each environment and rotate it after use.
+
+> The Carbon Intensity API is free and requires no API key. Set up automated data fetching using `scripts/setup_carbon_cron.sh` for real-time dashboard display.
 
 ### 4. Install Dependencies
 
@@ -150,6 +155,25 @@ Visit: https://eclectyc.energy/api/health
 - Multi-tier status (healthy/degraded/critical) with per-check metadata
 - Database, filesystem, PHP, disk, and memory diagnostics
 - Environment/SFTP configuration validation plus recent import/export activity timestamps
+
+## API Endpoints
+
+The platform provides RESTful API endpoints for integration and automation:
+
+### Carbon Intensity API
+- `GET /api/carbon-intensity` - Get current carbon intensity dashboard summary
+- `POST /api/carbon-intensity/refresh` - Manually refresh data from National Grid ESO API
+- `GET /api/carbon-intensity/history?days=7` - Get historical carbon intensity data
+
+### System Health API  
+- `GET /api/health` - System health check with detailed diagnostics
+
+### Meters API
+- `GET /api/meters` - List all meters
+- `GET /api/meters/{mpan}/readings` - Get readings for specific meter
+
+### Import Status API
+- `GET /api/import/status` - Get import job status and progress
 
 ### Structure Checker
 ```bash
@@ -283,8 +307,13 @@ The platform now includes comprehensive data aggregation and analytics features:
 - **Missing Data Detection**: Automated quality checks with outlier detection
 - **External Datasets**: Temperature, calorific values, and carbon intensity integration
 - **Carbon Reporting**: Calculate emissions based on consumption and grid intensity
+- **Real-time Carbon Intensity**: Live UK grid carbon intensity data from National Grid ESO API
+  - Real-time dashboard display with color-coded classifications
+  - Automated data fetching every 30 minutes
+  - Carbon intensity trending and forecasting
+  - API endpoints for integration and manual refresh
 
-See `docs/analytics_features.md` for detailed documentation.
+See `docs/analytics_features.md` and `docs/carbon_intensity_implementation.md` for detailed documentation.
 
 ## Troubleshooting
 

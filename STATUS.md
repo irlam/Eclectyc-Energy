@@ -9,7 +9,7 @@ This document captures the current progress of the Eclectyc Energy platform so f
 - **Tooling**: CLI utilities for migrations, seeding, CSV import, aggregation, SFTP export; structure and health check tools.
 - **UI**: Base layout, dashboard scaffold, login view, admin/report listings, consistent styling.
 - **Reports**: Consumption and cost dashboards now backed by controllers and live aggregates.
-- **APIs**: `/api/health` endpoint plus controller-backed meter/import feeds returning aggregated roll-ups.
+- **APIs**: `/api/health` endpoint plus controller-backed meter/import feeds returning aggregated roll-ups, and carbon intensity API endpoints (`/api/carbon-intensity`, `/api/carbon-intensity/refresh`, `/api/carbon-intensity/history`).
 - **Access Control**: Session-backed auth service, role-aware middleware, and navigation that respects admin/manager/viewer capabilities.
 - **Aggregation**: Domain services for daily and period roll-ups (weekly/monthly/annual), CLI wrappers, and audit logging feeding the aggregation tables.
 - **Imports & Exports**: Central CSV ingestion service shared by CLI and admin UI (dry-run support, batch flash messaging), import history dashboard, and operational SFTP export pipeline with phpseclib authentication and admin activity view.
@@ -30,6 +30,12 @@ This document captures the current progress of the Eclectyc Energy platform so f
   - ✅ Automate cron/scheduler orchestration for daily and period aggregations with telemetry and failure alerts.
   - ✅ Layer in comparison snapshots (prev day/week/month/year), baseload analytics, and missing-data detection.
   - ✅ Integrate external datasets (temperature, calorific values) to power AI insights and carbon reporting.
+  - ✅ **Real-time Carbon Intensity API**: Live UK grid carbon intensity integration with National Grid ESO API
+    - Dashboard carbon intensity card with color-coded classifications (Very Low → Very High)
+    - Automated data fetching every 30 minutes via cron jobs
+    - REST API endpoints for current data, manual refresh, and historical queries
+    - Interactive dashboard refresh capability with trend analysis
+    - Complete documentation and cron setup scripts
 
 - **Data Imports**
   - Add retry workflows, reprocessing, and richer attribution/notes for batches surfaced in the history dashboard.
@@ -41,7 +47,8 @@ This document captures the current progress of the Eclectyc Energy platform so f
 
 - **Reporting & Visualisation**
   - Populate report templates with aggregated data, add charts (e.g., Chart.js) and AJAX filters.
-  - Deliver drill-down charts (48-period graphs, comparisons) and carbon/flexible-tariff dashboards.
+  - Deliver drill-down charts (48-period graphs, comparisons) and flexible-tariff dashboards.
+  - ✅ **Carbon Dashboard**: Real-time carbon intensity display with classification levels and trending.
 
 - **Tariff Engine & Switching**
   - Model complex tariff structures (time bands, flexible offers) and cost comparison workflows.
