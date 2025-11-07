@@ -1,15 +1,23 @@
 {% extends "base.twig" %}
 
-{% block title %}Create User{% endblock %}
+{% block title %}Edit User{% endblock %}
 
 {% block content %}
 <section class="card">
     <div class="card-header">
         <div>
-            <h2>Create New User</h2>
-            <p class="mb-2">Add a new user account to the platform.</p>
+            <h2>Edit User</h2>
+            <p class="mb-2">Update account details or reset a password.</p>
         </div>
-        <a class="btn btn-secondary" href="/admin/users">← Back to Users</a>
+        <div class="action-buttons" style="gap: 0.5rem;">
+            {% set isCurrentUser = auth.user and (auth.user.id == user.id) %}
+            {% if not isCurrentUser %}
+                <form method="post" action="/admin/users/{{ user.id }}/delete" onsubmit="return confirm('Delete {{ user.name }}? This action cannot be undone.');">
+                    <button type="submit" class="btn btn-danger">Delete User</button>
+                </form>
+            {% endif %}
+            <a class="btn btn-secondary" href="/admin/users">← Back to Users</a>
+        </div>
     </div>
 
     {% if flash %}
@@ -18,38 +26,38 @@
         </div>
     {% endif %}
 
-    <form method="post" action="/admin/users" class="form">
+    <form method="post" action="/admin/users/{{ user.id }}" class="form">
         <div class="form-group">
             <label for="email">Email Address *</label>
-            <input type="email" id="email" name="email" required class="form-control" 
+            <input type="email" id="email" name="email" required class="form-control"
                    placeholder="Enter email address" value="{{ form_data.email ?? '' }}">
         </div>
 
         <div class="form-group">
             <label for="name">Full Name *</label>
-            <input type="text" id="name" name="name" required class="form-control" 
+            <input type="text" id="name" name="name" required class="form-control"
                    placeholder="Enter full name" value="{{ form_data.name ?? '' }}">
         </div>
 
         <div class="form-group">
             <label for="role">Role *</label>
             <select id="role" name="role" required class="form-control">
-                <option value="viewer" {% if (form_data.role ?? 'viewer') == 'viewer' %}selected{% endif %}>Viewer - Read-only access</option>
+                <option value="viewer" {% if (form_data.role ?? '') == 'viewer' %}selected{% endif %}>Viewer - Read-only access</option>
                 <option value="manager" {% if (form_data.role ?? '') == 'manager' %}selected{% endif %}>Manager - Reports and analytics</option>
                 <option value="admin" {% if (form_data.role ?? '') == 'admin' %}selected{% endif %}>Admin - Full system access</option>
             </select>
         </div>
 
         <div class="form-group">
-            <label for="password">Password *</label>
-            <input type="password" id="password" name="password" required class="form-control" 
-                   placeholder="Enter password (minimum 8 characters)" minlength="8">
+            <label for="password">New Password</label>
+            <input type="password" id="password" name="password" class="form-control"
+                   placeholder="Leave blank to keep current password" minlength="8">
         </div>
 
         <div class="form-group">
-            <label for="confirm_password">Confirm Password *</label>
-            <input type="password" id="confirm_password" name="confirm_password" required class="form-control" 
-                   placeholder="Confirm password">
+            <label for="confirm_password">Confirm New Password</label>
+            <input type="password" id="confirm_password" name="confirm_password" class="form-control"
+                   placeholder="Re-enter new password">
         </div>
 
         <div class="form-group">
@@ -59,11 +67,11 @@
                 <span class="checkmark"></span>
                 Active Account
             </label>
-            <small class="form-text">Uncheck to create a disabled account</small>
+            <small class="form-text">Uncheck to suspend access to this account</small>
         </div>
 
         <div class="form-actions">
-            <button type="submit" class="btn btn-primary">Create User</button>
+            <button type="submit" class="btn btn-primary">Save Changes</button>
             <a href="/admin/users" class="btn btn-secondary">Cancel</a>
         </div>
     </form>
@@ -72,18 +80,18 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const passwordField = document.getElementById('password');
-    const confirmPasswordField = document.getElementById('confirm_password');
-    
+    const confirmField = document.getElementById('confirm_password');
+
     function validatePasswords() {
-        if (passwordField.value !== confirmPasswordField.value) {
-            confirmPasswordField.setCustomValidity('Passwords do not match');
+        if (passwordField.value !== confirmField.value) {
+            confirmField.setCustomValidity('Passwords do not match');
         } else {
-            confirmPasswordField.setCustomValidity('');
+            confirmField.setCustomValidity('');
         }
     }
-    
+
     passwordField.addEventListener('input', validatePasswords);
-    confirmPasswordField.addEventListener('input', validatePasswords);
+    confirmField.addEventListener('input', validatePasswords);
 });
 </script>
 {% endblock %}

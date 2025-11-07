@@ -109,6 +109,9 @@ $app->group('/admin', function ($group) {
     $group->get('/users', [UsersController::class, 'index'])->setName('admin.users');
     $group->get('/users/create', [UsersController::class, 'create'])->setName('admin.users.create');
     $group->post('/users', [UsersController::class, 'store'])->setName('admin.users.store');
+    $group->get('/users/{id}/edit', [UsersController::class, 'edit'])->setName('admin.users.edit');
+    $group->post('/users/{id}', [UsersController::class, 'update'])->setName('admin.users.update');
+    $group->post('/users/{id}/delete', [UsersController::class, 'delete'])->setName('admin.users.delete');
 })->add(function ($request, $handler) use ($container) {
     $middleware = new AuthMiddleware($container->get(AuthService::class), ['admin']);
     return $middleware->process($request, $handler);

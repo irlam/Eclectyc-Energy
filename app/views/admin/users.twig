@@ -56,8 +56,15 @@
                         <td>{{ user.created_at|date("d/m/Y") }}</td>
                         <td>
                             <div class="action-buttons">
-                                <button class="btn btn-sm btn-secondary" title="Edit user (Coming soon)" disabled>Edit</button>
-                                <button class="btn btn-sm btn-danger" title="Delete user (Coming soon)" disabled>Delete</button>
+                                <a class="btn btn-sm btn-secondary" href="/admin/users/{{ user.id }}/edit">Edit</a>
+                                {% set isCurrentUser = auth.user and (auth.user.id == user.id) %}
+                                {% if not isCurrentUser %}
+                                    <form method="post" action="/admin/users/{{ user.id }}/delete" style="display: inline;" onsubmit="return confirm('Delete {{ user.name }}? This action cannot be undone.');">
+                                        <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                                    </form>
+                                {% else %}
+                                    <span class="muted" style="font-size: 0.85rem;">Current session</span>
+                                {% endif %}
                             </div>
                         </td>
                     </tr>
