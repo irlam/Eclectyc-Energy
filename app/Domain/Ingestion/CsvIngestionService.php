@@ -453,7 +453,9 @@ class CsvIngestionService
 
     private function normaliseHeaderKey(string $value): string
     {
-        return strtolower(preg_replace('/[^a-z0-9]+/', '', $value));
+        $value = strtolower($value);
+
+        return preg_replace('/[^a-z0-9]+/', '', $value);
     }
 
     private function detectDelimiter(string $filePath): string
