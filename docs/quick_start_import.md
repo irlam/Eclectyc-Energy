@@ -275,5 +275,5 @@ After import:
 
 **Congratulations!** You've successfully imported your first energy data into the platform. You can now explore the various reports and analytics features.
 
-**Last Updated:** November 2025
+**Last Updated:** November 2024
 **Version:** 1.0

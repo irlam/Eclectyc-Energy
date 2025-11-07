@@ -84,8 +84,8 @@
                             >📋</button>
                         </td>
                         <td>{{ meter.serial_number ?: '—' }}</td>
-                        <td>{{ meter.site_name ?: '<span style="color: #999;">Unassigned</span>' }}</td>
-                        <td>{{ meter.supplier_name ?: '<span style="color: #999;">Unassigned</span>' }}</td>
+                        <td>{{ meter.site_name ?: '<span style="color: #999;">Unassigned</span>'|raw }}</td>
+                        <td>{{ meter.supplier_name ?: '<span style="color: #999;">Unassigned</span>'|raw }}</td>
                         <td>
                             <span style="padding: 2px 8px; background: #e9ecef; border-radius: 3px; font-size: 0.85rem;">
                                 {{ meter.meter_type|title }}

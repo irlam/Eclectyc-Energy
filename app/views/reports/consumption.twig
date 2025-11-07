@@ -55,7 +55,7 @@
             </div>
             <div class="stat">
                 <span>Average per day</span>
-                <strong>{{ (report.totalConsumption / (period.end.diff(period.start).days + 1))|number_format(1, '.', ',') }} kWh</strong>
+                <strong>{{ report.totalConsumption > 0 ? (report.totalConsumption / (period.end.diff(period.start).days + 1))|number_format(1, '.', ',') : '0.0' }} kWh</strong>
             </div>
         </div>
 
