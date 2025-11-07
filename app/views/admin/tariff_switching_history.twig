@@ -3,54 +3,49 @@
 {% block title %}{{ page_title }}{% endblock %}
 
 {% block content %}
-<div class="container-fluid px-4">
-    <h1 class="mt-4">{{ page_title }}</h1>
-    <ol class="breadcrumb mb-4">
-        <li class="breadcrumb-item"><a href="/dashboard">Dashboard</a></li>
-        <li class="breadcrumb-item"><a href="/admin/tariff-switching">Tariff Switching</a></li>
-        <li class="breadcrumb-item active">History</li>
-    </ol>
+<section class="card">
+    <div class="card-header">
+        <div>
+            <h2>{{ page_title }}</h2>
+            <p>Review historical switching analyses for this meter.</p>
+        </div>
+        <a href="/admin/tariff-switching" class="btn btn-primary">
+            🔍 New Analysis
+        </a>
+    </div>
 
     {% if meter %}
-        <div class="card mb-4">
-            <div class="card-header bg-primary text-white">
-                <i class="fas fa-tachometer-alt me-1"></i>
-                Meter Information
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-3">
-                        <strong>MPAN:</strong> {{ meter.mpan }}
-                    </div>
-                    <div class="col-md-3">
-                        <strong>Site:</strong> {{ meter.site_name }}
-                    </div>
-                    <div class="col-md-3">
-                        <strong>Type:</strong> {{ meter.meter_type|capitalize }}
-                    </div>
-                    <div class="col-md-3">
-                        <strong>Supplier:</strong> {{ meter.supplier_name ?? 'N/A' }}
-                    </div>
+        <div class="card" style="margin-top: 1.5rem;">
+            <h2 style="font-size: 1.1rem; margin-bottom: 1rem;">🔌 Meter Information</h2>
+            <div class="grid grid-cols-4">
+                <div>
+                    <strong>MPAN</strong><br>
+                    <span class="muted">{{ meter.mpan }}</span>
+                </div>
+                <div>
+                    <strong>Site</strong><br>
+                    <span class="muted">{{ meter.site_name }}</span>
+                </div>
+                <div>
+                    <strong>Type</strong><br>
+                    <span class="muted">{{ meter.meter_type|capitalize }}</span>
+                </div>
+                <div>
+                    <strong>Supplier</strong><br>
+                    <span class="muted">{{ meter.supplier_name ?? 'N/A' }}</span>
                 </div>
             </div>
         </div>
 
-        <div class="card mb-4">
-            <div class="card-header">
-                <i class="fas fa-history me-1"></i>
-                Historical Switching Analyses
-                <a href="/admin/tariff-switching" class="btn btn-sm btn-primary float-end">
-                    <i class="fas fa-plus me-1"></i> New Analysis
-                </a>
-            </div>
-            <div class="card-body">
-                {% if analyses is empty %}
-                    <div class="alert alert-info">
-                        <i class="fas fa-info-circle me-1"></i>
-                        No historical analyses found for this meter.
-                    </div>
-                {% else %}
-                    <table class="table table-striped">
+        <div class="card" style="margin-top: 1.5rem;">
+            <h2 style="font-size: 1.1rem; margin-bottom: 1rem;">📊 Historical Analyses</h2>
+            {% if analyses is empty %}
+                <div class="alert alert-info">
+                    ℹ️ No historical analyses found for this meter.
+                </div>
+            {% else %}
+                <div class="table-wrapper">
+                    <table class="table">
                         <thead>
                             <tr>
                                 <th>Date</th>
@@ -68,25 +63,29 @@
                                 <tr>
                                     <td>{{ analysis.created_at|date('Y-m-d H:i') }}</td>
                                     <td>
-                                        {{ analysis.analysis_start_date|date('Y-m-d') }} to 
-                                        {{ analysis.analysis_end_date|date('Y-m-d') }}
+                                        <span class="muted">
+                                            {{ analysis.analysis_start_date|date('Y-m-d') }} to 
+                                            {{ analysis.analysis_end_date|date('Y-m-d') }}
+                                        </span>
                                     </td>
                                     <td>{{ analysis.current_tariff_name ?? 'N/A' }}</td>
-                                    <td>£{{ analysis.current_cost|number_format(2) }}</td>
+                                    <td><strong>£{{ analysis.current_cost|number_format(2) }}</strong></td>
                                     <td>{{ analysis.recommended_tariff_name ?? 'N/A' }}</td>
                                     <td>
                                         {% if analysis.recommended_cost > 0 %}
-                                            £{{ analysis.recommended_cost|number_format(2) }}
+                                            <strong>£{{ analysis.recommended_cost|number_format(2) }}</strong>
                                         {% else %}
-                                            <span class="text-muted">No recommendation</span>
+                                            <span class="muted">No recommendation</span>
                                         {% endif %}
                                     </td>
-                                    <td class="{% if analysis.potential_savings > 0 %}text-success{% endif %}">
+                                    <td>
                                         {% if analysis.potential_savings > 0 %}
-                                            £{{ analysis.potential_savings|number_format(2) }}
-                                            ({{ analysis.savings_percent }}%)
+                                            <span style="color: var(--brand);">
+                                                £{{ analysis.potential_savings|number_format(2) }}
+                                                ({{ analysis.savings_percent }}%)
+                                            </span>
                                         {% else %}
-                                            <span class="text-muted">N/A</span>
+                                            <span class="muted">N/A</span>
                                         {% endif %}
                                     </td>
                                     <td>{{ analysis.analyzed_by_name ?? 'System' }}</td>
@@ -94,14 +93,13 @@
                             {% endfor %}
                         </tbody>
                     </table>
-                {% endif %}
-            </div>
+                </div>
+            {% endif %}
         </div>
     {% else %}
         <div class="alert alert-danger">
-            <i class="fas fa-exclamation-triangle me-1"></i>
-            Meter not found.
+            ⚠️ Meter not found.
         </div>
     {% endif %}
-</div>
+</section>
 {% endblock %}
