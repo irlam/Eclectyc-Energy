@@ -195,6 +195,23 @@ Visit: https://eclectyc.energy/tools/show
 - `/admin/imports` (admin only) provides CSV uploads with optional dry-run previews and batch summaries.
 - `/admin/imports/history` (admin only) lists recent ingestion runs with filters, decoded metadata, and surfaced errors.
 - `/admin/exports` (admin only) tracks SFTP export jobs, delivery status, and failure messages.
+- `/admin/meters` (admin only) allows you to add, view, and manage meters before importing data.
+
+## Getting Started with Data Import
+
+New to the platform? Start here:
+
+1. **Quick Start Guide:** `docs/quick_start_import.md`
+   - Step-by-step first import walkthrough
+   - Site and meter setup
+   - Example CSV templates
+   - Verification steps
+
+2. **Troubleshooting Guide:** `docs/import_troubleshooting.md`
+   - Common error solutions
+   - CSV format requirements
+   - Accepted column names reference
+   - Best practices
 
 ## CLI Scripts
 
@@ -208,7 +225,12 @@ Run from the project root so the autoloader resolves; switch `-t` to `daily` for
 - **Streaming progress bar**: the CLI counts rows up front (when possible) and renders a live ASCII progress bar showing processed/imported rows and warnings. For very large files you can skip the preview count by precomputing totals (e.g. `wc -l file.csv`).
 - **Admin uploader parity**: the same alias-aware ingestion and progress metadata power `/admin/imports`, which now receives richer batch summaries.
 
-The same ingestion service powers the admin console at `/admin/imports`, giving administrators a browser-based uploader with dry-run support and flash summaries covering processed/imported/failed rows plus sample errors.
+The same ingestion service powers the admin console at `/admin/imports`, giving administrators a browser-based uploader with dry-run support and flash summaries covering processed/imported/failed rows plus sample errors. The web interface provides:
+- Interactive help with accepted column names
+- Real-time file size preview
+- Detailed error messages with solutions
+- Links to meter management for missing MPANs
+- Progress indicators and status updates
 
 ### Run Aggregations
 ```bash
