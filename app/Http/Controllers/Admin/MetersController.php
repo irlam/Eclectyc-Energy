@@ -168,7 +168,137 @@ class MetersController
         return $this->redirect($response, '/admin/meters');
     }
 
-    private function validate(array $data): array
+    public function edit(Request $request, Response $response, array $args): Response
+    {
+        if (!$this->pdo) {
+            $this->setFlash('error', 'Database connection unavailable.');
+            return $this->redirect($response, '/admin/meters');
+        }
+
+        $meterId = (int) $args['id'];
+        
+        $stmt = $this->pdo->prepare('SELECT * FROM meters WHERE id = :id');
+        $stmt->execute(['id' => $meterId]);
+        $meter = $stmt->fetch();
+
+        if (!$meter) {
+            $this->setFlash('error', 'Meter not found.');
+            return $this->redirect($response, '/admin/meters');
+        }
+
+        $sites = $this->pdo->query('SELECT id, name FROM sites ORDER BY name ASC')->fetchAll() ?: [];
+        $suppliers = $this->pdo->query('SELECT id, name FROM suppliers ORDER BY name ASC')->fetchAll() ?: [];
+        $flash = $_SESSION['meter_flash'] ?? null;
+        unset($_SESSION['meter_flash']);
+
+        return $this->view->render($response, 'admin/meters_edit.twig', [
+            'page_title' => 'Edit Meter',
+            'meter' => $meter,
+            'sites' => $sites,
+            'suppliers' => $suppliers,
+            'meter_types' => $this->getMeterTypes(),
+            'flash' => $flash,
+        ]);
+    }
+
+    public function update(Request $request, Response $response, array $args): Response
+    {
+        if (!$this->pdo) {
+            $this->setFlash('error', 'Database connection unavailable.');
+            return $this->redirect($response, '/admin/meters');
+        }
+
+        $meterId = (int) $args['id'];
+        $data = $request->getParsedBody() ?? [];
+        $errors = $this->validate($data, $meterId);
+
+        if (!empty($errors)) {
+            $this->setFlash('error', 'Validation failed: ' . implode(', ', $errors));
+            return $this->redirect($response, '/admin/meters/' . $meterId . '/edit');
+        }
+
+        $siteId = (int) $data['site_id'];
+        $supplierId = !empty($data['supplier_id']) ? (int) $data['supplier_id'] : null;
+        $mpan = strtoupper(trim($data['mpan']));
+        $serial = trim($data['serial_number'] ?? '');
+        $meterType = $data['meter_type'] ?? 'electricity';
+        $isSmart = isset($data['is_smart_meter']) ? 1 : 0;
+        $isHalfHourly = isset($data['is_half_hourly']) ? 1 : 0;
+        $installationDate = !empty($data['installation_date']) ? $data['installation_date'] : null;
+        $isActive = isset($data['is_active']) ? 1 : 0;
+
+        try {
+            $stmt = $this->pdo->prepare('
+                UPDATE meters
+                SET site_id = :site_id,
+                    supplier_id = :supplier_id,
+                    mpan = :mpan,
+                    serial_number = :serial_number,
+                    meter_type = :meter_type,
+                    is_smart_meter = :is_smart_meter,
+                    is_half_hourly = :is_half_hourly,
+                    installation_date = :installation_date,
+                    is_active = :is_active
+                WHERE id = :id
+            ');
+            $stmt->execute([
+                'id' => $meterId,
+                'site_id' => $siteId,
+                'supplier_id' => $supplierId,
+                'mpan' => $mpan,
+                'serial_number' => $serial !== '' ? $serial : null,
+                'meter_type' => $meterType,
+                'is_smart_meter' => $isSmart,
+                'is_half_hourly' => $isHalfHourly,
+                'installation_date' => $installationDate ?: null,
+                'is_active' => $isActive,
+            ]);
+
+            $this->setFlash('success', 'Meter updated successfully.');
+        } catch (PDOException $e) {
+            $code = (int) $e->getCode();
+            if ($code === 23000) {
+                $this->setFlash('error', 'A meter with that MPAN already exists.');
+            } else {
+                $this->setFlash('error', 'Failed to update meter: ' . $e->getMessage());
+            }
+        }
+
+        return $this->redirect($response, '/admin/meters');
+    }
+
+    public function delete(Request $request, Response $response, array $args): Response
+    {
+        if (!$this->pdo) {
+            $this->setFlash('error', 'Database connection unavailable.');
+            return $this->redirect($response, '/admin/meters');
+        }
+
+        $meterId = (int) $args['id'];
+
+        try {
+            // Check if meter has readings
+            $stmt = $this->pdo->prepare('SELECT COUNT(*) as count FROM meter_readings WHERE meter_id = :id');
+            $stmt->execute(['id' => $meterId]);
+            $readingCount = $stmt->fetch()['count'] ?? 0;
+
+            if ($readingCount > 0) {
+                $this->setFlash('error', 'Cannot delete meter with associated readings. Archive it by marking as inactive instead.');
+                return $this->redirect($response, '/admin/meters');
+            }
+
+            $stmt = $this->pdo->prepare('DELETE FROM meters WHERE id = :id');
+            $stmt->execute(['id' => $meterId]);
+
+            $this->setFlash('success', 'Meter deleted successfully.');
+        } catch (PDOException $e) {
+            $this->setFlash('error', 'Failed to delete meter: ' . $e->getMessage());
+        }
+
+        return $this->redirect($response, '/admin/meters');
+    }
+
+    private function validate(array $data, ?int $meterId = null): array
     {
         $errors = [];
 
@@ -181,6 +311,24 @@ class MetersController
             $errors[] = 'MPAN is required';
         } elseif (strlen($mpan) < 8) {
             $errors[] = 'MPAN must be at least 8 characters';
+        } else {
+            // Check MPAN uniqueness (excluding current meter during edit)
+            if ($this->pdo) {
+                $sql = 'SELECT COUNT(*) as count FROM meters WHERE mpan = :mpan';
+                if ($meterId !== null) {
+                    $sql .= ' AND id != :id';
+                }
+                $stmt = $this->pdo->prepare($sql);
+                $params = ['mpan' => $mpan];
+                if ($meterId !== null) {
+                    $params['id'] = $meterId;
+                }
+                $stmt->execute($params);
+                $count = $stmt->fetch()['count'] ?? 0;
+                if ($count > 0) {
+                    $errors[] = 'A meter with this MPAN already exists';
+                }
+            }
         }
 
         $types = array_keys($this->getMeterTypes());
