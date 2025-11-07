@@ -44,10 +44,11 @@ class CsvIngestionService
      * @param string $filePath Path to the CSV file
      * @param string $format Format type: 'hh' (half-hourly), 'daily', or 'minute'
     * @param string|null $batchId Optional batch identifier for tracking imports
+    * @param callable|null $progressCallback Invoked after each row is processed with (processed, imported, warnings)
     * @return IngestionResult Statistics about the ingestion process
      * @throws Exception If file cannot be processed
      */
-    public function ingestFromCsv(string $filePath, string $format = 'hh', ?string $batchId = null, bool $dryRun = false, ?int $userId = null): IngestionResult
+    public function ingestFromCsv(string $filePath, string $format = 'hh', ?string $batchId = null, bool $dryRun = false, ?int $userId = null, ?callable $progressCallback = null): IngestionResult
     {
         if (!is_readable($filePath)) {
             throw new Exception('CSV file cannot be read: ' . $filePath);
@@ -75,12 +76,12 @@ class CsvIngestionService
 
         if ($format === 'hh') {
             if ($this->isIntervalRecordFormat($headerMap)) {
-                $result = $this->ingestHalfHourlyIntervalRecords($reader, $headerMap, $batchId, $dryRun);
+                $result = $this->ingestHalfHourlyIntervalRecords($reader, $headerMap, $batchId, $dryRun, $progressCallback);
             } else {
-                $result = $this->ingestHalfHourlyMatrixRecords($reader, $headerRow, $headerMap, $batchId, $dryRun);
+                $result = $this->ingestHalfHourlyMatrixRecords($reader, $headerRow, $headerMap, $batchId, $dryRun, $progressCallback);
             }
         } else {
-            $result = $this->ingestDailyTotals($reader, $headerMap, $batchId, $dryRun);
+            $result = $this->ingestDailyTotals($reader, $headerMap, $batchId, $dryRun, $progressCallback);
         }
 
         if (!$dryRun) {
@@ -90,7 +91,7 @@ class CsvIngestionService
         return $result;
     }
 
-    private function ingestHalfHourlyIntervalRecords(Reader $reader, array $headerMap, string $batchId, bool $dryRun): IngestionResult
+    private function ingestHalfHourlyIntervalRecords(Reader $reader, array $headerMap, string $batchId, bool $dryRun, ?callable $progressCallback = null): IngestionResult
     {
         $meterStmt = $this->pdo->prepare('SELECT id FROM meters WHERE mpan = :mpan LIMIT 1');
         $insertStmt = $this->pdo->prepare('
@@ -165,6 +166,10 @@ class CsvIngestionService
             } catch (Exception $exception) {
                 $this->addError($errors, $processed, $exception->getMessage());
             }
+
+            if ($progressCallback !== null) {
+                $progressCallback($processed, $successfulRows, count($errors));
+            }
         }
 
         return new IngestionResult($processed, $successfulRows, $errors, $batchId, $dryRun, [
@@ -180,7 +185,7 @@ class CsvIngestionService
         ]);
     }
 
-    private function ingestHalfHourlyMatrixRecords(Reader $reader, array $headerRow, array $headerMap, string $batchId, bool $dryRun): IngestionResult
+    private function ingestHalfHourlyMatrixRecords(Reader $reader, array $headerRow, array $headerMap, string $batchId, bool $dryRun, ?callable $progressCallback = null): IngestionResult
     {
         if (!$this->hasAlias($headerMap, self::HEADER_ALIASES['date'])) {
             throw new Exception('Half-hourly CSV must include a date column.');
@@ -268,6 +273,10 @@ class CsvIngestionService
             } catch (Exception $exception) {
                 $this->addError($errors, $processed, $exception->getMessage());
             }
+
+            if ($progressCallback !== null) {
+                $progressCallback($processed, $successfulRows, count($errors));
+            }
         }
 
         return new IngestionResult($processed, $successfulRows, $errors, $batchId, $dryRun, [
@@ -280,7 +289,7 @@ class CsvIngestionService
         ]);
     }
 
-    private function ingestDailyTotals(Reader $reader, array $headerMap, string $batchId, bool $dryRun): IngestionResult
+    private function ingestDailyTotals(Reader $reader, array $headerMap, string $batchId, bool $dryRun, ?callable $progressCallback = null): IngestionResult
     {
         if (!$this->hasAlias($headerMap, self::HEADER_ALIASES['date'])) {
             throw new Exception('Daily CSV must include a date column.');
@@ -355,6 +364,10 @@ class CsvIngestionService
                 $this->addError($errors, $processed, $pdoException->getMessage());
             } catch (Exception $exception) {
                 $this->addError($errors, $processed, $exception->getMessage());
+            }
+
+            if ($progressCallback !== null) {
+                $progressCallback($processed, $successfulRows, count($errors));
             }
         }
 

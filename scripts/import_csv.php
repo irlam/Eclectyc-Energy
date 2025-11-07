@@ -10,6 +10,57 @@ use App\Domain\Ingestion\CsvIngestionService;
 use League\Csv\Reader;
 use Ramsey\Uuid\Uuid;
 
+class CliProgressBar
+{
+    private int $total;
+    private int $width;
+    private bool $finished = false;
+
+    public function __construct(int $total, int $width = 40)
+    {
+        $this->total = max(1, $total);
+        $this->width = max(10, $width);
+    }
+
+    public function update(int $processed, int $imported, int $warnings): void
+    {
+        if ($this->finished) {
+            return;
+        }
+
+        $clamped = max(0, min($processed, $this->total));
+        $ratio = $clamped / $this->total;
+        $filled = (int) floor($ratio * $this->width);
+        $bar = str_repeat('#', $filled) . str_repeat('-', $this->width - $filled);
+        $line = sprintf(
+            "\r[%s] %3d%% (%d/%d rows, %d ok, %d warnings)",
+            $bar,
+            (int) round($ratio * 100),
+            $clamped,
+            $this->total,
+            $imported,
+            $warnings
+        );
+
+        echo $line;
+        fflush(STDOUT);
+
+        if ($clamped >= $this->total) {
+            $this->finish();
+        }
+    }
+
+    public function finish(): void
+    {
+        if ($this->finished) {
+            return;
+        }
+
+        $this->finished = true;
+        echo "\n";
+    }
+}
+
 if (php_sapi_name() !== 'cli') {
     die('This script can only be run from command line.');
 }
@@ -73,7 +124,23 @@ if ($dryRun) {
     echo "Mode: Dry run (validation only)\n";
 }
 $sizeKb = number_format(filesize($csvFile) / 1024, 2);
-echo "Size: {$sizeKb} KB\n\n";
+echo "Size: {$sizeKb} KB\n";
+
+$totalRows = null;
+try {
+    $countReader = Reader::createFromPath($csvFile, 'r');
+    $countReader->setHeaderOffset(0);
+    $totalRows = iterator_count($countReader->getRecords());
+    echo 'Rows: ' . $totalRows . "\n";
+} catch (\Throwable $rowCountError) {
+    echo 'Rows: unavailable (' . $rowCountError->getMessage() . ")\n";
+}
+
+if ($totalRows !== null && $totalRows > 0) {
+    echo "Progress:\n";
+}
+
+echo "\n";
 
 try {
     $db = Database::getConnection();
@@ -92,7 +159,25 @@ try {
 
     $service = new CsvIngestionService($db);
     $batchId = Uuid::uuid4()->toString();
-    $result = $service->ingestFromCsv($csvFile, $importType, $batchId, $dryRun);
+
+    $progressBar = null;
+    $progressCallback = null;
+
+    if ($totalRows !== null && $totalRows > 0) {
+        $progressBar = new CliProgressBar($totalRows);
+        $progressCallback = function (int $processed, int $imported, int $warnings) use ($progressBar) {
+            if ($progressBar !== null) {
+                $progressBar->update($processed, $imported, $warnings);
+            }
+        };
+    }
+
+    $result = $service->ingestFromCsv($csvFile, $importType, $batchId, $dryRun, null, $progressCallback);
+
+    if ($progressBar !== null) {
+        $progressBar->finish();
+        echo "\n";
+    }
 
     $effectiveBatch = $result->getBatchId() ?? $batchId;
 

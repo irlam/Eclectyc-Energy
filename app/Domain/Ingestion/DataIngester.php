@@ -22,13 +22,14 @@ class DataIngester
      * Ingest data from a CSV file
      * 
      * @param string $filePath Path to the CSV file
+     * @param callable|null $progressCallback Optional callback for progress updates
      * @return IngestionResult Result of the ingestion operation
      */
-    public function ingestFromCsv(string $filePath, string $format = 'hh', ?string $batchId = null, bool $dryRun = false, ?int $userId = null): IngestionResult
+    public function ingestFromCsv(string $filePath, string $format = 'hh', ?string $batchId = null, bool $dryRun = false, ?int $userId = null, ?callable $progressCallback = null): IngestionResult
     {
         $service = new CsvIngestionService($this->pdo);
         /** @var IngestionResult $result */
-        $result = $service->ingestFromCsv($filePath, $format, $batchId, $dryRun, $userId);
+        $result = $service->ingestFromCsv($filePath, $format, $batchId, $dryRun, $userId, $progressCallback);
 
         return $result;
     }
