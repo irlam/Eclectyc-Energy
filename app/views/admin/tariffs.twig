@@ -4,8 +4,19 @@
 
 {% block content %}
 <section class="card">
-    <h2>Tariff Management</h2>
-    <p class="mb-2">Monitor available supply tariffs and their rate structures.</p>
+    <div class="card-header" style="display: flex; justify-content: space-between; align-items: start;">
+        <div>
+            <h2>Tariff Management</h2>
+            <p class="mb-2">Monitor available supply tariffs and their rate structures.</p>
+        </div>
+        <a class="btn btn-primary" href="/admin/tariffs/create">+ Add Tariff</a>
+    </div>
+
+    {% if flash %}
+        <div class="alert alert-{{ flash.type }}">
+            {{ flash.message }}
+        </div>
+    {% endif %}
 
     {% if tariffs is not empty %}
         <table class="table">
@@ -19,6 +30,7 @@
                     <th class="text-right">Standing (p/day)</th>
                     <th>Status</th>
                     <th>Valid</th>
+                    <th>Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -60,12 +72,20 @@
                                 <span class="badge">Open-ended</span>
                             {% endif %}
                         </td>
+                        <td>
+                            <div style="display: flex; gap: 0.5rem;">
+                                <a href="/admin/tariffs/{{ tariff.id }}/edit" class="btn btn-sm btn-secondary" title="Edit tariff">✏️ Edit</a>
+                                <form method="post" action="/admin/tariffs/{{ tariff.id }}/delete" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this tariff? This action cannot be undone.');">
+                                    <button type="submit" class="btn btn-sm btn-danger" title="Delete tariff">🗑️ Delete</button>
+                                </form>
+                            </div>
+                        </td>
                     </tr>
                 {% endfor %}
             </tbody>
         </table>
     {% else %}
-        <p>No tariffs configured. Use the seed process or database scripts to add tariffs.</p>
+        <p>No tariffs configured. <a href="/admin/tariffs/create">Create your first tariff</a> or use the seed process to add sample tariffs.</p>
     {% endif %}
 </section>
 {% endblock %}

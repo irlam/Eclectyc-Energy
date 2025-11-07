@@ -1,0 +1,248 @@
+{% extends "base.twig" %}
+
+{% block title %}Edit Tariff{% endblock %}
+
+{% block content %}
+<section class="card">
+    <div class="card-header">
+        <div>
+            <h2>Edit Tariff</h2>
+            <p class="mb-2">Update tariff details and pricing.</p>
+        </div>
+        <a class="btn btn-secondary" href="/admin/tariffs">← Back to Tariffs</a>
+    </div>
+
+    {% if flash %}
+        <div class="alert alert-{{ flash.type }}">
+            {{ flash.message }}
+        </div>
+    {% endif %}
+
+    <form method="post" action="/admin/tariffs/{{ tariff.id }}" class="form" id="tariffForm">
+        <div class="form-group">
+            <label for="name">Tariff Name *</label>
+            <input 
+                type="text" 
+                id="name" 
+                name="name" 
+                required 
+                class="form-control" 
+                value="{{ tariff.name }}"
+                placeholder="e.g., Standard Variable Rate"
+                minlength="2"
+            >
+            <small class="form-text">A descriptive name for this tariff</small>
+        </div>
+
+        <div class="form-group">
+            <label for="code">Tariff Code</label>
+            <input 
+                type="text" 
+                id="code" 
+                name="code" 
+                class="form-control" 
+                value="{{ tariff.code }}"
+                placeholder="e.g., SVR-2025 (optional)"
+            >
+            <small class="form-text">Optional unique identifier for this tariff</small>
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label for="energy_type">Energy Type *</label>
+                <select id="energy_type" name="energy_type" required class="form-control">
+                    {% for value, label in energy_types %}
+                        <option value="{{ value }}" {% if value == tariff.energy_type %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="tariff_type">Tariff Type *</label>
+                <select id="tariff_type" name="tariff_type" required class="form-control">
+                    {% for value, label in tariff_types %}
+                        <option value="{{ value }}" {% if value == tariff.tariff_type %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="supplier_id">Supplier</label>
+            <select id="supplier_id" name="supplier_id" class="form-control">
+                <option value="">-- No supplier assigned --</option>
+                {% for supplier in suppliers %}
+                    <option value="{{ supplier.id }}" {% if supplier.id == tariff.supplier_id %}selected{% endif %}>{{ supplier.name }}</option>
+                {% endfor %}
+            </select>
+            <small class="form-text">The energy supplier offering this tariff (optional)</small>
+        </div>
+
+        <h3 style="margin-top: 2rem; margin-bottom: 1rem;">Pricing Details</h3>
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label for="unit_rate">Unit Rate (pence/kWh)</label>
+                <input 
+                    type="number" 
+                    id="unit_rate" 
+                    name="unit_rate" 
+                    class="form-control" 
+                    step="0.0001"
+                    min="0"
+                    value="{{ tariff.unit_rate }}"
+                    placeholder="e.g., 24.50"
+                >
+                <small class="form-text">Standard unit rate in pence per kWh</small>
+            </div>
+
+            <div class="form-group">
+                <label for="standing_charge">Standing Charge (pence/day)</label>
+                <input 
+                    type="number" 
+                    id="standing_charge" 
+                    name="standing_charge" 
+                    class="form-control" 
+                    step="0.0001"
+                    min="0"
+                    value="{{ tariff.standing_charge }}"
+                    placeholder="e.g., 60.00"
+                >
+                <small class="form-text">Daily standing charge in pence</small>
+            </div>
+        </div>
+
+        <div class="form-group" id="touRatesSection" style="display: {% if tariff.tariff_type in ['time_of_use', 'dynamic'] %}block{% else %}none{% endif %};">
+            <h4>Time of Use Rates (Optional)</h4>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="peak_rate">Peak Rate (pence/kWh)</label>
+                    <input 
+                        type="number" 
+                        id="peak_rate" 
+                        name="peak_rate" 
+                        class="form-control" 
+                        step="0.0001"
+                        min="0"
+                        value="{{ tariff.peak_rate }}"
+                        placeholder="e.g., 35.00"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="off_peak_rate">Off-Peak Rate (pence/kWh)</label>
+                    <input 
+                        type="number" 
+                        id="off_peak_rate" 
+                        name="off_peak_rate" 
+                        class="form-control" 
+                        step="0.0001"
+                        min="0"
+                        value="{{ tariff.off_peak_rate }}"
+                        placeholder="e.g., 15.00"
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="weekend_rate">Weekend Rate (pence/kWh)</label>
+                    <input 
+                        type="number" 
+                        id="weekend_rate" 
+                        name="weekend_rate" 
+                        class="form-control" 
+                        step="0.0001"
+                        min="0"
+                        value="{{ tariff.weekend_rate }}"
+                        placeholder="e.g., 18.00"
+                    >
+                </div>
+            </div>
+        </div>
+
+        <h3 style="margin-top: 2rem; margin-bottom: 1rem;">Validity Period</h3>
+        
+        <div class="form-row">
+            <div class="form-group">
+                <label for="valid_from">Valid From *</label>
+                <input 
+                    type="date" 
+                    id="valid_from" 
+                    name="valid_from" 
+                    required 
+                    class="form-control"
+                    value="{{ tariff.valid_from }}"
+                >
+                <small class="form-text">Date this tariff becomes active</small>
+            </div>
+
+            <div class="form-group">
+                <label for="valid_to">Valid To</label>
+                <input 
+                    type="date" 
+                    id="valid_to" 
+                    name="valid_to" 
+                    class="form-control"
+                    value="{{ tariff.valid_to }}"
+                >
+                <small class="form-text">Leave blank for open-ended tariff</small>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label class="checkbox-label">
+                <input type="checkbox" name="is_active" id="is_active" {% if tariff.is_active %}checked{% endif %}>
+                <span>Active tariff (available for use)</span>
+            </label>
+        </div>
+
+        <div class="form-actions" style="margin-top: 1.5rem;">
+            <button type="submit" class="btn btn-primary">💾 Update Tariff</button>
+            <a href="/admin/tariffs" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</section>
+
+<script>
+// Show/hide time of use rates based on tariff type
+document.getElementById('tariff_type').addEventListener('change', function(e) {
+    const touSection = document.getElementById('touRatesSection');
+    if (e.target.value === 'time_of_use' || e.target.value === 'dynamic') {
+        touSection.style.display = 'block';
+    } else {
+        touSection.style.display = 'none';
+    }
+});
+
+// Validate dates
+document.getElementById('tariffForm').addEventListener('submit', function(e) {
+    const validFrom = document.getElementById('valid_from').value;
+    const validTo = document.getElementById('valid_to').value;
+    
+    if (validTo && validFrom && new Date(validTo) < new Date(validFrom)) {
+        e.preventDefault();
+        alert('Valid To date must be after Valid From date');
+        document.getElementById('valid_to').focus();
+        return false;
+    }
+});
+</script>
+
+<style>
+.form-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: auto;
+}
+</style>
+{% endblock %}

@@ -79,6 +79,9 @@ $app->group('/admin', function ($group) {
     $group->get('/meters', [AdminMetersController::class, 'index'])->setName('admin.meters');
     $group->get('/meters/create', [AdminMetersController::class, 'create'])->setName('admin.meters.create');
     $group->post('/meters', [AdminMetersController::class, 'store'])->setName('admin.meters.store');
+    $group->get('/meters/{id}/edit', [AdminMetersController::class, 'edit'])->setName('admin.meters.edit');
+    $group->post('/meters/{id}', [AdminMetersController::class, 'update'])->setName('admin.meters.update');
+    $group->post('/meters/{id}/delete', [AdminMetersController::class, 'delete'])->setName('admin.meters.delete');
     
     // Sites CRUD routes
     $group->get('/sites', [SitesController::class, 'index'])->setName('admin.sites');
@@ -89,6 +92,11 @@ $app->group('/admin', function ($group) {
     $group->post('/sites/{id}/delete', [SitesController::class, 'delete'])->setName('admin.sites.delete');
     
     $group->get('/tariffs', [TariffsController::class, 'index'])->setName('admin.tariffs');
+    $group->get('/tariffs/create', [TariffsController::class, 'create'])->setName('admin.tariffs.create');
+    $group->post('/tariffs', [TariffsController::class, 'store'])->setName('admin.tariffs.store');
+    $group->get('/tariffs/{id}/edit', [TariffsController::class, 'edit'])->setName('admin.tariffs.edit');
+    $group->post('/tariffs/{id}', [TariffsController::class, 'update'])->setName('admin.tariffs.update');
+    $group->post('/tariffs/{id}/delete', [TariffsController::class, 'delete'])->setName('admin.tariffs.delete');
     
     // Users CRUD routes
     $group->get('/users', [UsersController::class, 'index'])->setName('admin.users');
