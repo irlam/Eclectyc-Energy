@@ -25,7 +25,28 @@ class CsvIngestionService
      * @var array<string, array<int, string>>
      */
     private const HEADER_ALIASES = [
-        'mpan' => ['mpan', 'metercode', 'meter_code', 'meter', 'meterid', 'meter_id'],
+        'mpan' => [
+            'mpan',
+            'mpancore',
+            'mpan_core',
+            'metercode',
+            'meter_code',
+            'meter',
+            'meterid',
+            'meter_id',
+            'meterreference',
+            'meter_reference',
+            'meterref',
+            'meter_ref',
+            'meterserial',
+            'meter_serial',
+            'meterserialnumber',
+            'meter_serial_number',
+            'serial',
+            'serialnumber',
+            'supplynumber',
+            'mprn',
+        ],
         'date' => ['date', 'readdate', 'read_date', 'readingdate', 'perioddate', 'billdate', 'insertdate'],
         'time' => ['time', 'readtime', 'read_time', 'readingtime', 'periodtime'],
         'datetime' => ['datetime', 'timestamp', 'readdatetime', 'read_datetime', 'readingdatetime'],
@@ -71,7 +92,9 @@ class CsvIngestionService
 
         $headerMap = $this->buildHeaderMap($headerRow);
         if (!$this->hasAlias($headerMap, self::HEADER_ALIASES['mpan'])) {
-            throw new Exception('CSV must include a column containing the meter identifier (e.g. MPAN or MeterCode).');
+            $availableHeaders = array_unique(array_values($headerMap));
+            $preview = implode(', ', array_slice($availableHeaders, 0, 15));
+            throw new Exception('CSV must include a column containing the meter identifier (e.g. MPAN or MeterCode). Headers detected: ' . $preview);
         }
 
         if ($format === 'hh') {
@@ -392,10 +415,38 @@ class CsvIngestionService
     {
         $map = [];
         foreach ($headers as $header) {
-            $map[$this->normaliseHeaderKey($header)] = $header;
+            if (!is_string($header)) {
+                continue;
+            }
+
+            $original = (string) $header;
+            $withoutBom = $this->stripUtf8Bom($original);
+            $clean = trim($withoutBom);
+
+            if ($clean === '') {
+                continue;
+            }
+
+            $normalisedClean = $this->normaliseHeaderKey($clean);
+            $map[$normalisedClean] = $original;
+
+            $normalisedOriginal = $this->normaliseHeaderKey($original);
+            if ($normalisedOriginal !== $normalisedClean) {
+                $map[$normalisedOriginal] = $original;
+            }
         }
 
         return $map;
+    }
+
+    private function stripUtf8Bom(string $header): string
+    {
+        $bom = pack('CCC', 0xEF, 0xBB, 0xBF);
+        if (str_starts_with($header, $bom)) {
+            $header = substr($header, 3);
+        }
+
+        return $header;
     }
 
     private function normaliseHeaderKey(string $value): string
