@@ -24,6 +24,7 @@ use App\Http\Controllers\ReportsController;
 use App\Http\Controllers\ToolsController;
 use App\Http\Middleware\AuthMiddleware;
 use App\Services\AuthService;
+use Slim\Psr7\Stream;
 
 // Homepage / Dashboard
 $container = $app->getContainer();
@@ -64,6 +65,68 @@ $app->group('/tools', function ($group) {
 })->add(function ($request, $handler) use ($container) {
     $middleware = new AuthMiddleware($container->get(AuthService::class), ['admin']);
     return $middleware->process($request, $handler);
+});
+
+// Public showcase assets (accessible without authentication)
+$app->get('/showcase[/{path:.*}]', function ($request, $response, array $args) {
+    $relativePath = $args['path'] ?? 'index.html';
+
+    if ($relativePath === '' || substr($relativePath, -1) === '/') {
+        $relativePath = rtrim($relativePath, '/') . '/index.html';
+    }
+
+    $relativePath = ltrim($relativePath, '/');
+
+    $basePath = BASE_PATH . '/showcase';
+    $baseRealPath = realpath($basePath);
+    $targetRealPath = realpath($basePath . '/' . $relativePath);
+
+    if (!$baseRealPath || !$targetRealPath || strpos($targetRealPath, $baseRealPath) !== 0 || !is_file($targetRealPath)) {
+        $body = $response->getBody();
+        $body->write('Showcase asset not found.');
+        return $response
+            ->withBody($body)
+            ->withStatus(404)
+            ->withHeader('Content-Type', 'text/plain; charset=utf-8');
+    }
+
+    $extension = strtolower(pathinfo($targetRealPath, PATHINFO_EXTENSION));
+    $mimeTypes = [
+        'html' => 'text/html; charset=utf-8',
+        'htm' => 'text/html; charset=utf-8',
+        'css' => 'text/css; charset=utf-8',
+        'js' => 'application/javascript; charset=utf-8',
+        'json' => 'application/json; charset=utf-8',
+        'svg' => 'image/svg+xml',
+        'png' => 'image/png',
+        'jpg' => 'image/jpeg',
+        'jpeg' => 'image/jpeg',
+        'gif' => 'image/gif',
+        'webp' => 'image/webp',
+        'ico' => 'image/x-icon',
+        'woff' => 'font/woff',
+        'woff2' => 'font/woff2',
+    ];
+
+    $mime = $mimeTypes[$extension] ?? 'application/octet-stream';
+
+    $handle = fopen($targetRealPath, 'rb');
+
+    if ($handle === false) {
+        $body = $response->getBody();
+        $body->write('Failed to read showcase asset.');
+        return $response
+            ->withBody($body)
+            ->withStatus(500)
+            ->withHeader('Content-Type', 'text/plain; charset=utf-8');
+    }
+
+    $stream = new Stream($handle);
+
+    return $response
+        ->withHeader('Content-Type', $mime)
+        ->withHeader('Cache-Control', 'public, max-age=3600')
+        ->withBody($stream);
 });
 
 // Admin Routes (future expansion)
