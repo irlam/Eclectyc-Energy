@@ -5,117 +5,236 @@
 {% extends "base.twig" %}
 
 {% block content %}
-<h2>Energy Management Dashboard</h2>
+<div class="dashboard-header">
+    <h2>Energy Management Dashboard</h2>
+    <p class="dashboard-subtitle">Real-time insights into your energy portfolio</p>
+</div>
 
-<div class="grid grid-cols-1 md:grid-cols-4 gap-3 mt-3">
-    <div class="card">
-        <h3>Total Sites</h3>
-        <p class="text-center" style="font-size: 2rem; font-weight: bold;">{{ stats.total_sites }}</p>
+<!-- Primary Stats - Horizontal Row -->
+<div class="stats-container">
+    <div class="stat-card stat-card-primary">
+        <div class="stat-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                <polyline points="9,22 9,12 15,12 15,22"/>
+            </svg>
+        </div>
+        <div class="stat-content">
+            <div class="stat-value">{{ stats.total_sites }}</div>
+            <div class="stat-label">Total Sites</div>
+        </div>
     </div>
 
-    <div class="card">
-        <h3>Total Meters</h3>
-        <p class="text-center" style="font-size: 2rem; font-weight: bold;">{{ stats.total_meters }}</p>
+    <div class="stat-card stat-card-secondary">
+        <div class="stat-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+                <circle cx="8.5" cy="8.5" r="1.5"/>
+                <path d="M21 15l-5-5L5 21"/>
+            </svg>
+        </div>
+        <div class="stat-content">
+            <div class="stat-value">{{ stats.total_meters }}</div>
+            <div class="stat-label">Total Meters</div>
+        </div>
     </div>
 
-    <div class="card">
-        <h3>Week to Date Consumption</h3>
-        <p class="text-center" style="font-size: 1.8rem; font-weight: bold;">{{ stats.week_consumption|number_format(1, '.', ',') }}<small> kWh</small></p>
+    <div class="stat-card stat-card-accent">
+        <div class="stat-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="22,12 18,12 15,21 9,3 6,12 2,12"/>
+            </svg>
+        </div>
+        <div class="stat-content">
+            <div class="stat-value">{{ stats.total_readings|number_format }}</div>
+            <div class="stat-label">Total Readings</div>
+        </div>
     </div>
 
-    <div class="card">
-        <h3>Data Coverage</h3>
-        <p class="text-center" style="font-size: 1.8rem; font-weight: bold;">{{ stats.coverage_pct }}%</p>
-        {% if stats.latest_aggregation_date %}
-            <p class="text-center"><small>Latest snapshot: {{ stats.latest_aggregation_date|date("d/m/Y") }}</small></p>
+    <div class="stat-card stat-card-success">
+        <div class="stat-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 11l3 3 8-8"/>
+                <path d="M21 12c0 4.97-4.03 9-9 9s-9-4.03-9-9 4.03-9 9-9c1.5 0 2.91.37 4.15 1.02"/>
+            </svg>
+        </div>
+        <div class="stat-content">
+            <div class="stat-value">{{ stats.coverage_pct }}%</div>
+            <div class="stat-label">Data Coverage</div>
+            {% if stats.latest_aggregation_date %}
+                <div class="stat-meta">Latest: {{ stats.latest_aggregation_date|date("d/m/Y") }}</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Energy Consumption Cards -->
+<div class="energy-cards">
+    <div class="energy-card energy-card-weekly">
+        <div class="energy-header">
+            <h3>Week to Date</h3>
+            <div class="energy-trend energy-trend-up">+12%</div>
+        </div>
+        <div class="energy-value">
+            {{ stats.week_consumption|number_format(1, '.', ',') }}
+            <span class="energy-unit">kWh</span>
+        </div>
+        <div class="energy-footer">
+            <div class="energy-progress">
+                <div class="energy-progress-bar" style="width: 65%"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="energy-card energy-card-monthly">
+        <div class="energy-header">
+            <h3>Month to Date</h3>
+            <div class="energy-trend energy-trend-down">-5%</div>
+        </div>
+        <div class="energy-value">
+            {{ stats.month_consumption|number_format(1, '.', ',') }}
+            <span class="energy-unit">kWh</span>
+        </div>
+        <div class="energy-footer">
+            <div class="energy-progress">
+                <div class="energy-progress-bar" style="width: 45%"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="energy-card energy-card-status">
+        <div class="energy-header">
+            <h3>Last Import</h3>
+            <div class="import-status import-status-success"></div>
+        </div>
+        <div class="energy-value energy-value-small">
+            {{ stats.last_import }}
+        </div>
+        <div class="energy-footer">
+            <button class="import-action-btn">View Details</button>
+        </div>
+    </div>
+</div>
+
+<!-- Modern Action Cards -->
+<div class="action-cards">
+    <div class="action-card action-card-primary">
+        <div class="action-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                <polyline points="9,22 9,12 15,12 15,22"/>
+            </svg>
+        </div>
+        <div class="action-content">
+            <h3>Manage Sites</h3>
+            <p>Configure and monitor your energy sites</p>
+        </div>
+        <a href="/admin/sites" class="action-link"></a>
+    </div>
+
+    <div class="action-card action-card-secondary">
+        <div class="action-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="20" x2="18" y2="10"/>
+                <line x1="12" y1="20" x2="12" y2="4"/>
+                <line x1="6" y1="20" x2="6" y2="14"/>
+            </svg>
+        </div>
+        <div class="action-content">
+            <h3>View Reports</h3>
+            <p>Analyze consumption and cost data</p>
+        </div>
+        <a href="/reports/consumption" class="action-link"></a>
+    </div>
+
+    <div class="action-card action-card-accent">
+        <div class="action-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+            </svg>
+        </div>
+        <div class="action-content">
+            <h3>System Health</h3>
+            <p>Monitor API and system status</p>
+        </div>
+        <a href="/api/health" class="action-link" target="_blank"></a>
+    </div>
+
+    <div class="action-card action-card-tertiary">
+        <div class="action-icon">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="9,11 12,14 22,4"/>
+                <path d="M21,12c0,4.97-4.03,9-9,9s-9-4.03-9-9 4.03-9,9-9c1.5,0 2.91,.37 4.15,1.02"/>
+            </svg>
+        </div>
+        <div class="action-content">
+            <h3>System Check</h3>
+            <p>Validate system configuration</p>
+        </div>
+        <a href="/tools/check" class="action-link"></a>
+    </div>
+</div>
+
+<!-- Data Overview -->
+<div class="overview-section">
+    <div class="overview-card">
+        <div class="overview-header">
+            <h2>Recent Activity</h2>
+            <div class="overview-badge">Live</div>
+        </div>
+        {% if recent_activity is not empty %}
+            <div class="activity-list">
+                {% for item in recent_activity|slice(0, 5) %}
+                    <div class="activity-item">
+                        <div class="activity-icon">
+                            <div class="activity-dot"></div>
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-text">{{ item.action }} - {{ item.entity_type ?: 'system' }}</div>
+                            <div class="activity-time">{{ item.created_at|date("H:i") }} • {{ item.created_at|date("d/m/Y") }}</div>
+                        </div>
+                    </div>
+                {% endfor %}
+            </div>
+            {% if recent_activity|length > 5 %}
+                <div class="overview-footer">
+                    <a href="/admin/imports/history" class="view-all-link">View all activity →</a>
+                </div>
+            {% endif %}
+        {% else %}
+            <div class="empty-state">
+                <p>No recent activity to display</p>
+            </div>
         {% endif %}
     </div>
-</div>
 
-<div class="grid grid-cols-1 md:grid-cols-3 gap-3 mt-3">
-    <div class="card">
-        <h3>Total Readings</h3>
-        <p class="text-center" style="font-size: 2rem; font-weight: bold;">{{ stats.total_readings|number_format }}</p>
-    </div>
-
-    <div class="card">
-        <h3>Month to Date Consumption</h3>
-        <p class="text-center" style="font-size: 1.8rem; font-weight: bold;">{{ stats.month_consumption|number_format(1, '.', ',') }}<small> kWh</small></p>
-    </div>
-
-    <div class="card">
-        <h3>Last Import</h3>
-        <p class="text-center" style="font-size: 1rem;">{{ stats.last_import }}</p>
-    </div>
-</div>
-
-<div class="card mt-3">
-    <h2>System Overview</h2>
-    
-    <div class="alert alert-info">
-        Welcome to the Eclectyc Energy Management Platform. This system provides comprehensive energy monitoring, 
-        analysis, and reporting capabilities for your organisation.
-    </div>
-    
-    <h3>Quick Actions</h3>
-    <div class="mt-2">
-        <a href="/admin/sites" class="btn btn-primary">Manage Sites</a>
-        <a href="/reports/consumption" class="btn btn-secondary">View Reports</a>
-        <a href="/api/health" class="btn btn-secondary" target="_blank">API Health Check</a>
-        <a href="/tools/check-structure" class="btn btn-secondary">Check Structure</a>
-    </div>
-</div>
-
-<div class="card mt-3">
-    <h2>Recent Activity</h2>
-    {% if recent_activity is not empty %}
-        <table class="table sortable-table">
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th>Action</th>
-                    <th>Entity</th>
-                    <th>User</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for item in recent_activity %}
-                    <tr>
-                        <td>{{ item.created_at|date("d/m/Y H:i:s") }}</td>
-                        <td>{{ item.action }}</td>
-                        <td>{{ item.entity_type ?: 'system' }}</td>
-                        <td>{{ item.user_id ?: 'system' }}</td>
-                    </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    {% else %}
-        <p>No audit activity recorded yet.</p>
-    {% endif %}
-</div>
-
-<div class="card mt-3">
-    <h2>Energy Consumption Chart</h2>
-    {% if trend is not empty %}
-        <table class="table">
-            <thead>
-                <tr>
-                    <th>Date</th>
-                    <th class="text-right">Consumption (kWh)</th>
-                </tr>
-            </thead>
-            <tbody>
+    <div class="overview-card">
+        <div class="overview-header">
+            <h2>Consumption Trend</h2>
+            <div class="trend-period">Last 7 days</div>
+        </div>
+        {% if trend is not empty %}
+            <div class="trend-chart">
                 {% for point in trend %}
-                    <tr>
-                        <td>{{ point.date|date("D d/m") }}</td>
-                        <td class="text-right">{{ point.total|number_format(1, '.', ',') }}</td>
-                    </tr>
+                    <div class="trend-item">
+                        <div class="trend-bar">
+                            <div class="trend-bar-fill" style="height: {{ (point.total / trend|map(p => p.total)|max * 100)|round }}%"></div>
+                        </div>
+                        <div class="trend-label">{{ point.date|date("d/m") }}</div>
+                    </div>
                 {% endfor %}
-            </tbody>
-        </table>
-    {% else %}
-        <p>No aggregated consumption data found for the last 7 days.</p>
-    {% endif %}
+            </div>
+            <div class="trend-summary">
+                <div class="trend-total">
+                    Total: {{ trend|map(p => p.total)|reduce((a, b) => a + b)|number_format(1, '.', ',') }} kWh
+                </div>
+            </div>
+        {% else %}
+            <div class="empty-state">
+                <p>No consumption data available</p>
+            </div>
+        {% endif %}
+    </div>
 </div>
 {% endblock %}
 
