@@ -1,0 +1,89 @@
+{% extends "base.twig" %}
+
+{% block title %}Meters{% endblock %}
+
+{% block content %}
+<section class="card">
+    <div class="card-header">
+        <div>
+            <h2>Meters Management</h2>
+            <p class="mb-2">Review registered MPANs and keep half-hourly coverage up to date.</p>
+        </div>
+        <a class="btn btn-primary" href="/admin/meters/create">+ Add Meter</a>
+    </div>
+
+    {% if flash %}
+        <div class="alert alert-{{ flash.type }}">
+            {{ flash.message }}
+        </div>
+    {% endif %}
+
+    <div class="stats-grid">
+        <div class="stat">
+            <span>Total meters</span>
+            <strong>{{ totals.count }}</strong>
+        </div>
+        <div class="stat">
+            <span>Active meters</span>
+            <strong>{{ totals.active }}</strong>
+        </div>
+        <div class="stat">
+            <span>Half-hourly</span>
+            <strong>{{ totals.hh }}</strong>
+        </div>
+    </div>
+
+    {% if meters is not empty %}
+        <table class="table mt-3">
+            <thead>
+                <tr>
+                    <th>MPAN</th>
+                    <th>Serial</th>
+                    <th>Site</th>
+                    <th>Supplier</th>
+                    <th>Type</th>
+                    <th>Half-hourly</th>
+                    <th>Smart</th>
+                    <th>Status</th>
+                    <th>Added</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for meter in meters %}
+                    <tr>
+                        <td><strong>{{ meter.mpan }}</strong></td>
+                        <td>{{ meter.serial_number ?: 'N/A' }}</td>
+                        <td>{{ meter.site_name ?: 'Unassigned' }}</td>
+                        <td>{{ meter.supplier_name ?: 'Unassigned' }}</td>
+                        <td>{{ meter.meter_type|title }}</td>
+                        <td>
+                            {% if meter.is_half_hourly %}
+                                <span class="status status-success">Yes</span>
+                            {% else %}
+                                <span class="status status-muted">No</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if meter.is_smart_meter %}
+                                <span class="status status-success">Smart</span>
+                            {% else %}
+                                <span class="status status-muted">Legacy</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if meter.is_active %}
+                                <span class="status status-success">Active</span>
+                            {% else %}
+                                <span class="status status-muted">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ meter.created_at ? meter.created_at|date("d/m/Y") : 'N/A' }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p class="mt-3">No meters found. Add one manually or run an import to populate the list.</p>
+    {% endif %}
+</section>
+{% endblock %}

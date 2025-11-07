@@ -7,6 +7,7 @@
 
 use App\Http\Controllers\Admin\ExportsController;
 use App\Http\Controllers\Admin\ImportController;
+use App\Http\Controllers\Admin\MetersController as AdminMetersController;
 use App\Http\Controllers\Admin\SitesController;
 use App\Http\Controllers\Admin\TariffsController;
 use App\Http\Controllers\Admin\UsersController;
@@ -66,6 +67,11 @@ $app->group('/admin', function ($group) {
     $group->get('/imports/history', [ImportController::class, 'history'])->setName('admin.imports.history');
     $group->post('/imports/retry', [ImportController::class, 'retry'])->setName('admin.imports.retry');
     $group->get('/exports', [ExportsController::class, 'index'])->setName('admin.exports');
+
+    // Meter management
+    $group->get('/meters', [AdminMetersController::class, 'index'])->setName('admin.meters');
+    $group->get('/meters/create', [AdminMetersController::class, 'create'])->setName('admin.meters.create');
+    $group->post('/meters', [AdminMetersController::class, 'store'])->setName('admin.meters.store');
     
     // Sites CRUD routes
     $group->get('/sites', [SitesController::class, 'index'])->setName('admin.sites');

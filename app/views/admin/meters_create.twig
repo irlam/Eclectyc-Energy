@@ -1,0 +1,92 @@
+{% extends "base.twig" %}
+
+{% block title %}Add Meter{% endblock %}
+
+{% block content %}
+<section class="card">
+    <div class="card-header">
+        <div>
+            <h2>Add New Meter</h2>
+            <p class="mb-2">Create or update an MPAN directly from the admin console.</p>
+        </div>
+        <a class="btn btn-secondary" href="/admin/meters">← Back to Meters</a>
+    </div>
+
+    {% if flash %}
+        <div class="alert alert-{{ flash.type }}">
+            {{ flash.message }}
+        </div>
+    {% endif %}
+
+    <form method="post" action="/admin/meters" class="form">
+        <div class="form-group">
+            <label for="mpan">MPAN *</label>
+            <input type="text" id="mpan" name="mpan" required class="form-control" placeholder="Enter the MPAN">
+            <small class="form-text">Existing MPANs will be updated with the details below.</small>
+        </div>
+
+        <div class="form-group">
+            <label for="serial_number">Serial Number</label>
+            <input type="text" id="serial_number" name="serial_number" class="form-control" placeholder="Optional serial reference">
+        </div>
+
+        <div class="form-group">
+            <label for="site_id">Linked Site *</label>
+            <select id="site_id" name="site_id" required class="form-control">
+                <option value="">Select a site...</option>
+                {% for site in sites %}
+                    <option value="{{ site.id }}">{{ site.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="supplier_id">Supplier</label>
+            <select id="supplier_id" name="supplier_id" class="form-control">
+                <option value="">No supplier</option>
+                {% for supplier in suppliers %}
+                    <option value="{{ supplier.id }}">{{ supplier.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="meter_type">Meter Type *</label>
+            <select id="meter_type" name="meter_type" required class="form-control">
+                {% for value, label in meter_types %}
+                    <option value="{{ value }}">{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="installation_date">Installation Date</label>
+            <input type="date" id="installation_date" name="installation_date" class="form-control">
+            <small class="form-text">Use format YYYY-MM-DD.</small>
+        </div>
+
+        <div class="form-group checkbox-group">
+            <label class="checkbox-label">
+                <input type="checkbox" name="is_half_hourly">
+                <span class="checkmark"></span>
+                Half-hourly capable
+            </label>
+            <label class="checkbox-label">
+                <input type="checkbox" name="is_smart_meter">
+                <span class="checkmark"></span>
+                Smart meter installed
+            </label>
+            <label class="checkbox-label">
+                <input type="checkbox" name="is_active" checked>
+                <span class="checkmark"></span>
+                Active meter
+            </label>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Save Meter</button>
+            <a href="/admin/meters" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</section>
+{% endblock %}
