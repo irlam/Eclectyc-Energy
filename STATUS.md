@@ -52,8 +52,9 @@ This document captures the current progress of the Eclectyc Energy platform so f
   - ✅ **Carbon Dashboard**: Real-time carbon intensity display with classification levels and trending.
 
 - **Tariff Engine & Switching**
+  - ✅ **Tariff Switching Analysis**: Implemented comprehensive switching analysis feature with historical tracking, cost comparisons, and savings recommendations.
   - Model complex tariff structures (time bands, flexible offers) and cost comparison workflows.
-  - Prepare for supplier integrations and customer switching analysis.
+  - Prepare for supplier integrations and automated tariff updates.
 
 - **Exports & Automation**
   - Enhance export monitoring with delivery receipts, retention policies, and email packaging.

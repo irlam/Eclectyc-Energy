@@ -191,12 +191,25 @@ Visit: https://eclectyc.energy/tools/show
 - `/reports/costs` (manager+) estimates spend per supplier using tariff unit rates.
 - `/admin/sites` (admin only) shows estates with meter counts and status.
 - `/admin/tariffs` (admin only) lists configured supply tariffs.
+- `/admin/tariff-switching` (admin only) analyzes switching opportunities and recommends alternative tariffs based on consumption history.
 - `/admin/users` (admin only) lists seeded accounts for quick role testing.
 - `/admin/imports` (admin only) provides CSV uploads with optional dry-run previews and batch summaries.
 - `/admin/imports/jobs` (admin only) shows all import jobs with real-time progress tracking and filtering.
 - `/admin/imports/history` (admin only) lists recent ingestion runs with filters, decoded metadata, and surfaced errors.
 - `/admin/exports` (admin only) tracks SFTP export jobs, delivery status, and failure messages.
 - `/admin/meters` (admin only) allows you to add, view, and manage meters before importing data.
+
+## Tariff Switching Analysis
+
+The platform includes comprehensive tariff switching analysis capabilities:
+
+- **Compare Tariffs**: Analyze consumption history against all available tariffs
+- **Calculate Savings**: Identify potential cost savings by switching suppliers/tariffs
+- **Historical Tracking**: Save and review past switching analyses
+- **Detailed Breakdowns**: View unit costs, standing charges, and total costs side-by-side
+- **Time-of-Use Support**: Handles peak/off-peak/weekend rate structures
+
+See `docs/tariff_switching_analysis.md` for detailed documentation on using the tariff switching feature.
 
 ## Getting Started with Data Import
 

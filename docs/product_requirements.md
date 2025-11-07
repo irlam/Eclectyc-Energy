@@ -30,8 +30,8 @@ Friend-supplied blueprint captured below so we can benchmark the current platfor
 
 | Capability | Status | Notes |
 | --- | --- | --- |
-| Upload simple fixed tariffs | Partial | Tariff CRUD absent; listing view shows seeded records. |
-| Support split tariffs by time bands | Planned | Schema holds peak/off-peak; need ingestion + calculator. |
+| Upload simple fixed tariffs | Supported | Full CRUD operations available via `/admin/tariffs`. |
+| Support split tariffs by time bands | Supported | Schema holds peak/off-peak/weekend rates; calculator handles time bands. |
 | Complex intraday rates per interval | Planned | Requires tariff schedule modelling. |
 | Automated updates from supplier/customer | Planned | Needs API ingestion & versioning. |
 | Flexible tariff performance reporting | Planned | Depends on aggregation + tariffs engine. |
@@ -46,7 +46,7 @@ Friend-supplied blueprint captured below so we can benchmark the current platfor
 | Comparative analytics (site/meter vs previous periods) | Planned | Needs aggregation tables. |
 | Group-level comparisons (company, region) | Planned | Summaries awaited from aggregation services. |
 | Flexible tariff success metrics | Planned | Dependent on tariffs + aggregation. |
-| Customer switching analysis vs alternative suppliers | Planned | Requires tariff library + AI/external APIs. |
+| Customer switching analysis vs alternative suppliers | Supported | Full switching analysis with historical tracking, cost comparisons, and savings recommendations available at `/admin/tariff-switching`. |
 | Usage vs external temperature trends | Planned | External weather feed integration outstanding. |
 | Baseload analysis (identify constant load) | Planned | Needs analytics module on aggregated data. |
 | AI-driven insights (external factors, key metrics) | Planned | No AI services integrated yet. |
