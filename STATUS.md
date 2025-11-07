@@ -12,7 +12,7 @@ This document captures the current progress of the Eclectyc Energy platform so f
 - **APIs**: `/api/health` endpoint plus controller-backed meter/import feeds returning aggregated roll-ups, and carbon intensity API endpoints (`/api/carbon-intensity`, `/api/carbon-intensity/refresh`, `/api/carbon-intensity/history`).
 - **Access Control**: Session-backed auth service, role-aware middleware, and navigation that respects admin/manager/viewer capabilities.
 - **Aggregation**: Domain services for daily and period roll-ups (weekly/monthly/annual), CLI wrappers, and audit logging feeding the aggregation tables.
-- **Imports & Exports**: Central CSV ingestion service shared by CLI and admin UI (dry-run support, batch flash messaging), import history dashboard, and operational SFTP export pipeline with phpseclib authentication and admin activity view.
+- **Imports & Exports**: Central CSV ingestion service shared by CLI and admin UI (dry-run support, header aliasing, live progress callbacks, batch flash messaging), import history dashboard, and operational SFTP export pipeline with phpseclib authentication and admin activity view.
 - **Health Monitoring**: `/api/health` now reports environment, SFTP, filesystem, and recent activity checks with graded status codes.
 - **Requirements**: High-level capability matrix tracked in `docs/product_requirements.md`.
 

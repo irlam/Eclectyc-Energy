@@ -204,6 +204,10 @@ php scripts/import_csv.php -f /path/to/readings.csv -t hh
 ```
 Run from the project root so the autoloader resolves; switch `-t` to `daily` for single-value totals. The CLI importer supports `--dry-run`/`-n` validation, assigns a UUID batch ID, and upserts rows in `meter_readings`.
 
+- **Flexible headers**: `CsvIngestionService` recognises aliases such as `MeterCode`, `ReadDateTime`, `ReadValue`, and common unit labels, so third-party CSVs import without manual renaming.
+- **Streaming progress bar**: the CLI counts rows up front (when possible) and renders a live ASCII progress bar showing processed/imported rows and warnings. For very large files you can skip the preview count by precomputing totals (e.g. `wc -l file.csv`).
+- **Admin uploader parity**: the same alias-aware ingestion and progress metadata power `/admin/imports`, which now receives richer batch summaries.
+
 The same ingestion service powers the admin console at `/admin/imports`, giving administrators a browser-based uploader with dry-run support and flash summaries covering processed/imported/failed rows plus sample errors.
 
 ### Run Aggregations
