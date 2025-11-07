@@ -6,6 +6,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Domain\External\ExternalDataService;
+use App\Services\CarbonIntensityService;
 use DateInterval;
 use DatePeriod;
 use DateTimeImmutable;
@@ -39,8 +41,19 @@ class DashboardController
 
         $trend = [];
         $recentActivity = [];
+        $carbonIntensity = null;
 
         if ($this->pdo) {
+            try {
+                // Initialize carbon intensity service
+                $externalDataService = new ExternalDataService($this->pdo);
+                $carbonService = new CarbonIntensityService($externalDataService);
+                $carbonIntensity = $carbonService->getDashboardSummary();
+            } catch (\Throwable $e) {
+                // Carbon intensity is optional - don't break dashboard if it fails
+                error_log("Carbon intensity fetch failed: " . $e->getMessage());
+            }
+
             try {
                 $stmt = $this->pdo->query('SELECT COUNT(*) as count FROM sites');
                 $stats['total_sites'] = (int) ($stmt->fetch()['count'] ?? 0);
@@ -177,6 +190,7 @@ class DashboardController
             'stats' => $stats,
             'trend' => $trend,
             'recent_activity' => $recentActivity,
+            'carbon_intensity' => $carbonIntensity,
         ]);
     }
 }

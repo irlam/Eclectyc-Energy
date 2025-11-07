@@ -861,6 +861,17 @@ input[type="checkbox"] {
     color: #FFD5D5;
 }
 
+.energy-trend-stable {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--muted);
+}
+
+.energy-unit-small {
+    font-size: 1rem;
+    color: var(--muted);
+    font-weight: 500;
+}
+
 .energy-value {
     font-size: 2.5rem;
     font-weight: 700;
@@ -923,6 +934,22 @@ input[type="checkbox"] {
 .import-action-btn:hover {
     background: rgba(255, 255, 255, 0.15);
     color: var(--ink);
+}
+
+.carbon-level {
+    display: inline-block;
+    padding: 0.3rem 0.8rem;
+    border-radius: 999px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #000;
+    margin-bottom: 0.5rem;
+}
+
+.energy-meta {
+    font-size: 0.7rem;
+    color: var(--muted);
+    opacity: 0.8;
 }
 
 @keyframes pulse {

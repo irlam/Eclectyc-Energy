@@ -114,6 +114,39 @@
             <button class="import-action-btn">View Details</button>
         </div>
     </div>
+
+    {% if carbon_intensity %}
+    <div class="energy-card energy-card-carbon">
+        <div class="energy-header">
+            <h3>Carbon Intensity</h3>
+            {% if carbon_intensity.trend == 'rising' %}
+                <div class="energy-trend energy-trend-up">Rising</div>
+            {% elseif carbon_intensity.trend == 'falling' %}
+                <div class="energy-trend energy-trend-down">Falling</div>
+            {% else %}
+                <div class="energy-trend energy-trend-stable">Stable</div>
+            {% endif %}
+        </div>
+        <div class="energy-value">
+            {% if carbon_intensity.current_intensity %}
+                {{ carbon_intensity.current_intensity|number_format(0) }}
+                <span class="energy-unit">gCO2/kWh</span>
+            {% else %}
+                <span class="energy-unit-small">No data</span>
+            {% endif %}
+        </div>
+        <div class="energy-footer">
+            {% if carbon_intensity.classification %}
+                <div class="carbon-level" style="background-color: {{ carbon_intensity.classification.color }}">
+                    {{ carbon_intensity.classification.label }}
+                </div>
+            {% endif %}
+            {% if carbon_intensity.last_updated %}
+                <div class="energy-meta">Updated: {{ carbon_intensity.last_updated|date("H:i") }}</div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
 </div>
 
 <!-- Modern Action Cards -->

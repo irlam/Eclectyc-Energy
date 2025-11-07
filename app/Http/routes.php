@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\ImportController;
 use App\Http\Controllers\Admin\SitesController;
 use App\Http\Controllers\Admin\TariffsController;
 use App\Http\Controllers\Admin\UsersController;
+use App\Http\Controllers\Api\CarbonIntensityController;
 use App\Http\Controllers\Api\HealthController;
 use App\Http\Controllers\Api\ImportStatusController;
 use App\Http\Controllers\Api\MetersController;
@@ -42,6 +43,11 @@ $app->group('/api', function ($group) {
     $group->get('/meters', [MetersController::class, 'index']);
     $group->get('/meters/{mpan}/readings', [MetersController::class, 'readings']);
     $group->get('/import/status', [ImportStatusController::class, 'index']);
+    
+    // Carbon intensity endpoints
+    $group->get('/carbon-intensity', [CarbonIntensityController::class, 'getCurrent']);
+    $group->post('/carbon-intensity/refresh', [CarbonIntensityController::class, 'refresh']);
+    $group->get('/carbon-intensity/history', [CarbonIntensityController::class, 'getHistory']);
 });
 
 // Tools Routes

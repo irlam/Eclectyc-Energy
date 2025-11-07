@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeHealthCheck();
     initializeDataTables();
     initializeCharts();
+    initializeCarbonIntensity();
 });
 
 /**
@@ -189,9 +190,117 @@ document.addEventListener('submit', function(e) {
     }
 });
 
+/**
+ * Carbon Intensity Management
+ */
+function initializeCarbonIntensity() {
+    const carbonCard = document.querySelector('.energy-card-carbon');
+    if (!carbonCard) return;
+    
+    // Add refresh capability to carbon intensity card
+    const refreshButton = createRefreshButton();
+    const carbonHeader = carbonCard.querySelector('.energy-header');
+    if (carbonHeader) {
+        carbonHeader.appendChild(refreshButton);
+    }
+    
+    // Auto-refresh carbon intensity every 15 minutes
+    setInterval(refreshCarbonIntensity, 15 * 60 * 1000);
+}
+
+function createRefreshButton() {
+    const button = document.createElement('button');
+    button.className = 'carbon-refresh-btn';
+    button.innerHTML = '↻';
+    button.title = 'Refresh carbon intensity data';
+    button.style.cssText = `
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: var(--muted);
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        cursor: pointer;
+        font-size: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
+    `;
+    
+    button.addEventListener('click', refreshCarbonIntensity);
+    
+    button.addEventListener('mouseenter', () => {
+        button.style.background = 'rgba(255, 255, 255, 0.2)';
+        button.style.color = 'var(--ink)';
+    });
+    
+    button.addEventListener('mouseleave', () => {
+        button.style.background = 'rgba(255, 255, 255, 0.1)';
+        button.style.color = 'var(--muted)';
+    });
+    
+    return button;
+}
+
+async function refreshCarbonIntensity() {
+    const carbonCard = document.querySelector('.energy-card-carbon');
+    const refreshBtn = document.querySelector('.carbon-refresh-btn');
+    
+    if (!carbonCard) return;
+    
+    // Show loading state
+    if (refreshBtn) {
+        refreshBtn.style.animation = 'spin 1s linear infinite';
+        refreshBtn.disabled = true;
+    }
+    
+    try {
+        const response = await fetch('/api/carbon-intensity/refresh', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            // Refresh the page to show new data
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+            
+            showNotification('Carbon intensity data updated successfully', 'success');
+        } else {
+            showNotification('Failed to update carbon intensity data', 'error');
+        }
+    } catch (error) {
+        console.error('Carbon intensity refresh error:', error);
+        showNotification('Error updating carbon intensity data', 'error');
+    } finally {
+        // Remove loading state
+        if (refreshBtn) {
+            refreshBtn.style.animation = '';
+            refreshBtn.disabled = false;
+        }
+    }
+}
+
+// Add CSS animation for refresh button
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+    }
+`;
+document.head.appendChild(style);
+
 // Export functions for use in other scripts
 window.EclectycEnergy = {
     formatUKDate,
     showNotification,
-    checkHealth: initializeHealthCheck
+    checkHealth: initializeHealthCheck,
+    refreshCarbonIntensity
 };
