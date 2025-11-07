@@ -8,6 +8,7 @@
 use App\Config\Database;
 use App\Domain\Aggregation\DailyAggregator;
 use App\Domain\Aggregation\PeriodAggregator;
+use App\Domain\Aggregation\AggregationRangeResolver;
 use App\Domain\Orchestration\SchedulerOrchestrator;
 use App\Domain\Orchestration\TelemetryService;
 use App\Domain\Orchestration\AlertService;
@@ -112,9 +113,6 @@ function executeRangeWithOrchestration(PDO $pdo, string $range, DateTimeImmutabl
     $telemetry->recordStart($executionId, $range, $targetDate);
     
     try {
-        // Call existing aggregation logic
-        require_once dirname(__DIR__) . '/scripts/aggregate_cron.php';
-        
         $dailyAggregator = new DailyAggregator($pdo);
         $periodAggregator = new PeriodAggregator($pdo);
         
@@ -130,21 +128,21 @@ function executeRangeWithOrchestration(PDO $pdo, string $range, DateTimeImmutabl
                 break;
                 
             case 'weekly':
-                [$start, $end] = aggregationResolveWeeklyRange($targetDate);
+                [$start, $end] = AggregationRangeResolver::resolveWeeklyRange($targetDate);
                 $summary = $periodAggregator->aggregate('weekly', $start, $end);
                 $metersProcessed = $summary->getMetersWithData();
                 $errors = $summary->getErrors();
                 break;
                 
             case 'monthly':
-                [$start, $end] = aggregationResolveMonthlyRange($targetDate);
+                [$start, $end] = AggregationRangeResolver::resolveMonthlyRange($targetDate);
                 $summary = $periodAggregator->aggregate('monthly', $start, $end);
                 $metersProcessed = $summary->getMetersWithData();
                 $errors = $summary->getErrors();
                 break;
                 
             case 'annual':
-                [$start, $end] = aggregationResolveAnnualRange($targetDate);
+                [$start, $end] = AggregationRangeResolver::resolveAnnualRange($targetDate);
                 $summary = $periodAggregator->aggregate('annual', $start, $end);
                 $metersProcessed = $summary->getMetersWithData();
                 $errors = $summary->getErrors();

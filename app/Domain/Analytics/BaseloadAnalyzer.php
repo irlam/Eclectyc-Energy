@@ -71,9 +71,14 @@ class BaseloadAnalyzer
         $totalConsumption = array_sum(array_column($dailyData, 'total_consumption'));
         
         // Estimate baseload as the lowest 10th percentile
+        // For small datasets, use minimum value
         sort($minDailyConsumptions);
-        $percentile10Index = (int) floor(count($minDailyConsumptions) * 0.1);
-        $baseloadEstimate = $minDailyConsumptions[$percentile10Index] ?? $minBaseload;
+        if (count($minDailyConsumptions) >= 10) {
+            $percentile10Index = (int) floor(count($minDailyConsumptions) * 0.1);
+            $baseloadEstimate = $minDailyConsumptions[$percentile10Index];
+        } else {
+            $baseloadEstimate = $minBaseload;
+        }
         
         // Calculate baseload percentage
         $baseloadPercentage = $totalConsumption > 0 

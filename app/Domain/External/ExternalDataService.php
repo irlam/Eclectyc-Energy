@@ -218,7 +218,7 @@ class ExternalDataService
             
             // Use average carbon intensity for the day if available
             $avgIntensity = 0;
-            if (isset($carbonByDate[$date])) {
+            if (isset($carbonByDate[$date]) && count($carbonByDate[$date]) > 0) {
                 $intensities = array_column($carbonByDate[$date], 'intensity');
                 $avgIntensity = array_sum($intensities) / count($intensities);
             }

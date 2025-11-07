@@ -50,9 +50,18 @@ class ComparisonSnapshotService
         $weekEnd = $weekStart->modify('+6 days');
         
         $current = $this->fetchWeeklyData($meterId, $weekStart, $weekEnd);
-        $prevWeek = $this->fetchWeeklyData($meterId, $weekStart->modify('-7 days'), $weekEnd->modify('-7 days'));
-        $prevMonth = $this->fetchWeeklyData($meterId, $weekStart->modify('-1 month'), $weekEnd->modify('-1 month'));
-        $prevYear = $this->fetchWeeklyData($meterId, $weekStart->modify('-1 year'), $weekEnd->modify('-1 year'));
+        
+        $prevWeekStart = $weekStart->modify('-7 days');
+        $prevWeekEnd = $prevWeekStart->modify('+6 days');
+        $prevWeek = $this->fetchWeeklyData($meterId, $prevWeekStart, $prevWeekEnd);
+        
+        $prevMonthStart = $weekStart->modify('-1 month');
+        $prevMonthEnd = $prevMonthStart->modify('+6 days');
+        $prevMonth = $this->fetchWeeklyData($meterId, $prevMonthStart, $prevMonthEnd);
+        
+        $prevYearStart = $weekStart->modify('-1 year');
+        $prevYearEnd = $prevYearStart->modify('+6 days');
+        $prevYear = $this->fetchWeeklyData($meterId, $prevYearStart, $prevYearEnd);
         
         return new WeeklyComparisonSnapshot(
             current: $current,
@@ -70,8 +79,14 @@ class ComparisonSnapshotService
         $monthEnd = $monthStart->modify('last day of this month');
         
         $current = $this->fetchMonthlyData($meterId, $monthStart, $monthEnd);
-        $prevMonth = $this->fetchMonthlyData($meterId, $monthStart->modify('-1 month'), $monthEnd->modify('-1 month'));
-        $prevYear = $this->fetchMonthlyData($meterId, $monthStart->modify('-1 year'), $monthEnd->modify('-1 year'));
+        
+        $prevMonthStart = $monthStart->modify('-1 month');
+        $prevMonthEnd = $prevMonthStart->modify('last day of this month');
+        $prevMonth = $this->fetchMonthlyData($meterId, $prevMonthStart, $prevMonthEnd);
+        
+        $prevYearStart = $monthStart->modify('-1 year');
+        $prevYearEnd = $prevYearStart->modify('last day of this month');
+        $prevYear = $this->fetchMonthlyData($meterId, $prevYearStart, $prevYearEnd);
         
         return new MonthlyComparisonSnapshot(
             current: $current,

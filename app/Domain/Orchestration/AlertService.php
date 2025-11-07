@@ -131,7 +131,7 @@ class AlertService
 
     private function shouldSendEmail(): bool
     {
-        return !empty($this->config['mail_enabled'] ?? $_ENV['MAIL_HOST'] ?? null);
+        return ($this->config['mail_enabled'] ?? false) && !empty($_ENV['MAIL_HOST']);
     }
 
     private function sendEmail(string $subject, string $message): void
