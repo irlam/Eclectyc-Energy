@@ -190,6 +190,11 @@ class ImportAlertService
 
     /**
      * Send email notification
+     * 
+     * Note: Uses PHP's mail() function for simplicity. For production deployments
+     * with high email volume or strict deliverability requirements, consider
+     * replacing with PHPMailer, SwiftMailer, or a transactional email service
+     * (e.g., SendGrid, Mailgun, Amazon SES).
      */
     private function sendEmail(string $to, string $subject, string $message): bool
     {

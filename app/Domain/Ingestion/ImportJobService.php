@@ -67,17 +67,28 @@ class ImportJobService
      */
     public function updateStatus(string $batchId, string $status, ?string $errorMessage = null): void
     {
-        $stmt = $this->pdo->prepare('
-            UPDATE import_jobs 
-            SET status = ?, 
-                error_message = ?,
-                last_error = CASE WHEN ? IS NOT NULL THEN ? ELSE last_error END,
-                started_at = CASE WHEN ? = "processing" AND started_at IS NULL THEN NOW() ELSE started_at END,
-                completed_at = CASE WHEN ? IN ("completed", "failed", "cancelled") THEN NOW() ELSE completed_at END
-            WHERE batch_id = ?
-        ');
+        // Build the update query based on status
+        $setStarted = ($status === 'processing') ? 'started_at = COALESCE(started_at, NOW())' : 'started_at = started_at';
+        $setCompleted = in_array($status, ['completed', 'failed', 'cancelled']) 
+            ? 'completed_at = NOW()' 
+            : 'completed_at = completed_at';
         
-        $stmt->execute([$status, $errorMessage, $errorMessage, $errorMessage, $status, $status, $batchId]);
+        $stmt = $this->pdo->prepare("
+            UPDATE import_jobs 
+            SET status = :status, 
+                error_message = :error_message,
+                last_error = COALESCE(:last_error, last_error),
+                $setStarted,
+                $setCompleted
+            WHERE batch_id = :batch_id
+        ");
+        
+        $stmt->execute([
+            'status' => $status,
+            'error_message' => $errorMessage,
+            'last_error' => $errorMessage,
+            'batch_id' => $batchId
+        ]);
     }
 
     /**
