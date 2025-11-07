@@ -656,14 +656,26 @@ class CsvIngestionService
             return null;
         }
 
+        // Handle special case: format like "30:00.0" which means 00:30:00 (MM:SS.f format)
+        // When first component is >= 24 and <= 59, treat as minutes:seconds
         if (preg_match('/^(\d{1,3}):(\d{2})(?:\.(\d+))?$/', $value, $matches)) {
             $first = (int) $matches[1];
             $second = (int) $matches[2];
 
+            // If first component is 0-23, treat as HH:MM
             if ($first <= 23) {
                 return [$first, $second, 0];
             }
+            
+            // If first component is 24-59, treat as MM:SS (minutes:seconds)
+            if ($first >= 24 && $first <= 59) {
+                $hours = 0;
+                $minutes = $first;
+                $seconds = $second;
+                return [$hours, $minutes, $seconds];
+            }
 
+            // If first component is >= 60, convert total seconds to H:M:S
             $totalSeconds = ($first * 60) + $second;
             $hours = (int) floor($totalSeconds / 3600);
             $minutes = (int) floor(($totalSeconds % 3600) / 60);
@@ -903,6 +915,35 @@ class CsvIngestionService
         $value = $this->normaliseString($value);
         if ($value === '') {
             return null;
+        }
+
+        // Handle special case: dates with year "0" or missing year (e.g., "30/08/0" or "30/08")
+        // These should use the current year
+        if (preg_match('/^(\d{1,2})\/(\d{1,2})\/0$/', $value, $matches)) {
+            $day = (int) $matches[1];
+            $month = (int) $matches[2];
+            $year = (int) date('Y');
+            
+            try {
+                $date = new DateTimeImmutable(sprintf('%04d-%02d-%02d', $year, $month, $day));
+                return $date;
+            } catch (Exception $e) {
+                // Invalid date, fall through to other parsing methods
+            }
+        }
+        
+        // Handle dates without year (e.g., "30/08") - use current year
+        if (preg_match('/^(\d{1,2})\/(\d{1,2})$/', $value, $matches)) {
+            $day = (int) $matches[1];
+            $month = (int) $matches[2];
+            $year = (int) date('Y');
+            
+            try {
+                $date = new DateTimeImmutable(sprintf('%04d-%02d-%02d', $year, $month, $day));
+                return $date;
+            } catch (Exception $e) {
+                // Invalid date, fall through to other parsing methods
+            }
         }
 
         $formats = ['d/m/Y', 'Y-m-d', DateTime::RFC3339];
