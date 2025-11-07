@@ -10,6 +10,7 @@ use App\Http\Controllers\Admin\ImportController;
 use App\Http\Controllers\Admin\MetersController as AdminMetersController;
 use App\Http\Controllers\Admin\SitesController;
 use App\Http\Controllers\Admin\TariffsController;
+use App\Http\Controllers\Admin\TariffSwitchingController;
 use App\Http\Controllers\Admin\UsersController;
 use App\Http\Controllers\Api\CarbonIntensityController;
 use App\Http\Controllers\Api\HealthController;
@@ -97,6 +98,12 @@ $app->group('/admin', function ($group) {
     $group->get('/tariffs/{id}/edit', [TariffsController::class, 'edit'])->setName('admin.tariffs.edit');
     $group->post('/tariffs/{id}', [TariffsController::class, 'update'])->setName('admin.tariffs.update');
     $group->post('/tariffs/{id}/delete', [TariffsController::class, 'delete'])->setName('admin.tariffs.delete');
+    
+    // Tariff switching analysis routes
+    $group->get('/tariff-switching', [TariffSwitchingController::class, 'index'])->setName('admin.tariff_switching');
+    $group->post('/tariff-switching/analyze', [TariffSwitchingController::class, 'analyze'])->setName('admin.tariff_switching.analyze');
+    $group->get('/tariff-switching/{id}/quick', [TariffSwitchingController::class, 'quickAnalyze'])->setName('admin.tariff_switching.quick');
+    $group->get('/tariff-switching/{id}/history', [TariffSwitchingController::class, 'history'])->setName('admin.tariff_switching.history');
     
     // Users CRUD routes
     $group->get('/users', [UsersController::class, 'index'])->setName('admin.users');

@@ -1,0 +1,228 @@
+{% extends "base.twig" %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<section class="card">
+    <div class="card-header">
+        <div>
+            <h2>{{ page_title }}</h2>
+            <p>Compare current tariff costs against alternatives and identify savings opportunities.</p>
+        </div>
+    </div>
+
+    {% if flash %}
+        <div class="alert alert-{{ flash.type == 'error' ? 'danger' : flash.type }}">
+            {{ flash.message }}
+        </div>
+    {% endif %}
+
+    {% if error %}
+        <div class="alert alert-danger">{{ error }}</div>
+    {% else %}
+        {# Analysis Form #}
+        <div class="card" style="margin-top: 1.5rem;">
+            <h2 style="font-size: 1.1rem; margin-bottom: 1rem;">🔍 Analyze Switching Opportunities</h2>
+            <form method="POST" action="/admin/tariff-switching/analyze">
+                <div class="grid grid-cols-2">
+                    <div class="form-group">
+                        <label for="meter_id">Select Meter</label>
+                        <select id="meter_id" name="meter_id" required onchange="updateTariffInfo()">
+                            <option value="">-- Select a meter --</option>
+                            {% for meter in meters %}
+                                <option value="{{ meter.id }}" 
+                                        data-tariff-id="{{ meter.current_tariff_id }}"
+                                        data-tariff-name="{{ meter.current_tariff_name }}"
+                                        {% if selected_meter and selected_meter.id == meter.id %}selected{% endif %}>
+                                    {{ meter.mpan }} - {{ meter.site_name }} ({{ meter.meter_type|capitalize }})
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="current_tariff_display">Current Tariff</label>
+                        <input type="hidden" id="current_tariff_id" name="current_tariff_id" value="{{ form_data.current_tariff_id ?? '' }}">
+                        <input type="text" id="current_tariff_display" readonly placeholder="Select a meter first">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2">
+                    <div class="form-group">
+                        <label for="start_date">Analysis Start Date</label>
+                        <input type="date" id="start_date" name="start_date" 
+                               value="{{ form_data.start_date ?? '' }}" required>
+                        <small class="form-text">Recommended: 90 days ago</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="end_date">Analysis End Date</label>
+                        <input type="date" id="end_date" name="end_date" 
+                               value="{{ form_data.end_date ?? '' }}" required>
+                        <small class="form-text">Recommended: Today</small>
+                    </div>
+                </div>
+
+                <div class="form-actions" style="display: flex; gap: 0.75rem;">
+                    <button type="submit" class="btn btn-primary">
+                        📊 Analyze Tariffs
+                    </button>
+                    <button type="button" class="btn btn-secondary" onclick="setDefaultDates()">
+                        📅 Use Last 90 Days
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        {% if analysis %}
+            {% if analysis.error %}
+                <div class="alert alert-warning" style="margin-top: 1.5rem;">
+                    ⚠️ {{ analysis.error }}
+                </div>
+            {% else %}
+                {# Analysis Summary #}
+                <div class="card" style="margin-top: 1.5rem;">
+                    <h2 style="font-size: 1.1rem; margin-bottom: 1rem;">📊 Analysis Summary</h2>
+                    <div class="grid grid-cols-4">
+                        <div>
+                            <strong>Period Analyzed</strong><br>
+                            <span class="muted">{{ analysis.analysis_period.start_date }} to {{ analysis.analysis_period.end_date }}</span>
+                        </div>
+                        <div>
+                            <strong>Total Consumption</strong><br>
+                            <span class="muted">{{ analysis.analysis_period.total_consumption|number_format(2) }} kWh</span>
+                        </div>
+                        <div>
+                            <strong>Days Analyzed</strong><br>
+                            <span class="muted">{{ analysis.analysis_period.days_analyzed }} days</span>
+                        </div>
+                        <div>
+                            <strong>Current Tariff</strong><br>
+                            <span class="muted">{{ analysis.current.tariff_name }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                {# Cost Comparison Cards #}
+                <div class="grid grid-cols-3" style="margin-top: 1.5rem;">
+                    {# Current Tariff Cost #}
+                    <div class="card">
+                        <h2 style="font-size: 1rem; color: var(--brand-alt); margin-bottom: 0.5rem;">💳 Current Tariff Cost</h2>
+                        <div class="energy-value" style="margin-bottom: 0.75rem;">£{{ analysis.current.total_cost|number_format(2) }}</div>
+                        <div style="padding: 0.75rem 0; border-top: 1px solid var(--line);">
+                            <p style="margin-bottom: 0.5rem;"><strong>Unit Cost:</strong> <span class="muted">£{{ analysis.current.unit_cost|number_format(2) }}</span></p>
+                            <p style="margin-bottom: 0.5rem;"><strong>Standing Charge:</strong> <span class="muted">£{{ analysis.current.standing_charge_cost|number_format(2) }}</span></p>
+                            <p style="margin: 0;"><small class="muted">Supplier: {{ analysis.current.supplier_name }}</small></p>
+                        </div>
+                    </div>
+
+                    {% if analysis.recommendation %}
+                        {# Recommended Tariff #}
+                        <div class="card">
+                            <h2 style="font-size: 1rem; color: var(--brand); margin-bottom: 0.5rem;">✅ Recommended Tariff</h2>
+                            <h3 style="font-size: 0.95rem; margin-bottom: 0.5rem;">{{ analysis.recommendation.tariff_name }}</h3>
+                            <div class="energy-value" style="margin-bottom: 0.75rem;">£{{ analysis.recommendation.total_cost|number_format(2) }}</div>
+                            <div style="padding: 0.75rem 0; border-top: 1px solid var(--line);">
+                                <p style="margin-bottom: 0.5rem;"><strong>Unit Cost:</strong> <span class="muted">£{{ analysis.recommendation.unit_cost|number_format(2) }}</span></p>
+                                <p style="margin-bottom: 0.5rem;"><strong>Standing Charge:</strong> <span class="muted">£{{ analysis.recommendation.standing_charge_cost|number_format(2) }}</span></p>
+                                <p style="margin: 0;"><small class="muted">Supplier: {{ analysis.recommendation.supplier_name }}</small></p>
+                            </div>
+                        </div>
+
+                        {# Potential Savings #}
+                        <div class="card">
+                            <h2 style="font-size: 1rem; color: var(--warning); margin-bottom: 0.5rem;">💰 Potential Savings</h2>
+                            <div class="energy-value" style="margin-bottom: 0.25rem;">£{{ analysis.recommendation.potential_savings|number_format(2) }}</div>
+                            <div class="energy-value-small" style="margin-bottom: 0.75rem;">{{ analysis.recommendation.savings_percent }}% savings</div>
+                            <div style="padding: 0.75rem 0; border-top: 1px solid var(--line);">
+                                <p style="margin: 0; font-size: 0.85rem; line-height: 1.5;">
+                                    By switching from <strong>{{ analysis.current.tariff_name }}</strong> 
+                                    to <strong>{{ analysis.recommendation.tariff_name }}</strong>
+                                </p>
+                            </div>
+                        </div>
+                    {% else %}
+                        {# No Better Options #}
+                        <div class="card" style="grid-column: span 2;">
+                            <h2 style="font-size: 1rem; margin-bottom: 0.5rem;">ℹ️ No Better Options Found</h2>
+                            <p>Your current tariff appears to be the most competitive option available.</p>
+                            <p style="margin: 0;">Review the alternative tariffs below to see detailed comparisons.</p>
+                        </div>
+                    {% endif %}
+                </div>
+
+                {# Alternative Tariffs Table #}
+                <div class="card" style="margin-top: 1.5rem;">
+                    <h2 style="font-size: 1.1rem; margin-bottom: 1rem;">📋 Alternative Tariffs Comparison</h2>
+                    <div class="table-wrapper">
+                        <table class="table">
+                            <thead>
+                                <tr>
+                                    <th>Tariff Name</th>
+                                    <th>Supplier</th>
+                                    <th>Type</th>
+                                    <th>Unit Rate</th>
+                                    <th>Standing Charge</th>
+                                    <th>Total Cost</th>
+                                    <th>Savings</th>
+                                    <th>Savings %</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for alt in analysis.alternatives %}
+                                    <tr {% if alt.potential_savings > 0 %}style="background: rgba(39, 224, 165, 0.08);"{% endif %}>
+                                        <td>
+                                            <strong>{{ alt.tariff_name }}</strong>
+                                            {% if alt.tariff_code %}<br><small class="muted">{{ alt.tariff_code }}</small>{% endif %}
+                                        </td>
+                                        <td>{{ alt.supplier_name }}</td>
+                                        <td><span class="status-pill">{{ alt.tariff_type|replace({'_': ' '})|title }}</span></td>
+                                        <td>{{ alt.unit_rate ? (alt.unit_rate|number_format(4) ~ 'p') : 'N/A' }}</td>
+                                        <td>{{ alt.standing_charge ? (alt.standing_charge|number_format(4) ~ 'p/day') : 'N/A' }}</td>
+                                        <td><strong>£{{ alt.total_cost|number_format(2) }}</strong></td>
+                                        <td style="{% if alt.potential_savings > 0 %}color: var(--brand);{% elseif alt.potential_savings < 0 %}color: var(--danger);{% endif %}">
+                                            £{{ alt.potential_savings|number_format(2) }}
+                                        </td>
+                                        <td style="{% if alt.savings_percent > 0 %}color: var(--brand);{% elseif alt.savings_percent < 0 %}color: var(--danger);{% endif %}">
+                                            {{ alt.savings_percent }}%
+                                        </td>
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            {% endif %}
+        {% endif %}
+    {% endif %}
+</section>
+
+<script>
+function updateTariffInfo() {
+    const select = document.getElementById('meter_id');
+    const option = select.options[select.selectedIndex];
+    const tariffId = option.getAttribute('data-tariff-id');
+    const tariffName = option.getAttribute('data-tariff-name');
+    
+    document.getElementById('current_tariff_id').value = tariffId || '';
+    document.getElementById('current_tariff_display').value = tariffName || 'No tariff assigned';
+}
+
+function setDefaultDates() {
+    const today = new Date();
+    const ninetyDaysAgo = new Date(today);
+    ninetyDaysAgo.setDate(today.getDate() - 90);
+    
+    document.getElementById('end_date').value = today.toISOString().split('T')[0];
+    document.getElementById('start_date').value = ninetyDaysAgo.toISOString().split('T')[0];
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    updateTariffInfo();
+    
+    // Set default dates if not already set
+    if (!document.getElementById('start_date').value || !document.getElementById('end_date').value) {
+        setDefaultDates();
+    }
+});
+</script>
+{% endblock %}
