@@ -2,7 +2,7 @@
 /**
  * eclectyc-energy/tests/test_import_jobs.php
  * Simple integration test for import job functionality
- * Last updated: 07/11/2025
+ * Last updated: 2025-11-07
  */
 
 require_once dirname(__DIR__) . '/vendor/autoload.php';

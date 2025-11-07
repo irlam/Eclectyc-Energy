@@ -2,7 +2,7 @@
 /**
  * eclectyc-energy/app/Http/Controllers/Api/ImportJobController.php
  * API endpoint for import job status and progress
- * Last updated: 07/11/2025
+ * Last updated: 2025-11-07
  */
 
 namespace App\Http\Controllers\Api;

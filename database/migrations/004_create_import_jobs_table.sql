@@ -1,6 +1,6 @@
 -- eclectyc-energy/database/migrations/004_create_import_jobs_table.sql
 -- Create import jobs table for tracking async import processes
--- Last updated: 07/11/2025
+-- Last updated: 2025-11-07
 
 CREATE TABLE IF NOT EXISTS import_jobs (
     id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,

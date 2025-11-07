@@ -2,7 +2,7 @@
 /**
  * eclectyc-energy/app/Domain/Ingestion/ImportJobService.php
  * Service for managing async import jobs
- * Last updated: 07/11/2025
+ * Last updated: 2025-11-07
  */
 
 namespace App\Domain\Ingestion;

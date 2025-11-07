@@ -2,7 +2,7 @@
 /**
  * eclectyc-energy/scripts/process_import_jobs.php
  * Background worker for processing queued import jobs
- * Last updated: 07/11/2025
+ * Last updated: 2025-11-07
  */
 
 use App\Config\Database;
