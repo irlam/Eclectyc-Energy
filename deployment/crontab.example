@@ -1,0 +1,17 @@
+# Cron jobs for Eclectyc Energy Import System
+# Add these to your crontab: crontab -e
+
+# Process import jobs every minute (alternative to supervisor/systemd)
+* * * * * cd /path/to/eclectyc-energy && /usr/bin/php scripts/process_import_jobs.php --once >> logs/import_worker_cron.log 2>&1
+
+# Monitor import system health every 15 minutes
+*/15 * * * * cd /path/to/eclectyc-energy && /usr/bin/php scripts/monitor_import_system.php --handle-stuck --send-alerts >> logs/import_monitor.log 2>&1
+
+# Clean up old import jobs weekly (Sundays at 2 AM)
+0 2 * * 0 cd /path/to/eclectyc-energy && /usr/bin/php scripts/cleanup_import_jobs.php --days 30 --verbose >> logs/import_cleanup.log 2>&1
+
+# Daily aggregation (1:30 AM)
+30 1 * * * cd /path/to/eclectyc-energy && /usr/bin/php scripts/aggregate_orchestrated.php --all --verbose >> logs/aggregation.log 2>&1
+
+# Data quality checks (2:00 AM)
+0 2 * * * cd /path/to/eclectyc-energy && /usr/bin/php scripts/run_data_quality_checks.php --verbose >> logs/data_quality.log 2>&1

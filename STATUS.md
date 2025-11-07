@@ -39,7 +39,8 @@ This document captures the current progress of the Eclectyc Energy platform so f
 
 - **Data Imports**
   - ✅ Queue-backed web imports with job tracking UI and CLI worker scaffold (`process_import_jobs.php`) now in place.
-  - Add governed retry workflows, richer batch attribution/notes, and schedule/monitor the worker in production (systemd/Supervisor, alerting, retention cleanup).
+  - ✅ **Operationalized async ingestion**: Governed retry workflows (exponential backoff, max 3 retries), richer batch attribution (notes, priority, tags, metadata), monitoring service for health checks and stuck jobs, alerting service (email/Slack), automated cleanup with retention policies, and deployment templates (supervisor/systemd/cron).
+
 
 - **CRUD & Admin UI**
   - Add create/edit flows for sites, meters, tariffs; introduce validation, flash messaging, and REST endpoints.
