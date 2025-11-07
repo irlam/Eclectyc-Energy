@@ -30,4 +30,23 @@
         </div>
     </form>
 </section>
+
+<section class="card">
+    <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; gap: 1rem;">
+        <div>
+            <h2 class="mb-1">Interactive Showcase</h2>
+            <p class="muted-text">Explore the full platform experience without signing in.</p>
+        </div>
+        <a class="btn btn-secondary" href="/showcase/index.html" target="_blank" rel="noopener">Open Fullscreen</a>
+    </div>
+    <div class="showcase-frame-wrapper">
+        <iframe
+            class="showcase-iframe"
+            src="/showcase/index.html"
+            title="Eclectyc Energy Showcase"
+            loading="lazy"
+            allowfullscreen
+        ></iframe>
+    </div>
+</section>
 {% endblock %}
