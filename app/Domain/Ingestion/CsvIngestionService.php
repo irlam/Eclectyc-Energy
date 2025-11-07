@@ -495,20 +495,15 @@ class CsvIngestionService
 
     private function resolveColumnName(array $headerMap, array $aliases): ?string
     {
-        $normalisedValues = [];
-        foreach ($headerMap as $column) {
-            $normalisedValues[$this->normaliseHeaderKey($column)] = $column;
+        $aliasKeys = [];
+        foreach ($aliases as $alias) {
+            $aliasKeys[$this->normaliseHeaderKey($alias)] = true;
         }
 
-        foreach ($aliases as $alias) {
-            $normalised = $this->normaliseHeaderKey($alias);
-
-            if (isset($headerMap[$normalised])) {
-                return $headerMap[$normalised];
-            }
-
-            if (isset($normalisedValues[$normalised])) {
-                return $normalisedValues[$normalised];
+        foreach ($headerMap as $column) {
+            $normalisedColumn = $this->normaliseHeaderKey((string) $column);
+            if (isset($aliasKeys[$normalisedColumn])) {
+                return $column;
             }
         }
 
