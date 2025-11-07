@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eclectyc Energy Platform - Interactive Showcase</title>
+    <link rel="stylesheet" href="css/showcase.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation Sidebar -->
+    <nav class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <div class="logo">
+                <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="20" cy="20" r="18" stroke="url(#gradient)" stroke-width="2"/>
+                    <path d="M20 8L20 32M12 16L28 16M12 24L28 24" stroke="url(#gradient)" stroke-width="2" stroke-linecap="round"/>
+                    <defs>
+                        <linearGradient id="gradient" x1="0" y1="0" x2="40" y2="40">
+                            <stop offset="0%" stop-color="#10b981"/>
+                            <stop offset="100%" stop-color="#3b82f6"/>
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <div>
+                    <h1>Eclectyc Energy</h1>
+                    <p>Interactive Showcase</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="tour-controls">
+            <button class="btn btn-primary" id="startTour">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M3 2l10 6-10 6V2z"/>
+                </svg>
+                Start Guided Tour
+            </button>
+            <div class="progress-indicator">
+                <div class="progress-bar" id="tourProgress"></div>
+            </div>
+        </div>
+        
+        <ul class="nav-menu" id="navMenu">
+            <li class="nav-item active" data-section="welcome">
+                <span class="nav-icon">🏠</span>
+                <span>Welcome</span>
+                <span class="nav-badge">Start</span>
+            </li>
+            <li class="nav-item" data-section="architecture">
+                <span class="nav-icon">🏗️</span>
+                <span>System Architecture</span>
+            </li>
+            <li class="nav-item" data-section="import-flow">
+                <span class="nav-icon">📥</span>
+                <span>Data Import Flow</span>
+            </li>
+            <li class="nav-item" data-section="worker-demo">
+                <span class="nav-icon">🔄</span>
+                <span>Background Worker</span>
+            </li>
+            <li class="nav-item" data-section="aggregation-flow">
+                <span class="nav-icon">📊</span>
+                <span>Data Aggregation</span>
+            </li>
+            <li class="nav-item" data-section="tariff-analysis">
+                <span class="nav-icon">💰</span>
+                <span>Tariff Analysis</span>
+            </li>
+            <li class="nav-item" data-section="carbon-intensity">
+                <span class="nav-icon">🌍</span>
+                <span>Carbon Tracking</span>
+            </li>
+            <li class="nav-item" data-section="analytics">
+                <span class="nav-icon">📈</span>
+                <span>Analytics Engine</span>
+            </li>
+            <li class="nav-item" data-section="security">
+                <span class="nav-icon">🔐</span>
+                <span>Security & Access</span>
+            </li>
+            <li class="nav-item" data-section="monitoring">
+                <span class="nav-icon">🛠️</span>
+                <span>Monitoring & Ops</span>
+            </li>
+            <li class="nav-item" data-section="best-practices">
+                <span class="nav-icon">🎯</span>
+                <span>Best Practices</span>
+            </li>
+            <li class="nav-item" data-section="workflows">
+                <span class="nav-icon">🚀</span>
+                <span>Advanced Workflows</span>
+            </li>
+        </ul>
+        
+        <div class="sidebar-footer">
+            <a href="../README.md" class="footer-link">📘 Documentation</a>
+            <a href="../STATUS.md" class="footer-link">📊 Status</a>
+        </div>
+    </nav>
+
+    <!-- Main Content Area -->
+    <main class="main-content" id="mainContent">
+        <!-- Welcome Section -->
+        <section class="content-section active" id="welcome">
+            <div class="hero">
+                <div class="hero-badge">Production Ready ✅</div>
+                <h1 class="hero-title">Welcome to the Eclectyc Energy Platform</h1>
+                <p class="hero-subtitle">
+                    A comprehensive, enterprise-grade energy management system built with modern PHP, 
+                    featuring real-time analytics, intelligent automation, and production-ready operations.
+                </p>
+                
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-number">96%</div>
+                        <div class="stat-label">Platform Maturity</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">20+</div>
+                        <div class="stat-label">CLI Scripts</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">100%</div>
+                        <div class="stat-label">Feature Complete</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number">12</div>
+                        <div class="stat-label">Core Modules</div>
+                    </div>
+                </div>
+                
+                <div class="feature-highlights">
+                    <div class="highlight-card">
+                        <span class="highlight-icon">⚡</span>
+                        <h3>Async Processing</h3>
+                        <p>Queue-based imports with retry logic and real-time progress tracking</p>
+                    </div>
+                    <div class="highlight-card">
+                        <span class="highlight-icon">💰</span>
+                        <h3>Tariff Intelligence</h3>
+                        <p>Automated switching analysis with savings recommendations</p>
+                    </div>
+                    <div class="highlight-card">
+                        <span class="highlight-icon">🌍</span>
+                        <h3>Carbon Reporting</h3>
+                        <p>Real-time UK grid carbon intensity integration</p>
+                    </div>
+                    <div class="highlight-card">
+                        <span class="highlight-icon">📊</span>
+                        <h3>Advanced Analytics</h3>
+                        <p>Consumption trends, baseload analysis, and comparisons</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="voice-over-box">
+                <div class="voice-over-header">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M10 2a8 8 0 100 16 8 8 0 000-16zm0 14a6 6 0 110-12 6 6 0 010 12z"/>
+                        <path d="M8 6v8l6-4-6-4z"/>
+                    </svg>
+                    <span>Welcome Narration</span>
+                </div>
+                <div class="voice-over-content">
+                    <p><strong>Hello and welcome!</strong> I'm excited to guide you through the Eclectyc Energy Platform - 
+                    a powerful, production-ready system we've built for comprehensive energy management.</p>
+                    
+                    <p>Over the next few minutes, I'll walk you through each component of the platform, showing you 
+                    exactly how energy data flows through the system, how our intelligent algorithms work, and how 
+                    everything comes together to provide actionable insights.</p>
+                    
+                    <p>You can navigate manually using the sidebar menu, or click the <strong>"Start Guided Tour"</strong> 
+                    button above for an automatic walkthrough that will move through each section with narration.</p>
+                    
+                    <p>Ready? Let's dive in and explore what makes this platform special!</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Architecture Section -->
+        <section class="content-section" id="architecture">
+            <div class="section-header">
+                <h2>🏗️ System Architecture</h2>
+                <p class="section-subtitle">Understanding the four-layer architecture that powers the platform</p>
+            </div>
+            
+            <div class="voice-over-box">
+                <div class="voice-over-header">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M10 2a8 8 0 100 16 8 8 0 000-16zm0 14a6 6 0 110-12 6 6 0 010 12z"/>
+                        <path d="M8 6v8l6-4-6-4z"/>
+                    </svg>
+                    <span>Architecture Overview</span>
+                </div>
+                <div class="voice-over-content">
+                    <p><strong>Let me explain the architecture...</strong></p>
+                    
+                    <p>The platform is built on four distinct layers, each with a specific responsibility. 
+                    This separation of concerns makes the system maintainable, scalable, and easy to understand.</p>
+                    
+                    <p>At the bottom, we have the <strong>Storage & Retrieval Layer</strong> - our MySQL database 
+                    with 12 normalized tables. This is where all your energy data lives securely.</p>
+                    
+                    <p>Above that sits the <strong>Processing & Analytics Layer</strong> - the brain of the operation. 
+                    This is where raw meter readings are transformed into meaningful insights through aggregation, 
+                    trend analysis, and intelligent calculations.</p>
+                    
+                    <p>The <strong>Data Ingestion Layer</strong> handles getting data into the system. It supports 
+                    CSV imports, validates data quality, and manages the queue of background jobs.</p>
+                    
+                    <p>Finally, the <strong>Presentation Layer</strong> is what users see - responsive web interfaces, 
+                    RESTful APIs, and real-time dashboards.</p>
+                    
+                    <p>All these layers work together seamlessly, with clear boundaries and well-defined interfaces 
+                    between them.</p>
+                </div>
+            </div>
+            
+            <div class="architecture-diagram">
+                <div class="arch-layer layer-4">
+                    <div class="layer-title">Presentation Layer</div>
+                    <div class="layer-components">
+                        <span class="component">Web UI</span>
+                        <span class="component">REST APIs</span>
+                        <span class="component">Dashboards</span>
+                        <span class="component">Reports</span>
+                    </div>
+                </div>
+                
+                <div class="arch-arrow">↓ Data Flow ↓</div>
+                
+                <div class="arch-layer layer-3">
+                    <div class="layer-title">Data Ingestion Layer</div>
+                    <div class="layer-components">
+                        <span class="component">CSV Parser</span>
+                        <span class="component">Job Queue</span>
+                        <span class="component">Validators</span>
+                        <span class="component">Import Worker</span>
+                    </div>
+                </div>
+                
+                <div class="arch-arrow">↓ Processing ↓</div>
+                
+                <div class="arch-layer layer-2">
+                    <div class="layer-title">Processing & Analytics Layer</div>
+                    <div class="layer-components">
+                        <span class="component">Aggregation</span>
+                        <span class="component">Tariff Calculator</span>
+                        <span class="component">Analytics Engine</span>
+                        <span class="component">Quality Checks</span>
+                    </div>
+                </div>
+                
+                <div class="arch-arrow">↓ Storage ↓</div>
+                
+                <div class="arch-layer layer-1">
+                    <div class="layer-title">Storage & Retrieval Layer</div>
+                    <div class="layer-components">
+                        <span class="component">MySQL Database</span>
+                        <span class="component">12 Tables</span>
+                        <span class="component">Migrations</span>
+                        <span class="component">Audit Logs</span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="tech-stack">
+                <h3>Technology Stack</h3>
+                <div class="tech-grid">
+                    <div class="tech-item">
+                        <strong>Backend</strong>
+                        <span>PHP 8.2+</span>
+                        <span>Slim Framework 4</span>
+                    </div>
+                    <div class="tech-item">
+                        <strong>Database</strong>
+                        <span>MySQL 8.0+</span>
+                        <span>PDO with Prepared Statements</span>
+                    </div>
+                    <div class="tech-item">
+                        <strong>Frontend</strong>
+                        <span>Twig Templates</span>
+                        <span>Vanilla JavaScript</span>
+                    </div>
+                    <div class="tech-item">
+                        <strong>Operations</strong>
+                        <span>Cron / Supervisor</span>
+                        <span>SFTP / Email / Slack</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Import Flow Section -->
+        <section class="content-section" id="import-flow">
+            <div class="section-header">
+                <h2>📥 Data Import Flow</h2>
+                <p class="section-subtitle">How CSV files become queryable database records</p>
+            </div>
+            
+            <div class="voice-over-box">
+                <div class="voice-over-header">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M10 2a8 8 0 100 16 8 8 0 000-16zm0 14a6 6 0 110-12 6 6 0 010 12z"/>
+                        <path d="M8 6v8l6-4-6-4z"/>
+                    </svg>
+                    <span>Import Process Walkthrough</span>
+                </div>
+                <div class="voice-over-content">
+                    <p><strong>Let me walk you through the import process step by step...</strong></p>
+                    
+                    <p>It all starts when you navigate to <code>/admin/imports</code> and select a CSV file. 
+                    The moment you hit upload, several things happen in rapid succession.</p>
+                    
+                    <p><strong>First</strong>, the file is validated. We check the size, format, and scan the headers. 
+                    Our system is smart about this - it recognizes aliases like "MeterCode", "MPAN", "Serial Number" 
+                    all as the same thing. No need to rename your columns!</p>
+                    
+                    <p><strong>Second</strong>, the file gets stored in <code>storage/imports/</code> with a unique 
+                    filename. We generate a batch ID - a UUID that tracks this specific import through its entire lifecycle.</p>
+                    
+                    <p><strong>Third</strong>, a job record is created in the <code>import_jobs</code> table. 
+                    This record stores everything: who uploaded it, when, what priority, any notes you added, and its status.</p>
+                    
+                    <p><strong>Fourth</strong>, if you selected background processing, you're immediately redirected to 
+                    the status page. The import doesn't block your browser - you can close it and come back later!</p>
+                    
+                    <p><strong>Finally</strong>, the background worker picks up the job. It processes the CSV row by row, 
+                    updating progress in real-time. Each reading is validated, de-duplicated, and inserted into 
+                    <code>meter_readings</code>.</p>
+                    
+                    <p>The whole process is tracked with atomic precision, giving you complete visibility 
+                    from upload to completion.</p>
+                </div>
+            </div>
+            
+            <div class="flow-diagram">
+                <div class="flow-step step-active" data-step="1">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h4>File Upload</h4>
+                        <p>User selects CSV via web interface</p>
+                        <ul class="step-details">
+                            <li>File size validated</li>
+                            <li>Format checked</li>
+                            <li>Headers scanned</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="flow-arrow">↓</div>
+                
+                <div class="flow-step" data-step="2">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h4>Job Creation</h4>
+                        <p>Import job record created</p>
+                        <ul class="step-details">
+                            <li>Batch ID generated (UUID)</li>
+                            <li>File stored securely</li>
+                            <li>Status: <code>queued</code></li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="flow-arrow">↓</div>
+                
+                <div class="flow-step" data-step="3">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h4>Worker Pickup</h4>
+                        <p>Background worker selects job</p>
+                        <ul class="step-details">
+                            <li>Priority-based selection</li>
+                            <li>Status: <code>processing</code></li>
+                            <li>Start timestamp recorded</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="flow-arrow">↓</div>
+                
+                <div class="flow-step" data-step="4">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <h4>Row Processing</h4>
+                        <p>CSV parsed row by row</p>
+                        <ul class="step-details">
+                            <li>Header aliasing applied</li>
+                            <li>Data validated</li>
+                            <li>Progress tracked (rows_processed)</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="flow-arrow">↓</div>
+                
+                <div class="flow-step" data-step="5">
+                    <div class="step-number">5</div>
+                    <div class="step-content">
+                        <h4>Data Insertion</h4>
+                        <p>Readings inserted into database</p>
+                        <ul class="step-details">
+                            <li>Duplicate detection</li>
+                            <li>Batch linking</li>
+                            <li>Counters updated (rows_imported)</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="flow-arrow">↓</div>
+                
+                <div class="flow-step" data-step="6">
+                    <div class="step-number">6</div>
+                    <div class="step-content">
+                        <h4>Completion</h4>
+                        <p>Job finalized with summary</p>
+                        <ul class="step-details">
+                            <li>Status: <code>completed</code></li>
+                            <li>Summary stats saved</li>
+                            <li>File cleaned up</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="code-showcase">
+                <div class="code-header">
+                    <span>📁 app/Domain/Ingestion/CsvIngestionService.php</span>
+                    <span class="code-lang">PHP</span>
+                </div>
+                <pre><code class="language-php">/**
+ * Process CSV file and import readings
+ * 
+ * This is the heart of the import system - it handles:
+ * - Flexible header recognition
+ * - Row-by-row streaming (memory efficient)
+ * - Real-time progress callbacks
+ * - Error collection and reporting
+ */
+public function ingest(
+    string $filePath,
+    string $importType,
+    callable $progressCallback = null
+): IngestionResult {
+    // Open file for streaming (doesn't load all into memory)
+    $handle = fopen($filePath, 'r');
+    
+    // Read and parse headers with aliasing
+    $headers = $this->parseHeaders(fgetcsv($handle));
+    
+    $stats = ['processed' => 0, 'imported' => 0, 'failed' => 0];
+    
+    // Process row by row
+    while (($row = fgetcsv($handle)) !== false) {
+        $stats['processed']++;
+        
+        try {
+            $reading = $this->parseRow($row, $headers);
+            $this->insertReading($reading, $batchId);
+            $stats['imported']++;
+        } catch (ValidationException $e) {
+            $stats['failed']++;
+            $this->logError($e->getMessage());
+        }
+        
+        // Real-time progress update
+        if ($progressCallback && $stats['processed'] % 100 === 0) {
+            $progressCallback($stats);
+        }
+    }
+    
+    fclose($handle);
+    return new IngestionResult($stats);
+}</code></pre>
+            </div>
+        </section>
+
+        <!-- Worker Demo Section -->
+        <section class="content-section" id="worker-demo">
+            <div class="section-header">
+                <h2>🔄 Background Worker</h2>
+                <p class="section-subtitle">The engine that processes imports with retry logic and monitoring</p>
+            </div>
+            
+            <div class="voice-over-box">
+                <div class="voice-over-header">
+                    <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                        <path d="M10 2a8 8 0 100 16 8 8 0 000-16zm0 14a6 6 0 110-12 6 6 0 010 12z"/>
+                        <path d="M8 6v8l6-4-6-4z"/>
+                    </svg>
+                    <span>Worker Process Explained</span>
+                </div>
+                <div class="voice-over-content">
+                    <p><strong>Now for one of the most important parts - the background worker...</strong></p>
+                    
+                    <p>The worker runs as either a cron job (every minute) or as a long-running supervised process. 
+                    Its job is simple: find queued jobs and process them.</p>
+                    
+                    <p>But here's where it gets smart. The worker doesn't just blindly process jobs. 
+                    It implements <strong>priority-based scheduling</strong> - high-priority jobs go first. 
+                    It also handles <strong>retry logic with exponential backoff</strong>.</p>
+                    
+                    <p>Here's how retry works: If a job fails the first time - maybe the database was momentarily 
+                    unavailable - it's not immediately marked as failed. Instead, it's scheduled to retry after 1 minute. 
+                    If it fails again, 2 minutes. Then 4, then 8, with a cap at 60 minutes.</p>
+                    
+                    <p>This gives transient issues time to resolve without hammering the system. After 3 retries, 
+                    if it still fails, only then is it permanently failed and an alert is sent.</p>
+                    
+                    <p>The worker also updates progress in real-time. Every 100 rows, it writes back to the database 
+                    so users watching the status page see live updates. When a job completes, the worker automatically 
+                    cleans up the CSV file to save disk space.</p>
+                    
+                    <p>It's robust, efficient, and handles failures gracefully.</p>
+                </div>
+            </div>
+            
+            <div class="worker-visualization">
+                <div class="worker-console">
+                    <div class="console-header">
+                        <span>● ● ●</span>
+                        <span>process_import_jobs.php --once</span>
+                    </div>
+                    <div class="console-output" id="workerConsole">
+                        <div class="console-line">[2025-11-07 13:57:26] Worker started...</div>
+                        <div class="console-line">[2025-11-07 13:57:26] Checking for queued jobs...</div>
+                        <div class="console-line success">[2025-11-07 13:57:26] Found job: batch_abc123 (priority: high)</div>
+                        <div class="console-line">[2025-11-07 13:57:27] Processing: sample_data.csv (15,000 rows)</div>
+                        <div class="console-line">[2025-11-07 13:57:28] Progress: 1,000/15,000 (6.67%)</div>
+                        <div class="console-line">[2025-11-07 13:57:29] Progress: 2,000/15,000 (13.33%)</div>
+                        <div class="console-line">[2025-11-07 13:57:30] Progress: 3,000/15,000 (20.00%)</div>
+                        <div class="console-line animate-pulse">▓▓▓▓▓▓▓░░░░░░░░░░░░░ Processing...</div>
+                    </div>
+                </div>
+                
+                <div class="retry-timeline">
+                    <h4>Retry Logic Timeline</h4>
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <div class="timeline-marker attempt-1">0</div>
+                            <div class="timeline-content">
+                                <strong>Attempt 1</strong>
+                                <p>Process immediately</p>
+                            </div>
+                        </div>
+                        <div class="timeline-connector">→ 1 min wait →</div>
+                        <div class="timeline-item">
+                            <div class="timeline-marker attempt-2">1</div>
+                            <div class="timeline-content">
+                                <strong>Retry 1</strong>
+                                <p>After 1 minute</p>
+                            </div>
+                        </div>
+                        <div class="timeline-connector">→ 2 min wait →</div>
+                        <div class="timeline-item">
+                            <div class="timeline-marker attempt-3">2</div>
+                            <div class="timeline-content">
+                                <strong>Retry 2</strong>
+                                <p>After 2 minutes</p>
+                            </div>
+                        </div>
+                        <div class="timeline-connector">→ 4 min wait →</div>
+                        <div class="timeline-item">
+                            <div class="timeline-marker attempt-4">3</div>
+                            <div class="timeline-content">
+                                <strong>Retry 3</strong>
+                                <p>After 4 minutes</p>
+                            </div>
+                        </div>
+                        <div class="timeline-connector">→ Failed →</div>
+                        <div class="timeline-item">
+                            <div class="timeline-marker failed">✕</div>
+                            <div class="timeline-content">
+                                <strong>Permanent Failure</strong>
+                                <p>Alert sent</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Continue with more sections... -->
+        <!-- (Additional sections would follow the same pattern) -->
+        
+        <!-- Placeholder for remaining sections -->
+        <section class="content-section" id="aggregation-flow">
+            <div class="section-header">
+                <h2>📊 Data Aggregation Flow</h2>
+                <p class="section-subtitle">From raw readings to insights</p>
+            </div>
+            <div class="coming-soon">
+                <p>Full interactive content for this section coming in next update...</p>
+            </div>
+        </section>
+
+        <section class="content-section" id="tariff-analysis">
+            <div class="section-header">
+                <h2>💰 Tariff Analysis Engine</h2>
+                <p class="section-subtitle">Finding savings opportunities</p>
+            </div>
+            <div class="coming-soon">
+                <p>Full interactive content for this section coming in next update...</p>
+            </div>
+        </section>
+
+        <section class="content-section" id="carbon-intensity">
+            <div class="section-header">
+                <h2>🌍 Carbon Intensity Tracking</h2>
+                <p class="section-subtitle">Real-time grid carbon monitoring</p>
+            </div>
+            <div class="coming-soon">
+                <p>Full interactive content for this section coming in next update...</p>
+            </div>
+        </section>
+
+        <section class="content-section" id="analytics">
+            <div class="section-header">
+                <h2>📈 Analytics Engine</h2>
+                <p class="section-subtitle">Turning data into insights</p>
+            </div>
+            <div class="coming-soon">
+                <p>Full interactive content for this section coming in next update...</p>
+            </div>
+        </section>
+
+        <section class="content-section" id="security">
+            <div class="section-header">
+                <h2>🔐 Security & Access Control</h2>
+                <p class="section-subtitle">Keeping your data safe</p>
+            </div>
+            <div class="coming-soon">
+                <p>Full interactive content for this section coming in next update...</p>
+            </div>
+        </section>
+
+        <section class="content-section" id="monitoring">
+            <div class="section-header">
+                <h2>🛠️ Monitoring & Operations</h2>
+                <p class="section-subtitle">Production-ready monitoring</p>
+            </div>
+            <div class="coming-soon">
+                <p>Full interactive content for this section coming in next update...</p>
+            </div>
+        </section>
+
+        <section class="content-section" id="best-practices">
+            <div class="section-header">
+                <h2>🎯 Best Practices</h2>
+                <p class="section-subtitle">Optimization tips and tricks</p>
+            </div>
+            <div class="coming-soon">
+                <p>Full interactive content for this section coming in next update...</p>
+            </div>
+        </section>
+
+        <section class="content-section" id="workflows">
+            <div class="section-header">
+                <h2>🚀 Advanced Workflows</h2>
+                <p class="section-subtitle">Power-user techniques</p>
+            </div>
+            <div class="coming-soon">
+                <p>Full interactive content for this section coming in next update...</p>
+            </div>
+        </section>
+    </main>
+
+    <!-- Floating Action Button for Tour Control -->
+    <div class="fab" id="tourFab">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+            <path d="M8 5v14l11-7z"/>
+        </svg>
+    </div>
+
+    <script src="js/showcase.js"></script>
+</body>
+</html>

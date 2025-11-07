@@ -1,12 +1,31 @@
-# Eclectyc-Energy
-Self‑hosted energy intelligence for estates, construction &amp; industry
-# eclectyc-energy/.README.md  
-# Energy Management Platform Documentation
-# Last updated: 06/11/2025 22:35:00
-
 # Eclectyc Energy Management Platform
 
-A modern PHP-based energy management platform designed for deployment at https://eclectyc.energy/
+**Self‑hosted energy intelligence for estates, construction & industry**
+
+> A modern, production-ready PHP-based energy management platform with enterprise-grade features for consumption tracking, tariff analysis, carbon reporting, and intelligent automation.
+
+**Last updated:** November 7, 2025  
+**Status:** ✅ Production Ready  
+**Deployment:** https://eclectyc.energy/
+
+---
+
+## 🌟 Platform Highlights
+
+The Eclectyc Energy platform is a comprehensive solution for energy management that includes:
+
+✨ **Real-time Monitoring** - Live dashboard with carbon intensity tracking  
+⚡ **Smart Import System** - Web-triggered async CSV imports with progress tracking  
+💰 **Tariff Intelligence** - Automated switching analysis with savings recommendations  
+📊 **Advanced Analytics** - Consumption trends, baseload analysis, and year-over-year comparisons  
+🔄 **Background Processing** - Queue-based import jobs with retry logic and monitoring  
+📧 **Alerting & Notifications** - Email and Slack alerts for system events  
+🌍 **Carbon Reporting** - Real-time UK grid carbon intensity integration  
+🔒 **Enterprise Security** - Role-based access control, audit logging, and GDPR compliance  
+📈 **Data Quality** - Automated quality checks, outlier detection, and gap analysis  
+🚀 **Production Ready** - Complete with deployment configs, monitoring, and maintenance scripts
+
+[📘 Complete Feature Showcase](docs/COMPLETE_GUIDE.md) | [🚀 Quick Start](docs/quick_start_import.md) | [⚙️ Deployment Guide](docs/operationalizing_async_systems.md)
 
 ## System Requirements
 
