@@ -128,7 +128,7 @@ echo "Size: {$sizeKb} KB\n";
 
 $totalRows = null;
 try {
-    $countReader = Reader::createFromPath($csvFile, 'r');
+    $countReader = Reader::from($csvFile, 'r');
     $countReader->setHeaderOffset(0);
     $totalRows = iterator_count($countReader->getRecords());
     echo 'Rows: ' . $totalRows . "\n";
@@ -149,7 +149,7 @@ try {
     }
 
     try {
-        $preview = Reader::createFromPath($csvFile, 'r');
+    $preview = Reader::from($csvFile, 'r');
         $preview->setHeaderOffset(0);
         $headers = $preview->getHeader();
         echo "Headers: " . implode(', ', $headers) . "\n\n";

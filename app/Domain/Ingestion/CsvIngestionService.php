@@ -82,7 +82,7 @@ class CsvIngestionService
 
         $batchId = $batchId ?: Uuid::uuid4()->toString();
 
-        $reader = Reader::createFromPath($filePath);
+    $reader = Reader::from($filePath);
         $reader->setHeaderOffset(0);
 
         $headerRow = $reader->getHeader();
