@@ -28,15 +28,20 @@ class ImportJobService
         string $filePath,
         string $importType,
         ?int $userId = null,
-        bool $dryRun = false
+        bool $dryRun = false,
+        ?string $notes = null,
+        string $priority = 'normal',
+        ?array $tags = null,
+        ?array $metadata = null,
+        int $maxRetries = 3
     ): string {
         $batchId = Uuid::uuid4()->toString();
         
         $stmt = $this->pdo->prepare('
             INSERT INTO import_jobs (
                 batch_id, user_id, filename, file_path, import_type, 
-                dry_run, status, queued_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
+                dry_run, status, queued_at, notes, priority, tags, metadata, max_retries
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, NOW(), ?, ?, ?, ?, ?)
         ');
         
         $stmt->execute([
@@ -46,7 +51,12 @@ class ImportJobService
             $filePath,
             $importType,
             $dryRun ? 1 : 0,
-            'queued'
+            'queued',
+            $notes,
+            $priority,
+            $tags ? json_encode($tags) : null,
+            $metadata ? json_encode($metadata) : null,
+            $maxRetries
         ]);
         
         return $batchId;
@@ -61,12 +71,13 @@ class ImportJobService
             UPDATE import_jobs 
             SET status = ?, 
                 error_message = ?,
+                last_error = CASE WHEN ? IS NOT NULL THEN ? ELSE last_error END,
                 started_at = CASE WHEN ? = "processing" AND started_at IS NULL THEN NOW() ELSE started_at END,
                 completed_at = CASE WHEN ? IN ("completed", "failed", "cancelled") THEN NOW() ELSE completed_at END
             WHERE batch_id = ?
         ');
         
-        $stmt->execute([$status, $errorMessage, $status, $status, $batchId]);
+        $stmt->execute([$status, $errorMessage, $errorMessage, $errorMessage, $status, $status, $batchId]);
     }
 
     /**
@@ -205,14 +216,95 @@ class ImportJobService
     }
 
     /**
-     * Get jobs that need processing
+     * Get jobs that need processing (including retries)
      */
     public function getQueuedJobs(int $limit = 10): array
     {
         $stmt = $this->pdo->prepare('
             SELECT * FROM import_jobs
-            WHERE status = "queued"
-            ORDER BY queued_at ASC
+            WHERE status = "queued" 
+               OR (status = "failed" AND retry_count < max_retries AND (retry_at IS NULL OR retry_at <= NOW()))
+            ORDER BY priority DESC, queued_at ASC
+            LIMIT ?
+        ');
+        
+        $stmt->execute([$limit]);
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
+    }
+
+    /**
+     * Mark a job for retry
+     */
+    public function retryJob(string $batchId, int $delaySeconds = 0): bool
+    {
+        // First check if we can retry
+        $stmt = $this->pdo->prepare('
+            SELECT retry_count, max_retries FROM import_jobs WHERE batch_id = ?
+        ');
+        $stmt->execute([$batchId]);
+        $job = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$job || $job['retry_count'] >= $job['max_retries']) {
+            return false;
+        }
+        
+        $retryAt = $delaySeconds > 0 
+            ? date('Y-m-d H:i:s', time() + $delaySeconds)
+            : null;
+        
+        $stmt = $this->pdo->prepare('
+            UPDATE import_jobs 
+            SET status = "queued",
+                retry_count = retry_count + 1,
+                retry_at = ?,
+                error_message = NULL,
+                started_at = NULL,
+                completed_at = NULL
+            WHERE batch_id = ?
+        ');
+        
+        $stmt->execute([$retryAt, $batchId]);
+        return true;
+    }
+
+    /**
+     * Check if job can be retried
+     */
+    public function canRetry(string $batchId): bool
+    {
+        $stmt = $this->pdo->prepare('
+            SELECT retry_count, max_retries FROM import_jobs WHERE batch_id = ?
+        ');
+        $stmt->execute([$batchId]);
+        $job = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        return $job && $job['retry_count'] < $job['max_retries'];
+    }
+
+    /**
+     * Mark alert as sent for a job
+     */
+    public function markAlertSent(string $batchId): void
+    {
+        $stmt = $this->pdo->prepare('
+            UPDATE import_jobs 
+            SET alert_sent = TRUE, alert_sent_at = NOW()
+            WHERE batch_id = ?
+        ');
+        $stmt->execute([$batchId]);
+    }
+
+    /**
+     * Get failed jobs that need alerts
+     */
+    public function getFailedJobsNeedingAlerts(int $limit = 10): array
+    {
+        $stmt = $this->pdo->prepare('
+            SELECT * FROM import_jobs
+            WHERE status = "failed" 
+              AND alert_sent = FALSE
+              AND retry_count >= max_retries
+            ORDER BY completed_at DESC
             LIMIT ?
         ');
         

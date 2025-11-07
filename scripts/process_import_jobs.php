@@ -8,6 +8,7 @@
 use App\Config\Database;
 use App\Domain\Ingestion\CsvIngestionService;
 use App\Domain\Ingestion\ImportJobService;
+use App\Domain\Ingestion\ImportAlertService;
 
 require_once dirname(__DIR__) . '/vendor/autoload.php';
 
@@ -54,6 +55,7 @@ try {
 
     $jobService = new ImportJobService($db);
     $csvService = new CsvIngestionService($db);
+    $alertService = new ImportAlertService($db);
 
     do {
         $jobs = $jobService->getQueuedJobs($limit);
@@ -78,11 +80,14 @@ try {
             $importType = $job['import_type'];
             $dryRun = (bool) $job['dry_run'];
             $userId = $job['user_id'];
+            $retryCount = (int) ($job['retry_count'] ?? 0);
+            $maxRetries = (int) ($job['max_retries'] ?? 3);
 
             echo "Processing job: $batchId\n";
             echo "  File: " . $job['filename'] . "\n";
             echo "  Type: $importType\n";
             echo "  Dry run: " . ($dryRun ? 'Yes' : 'No') . "\n";
+            echo "  Retry: $retryCount/$maxRetries\n";
 
             // Check if file exists
             if (!file_exists($filePath)) {
@@ -127,9 +132,28 @@ try {
                 }
 
             } catch (\Throwable $e) {
-                $jobService->updateStatus($batchId, 'failed', $e->getMessage());
                 echo "  Status: FAILED\n";
                 echo "  Error: " . $e->getMessage() . "\n";
+                
+                // Check if we should retry
+                if ($jobService->canRetry($batchId)) {
+                    // Calculate exponential backoff: 2^retryCount minutes
+                    $delaySeconds = min(pow(2, $retryCount) * 60, 3600); // Cap at 1 hour
+                    $jobService->retryJob($batchId, $delaySeconds);
+                    
+                    echo "  Will retry in " . round($delaySeconds / 60, 1) . " minutes\n";
+                } else {
+                    // Mark as permanently failed
+                    $jobService->updateStatus($batchId, 'failed', $e->getMessage());
+                    
+                    // Send alert if not already sent
+                    if (!$job['alert_sent']) {
+                        $failedJob = $jobService->getJob($batchId);
+                        $alertService->sendFailureAlert($failedJob);
+                        $jobService->markAlertSent($batchId);
+                        echo "  Alert sent to administrators\n";
+                    }
+                }
             }
 
             echo "\n";
