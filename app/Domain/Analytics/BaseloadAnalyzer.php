@@ -30,21 +30,70 @@ class BaseloadAnalyzer
      */
     public function calculateBaseload(int $meterId, DateTimeImmutable $startDate, DateTimeImmutable $endDate): array
     {
-        // Placeholder implementation
-        // Future enhancement: Implement baseload analysis:
-        // - Identify minimum constant load
-        // - Calculate average baseload over period
-        // - Detect baseload variations
-        // - Estimate percentage of total consumption
-        // - Identify opportunities for reduction
+        // Get daily aggregations for the period
+        $stmt = $this->pdo->prepare('
+            SELECT 
+                date,
+                total_consumption,
+                min_reading,
+                max_reading,
+                reading_count
+            FROM daily_aggregations
+            WHERE meter_id = :meter_id 
+              AND date BETWEEN :start_date AND :end_date
+            ORDER BY date
+        ');
+        
+        $stmt->execute([
+            'meter_id' => $meterId,
+            'start_date' => $startDate->format('Y-m-d'),
+            'end_date' => $endDate->format('Y-m-d'),
+        ]);
+        
+        $dailyData = $stmt->fetchAll() ?: [];
+        
+        if (empty($dailyData)) {
+            return [
+                'meter_id' => $meterId,
+                'baseload_kwh' => 0.0,
+                'baseload_percentage' => 0.0,
+                'average_baseload' => 0.0,
+                'min_baseload' => 0.0,
+                'max_baseload' => 0.0,
+                'total_consumption' => 0.0,
+            ];
+        }
+        
+        // Calculate baseload as the minimum daily consumption (proxy for constant load)
+        $minDailyConsumptions = array_column($dailyData, 'total_consumption');
+        $minBaseload = min($minDailyConsumptions);
+        $avgBaseload = array_sum($minDailyConsumptions) / count($minDailyConsumptions);
+        $totalConsumption = array_sum(array_column($dailyData, 'total_consumption'));
+        
+        // Estimate baseload as the lowest 10th percentile
+        // For small datasets, use minimum value
+        sort($minDailyConsumptions);
+        if (count($minDailyConsumptions) >= 10) {
+            $percentile10Index = (int) floor(count($minDailyConsumptions) * 0.1);
+            $baseloadEstimate = $minDailyConsumptions[$percentile10Index];
+        } else {
+            $baseloadEstimate = $minBaseload;
+        }
+        
+        // Calculate baseload percentage
+        $baseloadPercentage = $totalConsumption > 0 
+            ? ($baseloadEstimate * count($dailyData) / $totalConsumption) * 100 
+            : 0.0;
         
         return [
             'meter_id' => $meterId,
-            'baseload_kwh' => 0.0,
-            'baseload_percentage' => 0.0,
-            'average_baseload' => 0.0,
-            'min_baseload' => 0.0,
-            'max_baseload' => 0.0,
+            'baseload_kwh' => $baseloadEstimate,
+            'baseload_percentage' => round($baseloadPercentage, 2),
+            'average_baseload' => round($avgBaseload, 3),
+            'min_baseload' => round($minBaseload, 3),
+            'max_baseload' => round(max($minDailyConsumptions), 3),
+            'total_consumption' => round($totalConsumption, 3),
+            'days_analyzed' => count($dailyData),
         ];
     }
 
@@ -57,19 +106,110 @@ class BaseloadAnalyzer
      */
     public function detectDataQualityIssues(int $meterId, DateTimeImmutable $date): array
     {
-        // Placeholder implementation
-        // Future enhancement: Implement data quality checks:
-        // - Missing data detection
-        // - Anomalous reading identification
-        // - Gap analysis in time series
-        // - Outlier detection
-        // - Data validation alerts
-        
-        return [
+        $issues = [
             'missing_periods' => [],
             'anomalies' => [],
-            'data_completeness' => 100.0,
+            'data_completeness' => 0.0,
+            'zero_readings' => 0,
+            'negative_readings' => 0,
         ];
+        
+        // Check if meter is half-hourly
+        $meterStmt = $this->pdo->prepare('SELECT is_half_hourly FROM meters WHERE id = :meter_id');
+        $meterStmt->execute(['meter_id' => $meterId]);
+        $meter = $meterStmt->fetch();
+        
+        if (!$meter) {
+            return $issues;
+        }
+        
+        $isHalfHourly = $meter['is_half_hourly'] ?? false;
+        $expectedReadings = $isHalfHourly ? 48 : 1;
+        
+        // Get readings for the date
+        $stmt = $this->pdo->prepare('
+            SELECT 
+                reading_time,
+                period_number,
+                reading_value
+            FROM meter_readings
+            WHERE meter_id = :meter_id 
+              AND reading_date = :date
+            ORDER BY reading_time, period_number
+        ');
+        
+        $stmt->execute([
+            'meter_id' => $meterId,
+            'date' => $date->format('Y-m-d'),
+        ]);
+        
+        $readings = $stmt->fetchAll() ?: [];
+        $actualReadings = count($readings);
+        
+        // Calculate data completeness
+        $issues['data_completeness'] = $expectedReadings > 0 
+            ? round(($actualReadings / $expectedReadings) * 100, 2) 
+            : 0.0;
+        
+        // Detect missing periods for half-hourly meters
+        if ($isHalfHourly && $actualReadings < $expectedReadings) {
+            $presentPeriods = array_column($readings, 'period_number');
+            for ($period = 1; $period <= 48; $period++) {
+                if (!in_array($period, $presentPeriods)) {
+                    $issues['missing_periods'][] = $period;
+                }
+            }
+        }
+        
+        // Detect anomalies
+        foreach ($readings as $reading) {
+            $value = (float) $reading['reading_value'];
+            
+            // Zero readings
+            if ($value == 0) {
+                $issues['zero_readings']++;
+            }
+            
+            // Negative readings (should not happen)
+            if ($value < 0) {
+                $issues['negative_readings']++;
+                $issues['anomalies'][] = [
+                    'type' => 'negative_value',
+                    'period' => $reading['period_number'],
+                    'value' => $value,
+                ];
+            }
+        }
+        
+        // Statistical outlier detection (using IQR method)
+        if (count($readings) >= 10) {
+            $values = array_map(fn($r) => (float) $r['reading_value'], $readings);
+            sort($values);
+            
+            $q1Index = (int) floor(count($values) * 0.25);
+            $q3Index = (int) floor(count($values) * 0.75);
+            
+            $q1 = $values[$q1Index];
+            $q3 = $values[$q3Index];
+            $iqr = $q3 - $q1;
+            
+            $lowerBound = $q1 - (1.5 * $iqr);
+            $upperBound = $q3 + (1.5 * $iqr);
+            
+            foreach ($readings as $reading) {
+                $value = (float) $reading['reading_value'];
+                if ($value < $lowerBound || $value > $upperBound) {
+                    $issues['anomalies'][] = [
+                        'type' => 'outlier',
+                        'period' => $reading['period_number'],
+                        'value' => $value,
+                        'bounds' => [$lowerBound, $upperBound],
+                    ];
+                }
+            }
+        }
+        
+        return $issues;
     }
 
     /**
