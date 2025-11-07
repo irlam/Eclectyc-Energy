@@ -18,75 +18,157 @@
         </div>
     {% endif %}
 
-    <form method="post" action="/admin/meters" class="form">
+    <div class="alert alert-info mb-3" style="background: #e8f4fd; border-left: 4px solid #0066cc;">
+        <strong>📝 About MPANs</strong>
+        <p style="margin: 0.5rem 0 0 0;">
+            The MPAN (Meter Point Administration Number) is a unique 13-digit reference for electricity meters in the UK.
+            It's sometimes called a "Supply Number" and can be found on your electricity bill.
+        </p>
+        <details style="margin-top: 0.5rem;">
+            <summary style="cursor: pointer; font-weight: bold;">Where to find your MPAN</summary>
+            <ul style="margin: 0.5rem 0; font-size: 0.9rem;">
+                <li>On your electricity bill (usually on the first page)</li>
+                <li>On your meter display (for some smart meters)</li>
+                <li>By contacting your electricity supplier</li>
+            </ul>
+            <p style="margin: 0.5rem 0 0 0; font-size: 0.9rem;"><strong>Format:</strong> Usually 13 digits, sometimes shown with spaces (e.g., 12 345 678 901 23)</p>
+        </details>
+    </div>
+
+    <form method="post" action="/admin/meters" class="form" id="meterForm">
         <div class="form-group">
-            <label for="mpan">MPAN *</label>
-            <input type="text" id="mpan" name="mpan" required class="form-control" placeholder="Enter the MPAN">
-            <small class="form-text">Existing MPANs will be updated with the details below.</small>
+            <label for="mpan">MPAN / Meter Code *</label>
+            <input 
+                type="text" 
+                id="mpan" 
+                name="mpan" 
+                required 
+                class="form-control" 
+                placeholder="e.g., 1234567890123 or METER001"
+                pattern="[A-Za-z0-9]{8,}"
+                minlength="8"
+            >
+            <small class="form-text">
+                💡 Must be at least 8 characters. Existing MPANs will be updated with the details below.
+            </small>
         </div>
 
         <div class="form-group">
             <label for="serial_number">Serial Number</label>
-            <input type="text" id="serial_number" name="serial_number" class="form-control" placeholder="Optional serial reference">
+            <input 
+                type="text" 
+                id="serial_number" 
+                name="serial_number" 
+                class="form-control" 
+                placeholder="Optional meter serial number"
+            >
+            <small class="form-text">The physical serial number on the meter (if available)</small>
         </div>
 
         <div class="form-group">
             <label for="site_id">Linked Site *</label>
             <select id="site_id" name="site_id" required class="form-control">
-                <option value="">Select a site...</option>
+                <option value="">-- Select a site --</option>
                 {% for site in sites %}
                     <option value="{{ site.id }}">{{ site.name }}</option>
                 {% endfor %}
             </select>
+            <small class="form-text">
+                {% if sites is empty %}
+                    ⚠️ No sites available. <a href="/admin/sites/create">Create a site first</a>.
+                {% else %}
+                    The location where this meter is installed
+                {% endif %}
+            </small>
         </div>
 
         <div class="form-group">
             <label for="supplier_id">Supplier</label>
             <select id="supplier_id" name="supplier_id" class="form-control">
-                <option value="">No supplier</option>
+                <option value="">-- No supplier assigned --</option>
                 {% for supplier in suppliers %}
                     <option value="{{ supplier.id }}">{{ supplier.name }}</option>
                 {% endfor %}
             </select>
+            <small class="form-text">The energy supplier for this meter (optional)</small>
         </div>
 
         <div class="form-group">
             <label for="meter_type">Meter Type *</label>
             <select id="meter_type" name="meter_type" required class="form-control">
                 {% for value, label in meter_types %}
-                    <option value="{{ value }}">{{ label }}</option>
+                    <option value="{{ value }}" {% if value == 'electricity' %}selected{% endif %}>{{ label }}</option>
                 {% endfor %}
             </select>
+            <small class="form-text">The type of energy this meter measures</small>
         </div>
 
         <div class="form-group">
             <label for="installation_date">Installation Date</label>
-            <input type="date" id="installation_date" name="installation_date" class="form-control">
-            <small class="form-text">Use format YYYY-MM-DD.</small>
+            <input type="date" id="installation_date" name="installation_date" class="form-control" max="{{ "now"|date("Y-m-d") }}">
+            <small class="form-text">When the meter was installed (optional)</small>
         </div>
 
-        <div class="form-group checkbox-group">
-            <label class="checkbox-label">
-                <input type="checkbox" name="is_half_hourly">
-                <span class="checkmark"></span>
-                Half-hourly capable
+        <div class="form-group" style="background: #f8f9fa; padding: 1rem; border-radius: 4px;">
+            <label style="display: block; margin-bottom: 0.75rem; font-weight: bold;">Meter Capabilities</label>
+            
+            <label class="checkbox-label" style="display: flex; align-items: start; margin-bottom: 0.5rem; cursor: pointer;">
+                <input type="checkbox" name="is_half_hourly" id="is_half_hourly" style="margin-top: 3px;">
+                <span style="margin-left: 0.5rem;">
+                    <strong>Half-hourly capable</strong>
+                    <small style="display: block; color: #666;">Meter can provide 48 readings per day (every 30 minutes)</small>
+                </span>
             </label>
-            <label class="checkbox-label">
-                <input type="checkbox" name="is_smart_meter">
-                <span class="checkmark"></span>
-                Smart meter installed
+            
+            <label class="checkbox-label" style="display: flex; align-items: start; margin-bottom: 0.5rem; cursor: pointer;">
+                <input type="checkbox" name="is_smart_meter" id="is_smart_meter" style="margin-top: 3px;">
+                <span style="margin-left: 0.5rem;">
+                    <strong>Smart meter installed</strong>
+                    <small style="display: block; color: #666;">Meter supports automatic readings and two-way communication</small>
+                </span>
             </label>
-            <label class="checkbox-label">
-                <input type="checkbox" name="is_active" checked>
-                <span class="checkmark"></span>
-                Active meter
+            
+            <label class="checkbox-label" style="display: flex; align-items: start; cursor: pointer;">
+                <input type="checkbox" name="is_active" id="is_active" checked style="margin-top: 3px;">
+                <span style="margin-left: 0.5rem;">
+                    <strong>Active meter</strong>
+                    <small style="display: block; color: #666;">Meter is currently in use and should be included in reports</small>
+                </span>
             </label>
         </div>
 
-        <div class="form-actions">
-            <button type="submit" class="btn btn-primary">Save Meter</button>
+        <div class="form-actions" style="margin-top: 1.5rem;">
+            <button type="submit" class="btn btn-primary">💾 Save Meter</button>
             <a href="/admin/meters" class="btn btn-secondary">Cancel</a>
         </div>
     </form>
 </section>
+
+<script>
+// Auto-format MPAN input (remove spaces and convert to uppercase)
+document.getElementById('mpan').addEventListener('input', function(e) {
+    let value = e.target.value.toUpperCase().replace(/\s/g, '');
+    e.target.value = value;
+});
+
+// Form validation feedback
+document.getElementById('meterForm').addEventListener('submit', function(e) {
+    const mpan = document.getElementById('mpan').value.trim();
+    const siteId = document.getElementById('site_id').value;
+    
+    if (mpan.length < 8) {
+        e.preventDefault();
+        alert('MPAN must be at least 8 characters long');
+        document.getElementById('mpan').focus();
+        return false;
+    }
+    
+    if (!siteId) {
+        e.preventDefault();
+        alert('Please select a site for this meter');
+        document.getElementById('site_id').focus();
+        return false;
+    }
+});
+</script>
 {% endblock %}

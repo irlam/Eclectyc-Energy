@@ -18,6 +18,19 @@
         </div>
     {% endif %}
 
+    {% if totals.count == 0 %}
+        <div class="alert alert-info" style="background: #e8f4fd; border-left: 4px solid #0066cc;">
+            <h3 style="margin-top: 0;">🚀 Getting Started</h3>
+            <p>You don't have any meters registered yet. Before you can import consumption data, you need to add meters to the system.</p>
+            <div style="margin-top: 1rem;">
+                <a href="/admin/meters/create" class="btn btn-primary">➕ Add Your First Meter</a>
+                <p style="margin-top: 0.5rem; font-size: 0.9rem; color: #666;">
+                    <strong>Tip:</strong> You'll need the MPAN (Meter Point Administration Number) for each meter you want to track.
+                </p>
+            </div>
+        </div>
+    {% endif %}
+
     <div class="stats-grid">
         <div class="stat">
             <span>Total meters</span>
@@ -31,13 +44,24 @@
             <span>Half-hourly</span>
             <strong>{{ totals.hh }}</strong>
         </div>
+        <div class="stat">
+            <span>Daily meters</span>
+            <strong>{{ totals.count - totals.hh }}</strong>
+        </div>
     </div>
 
     {% if meters is not empty %}
+        <div style="margin: 1rem 0; padding: 0.75rem; background: #f8f9fa; border-radius: 4px; font-size: 0.9rem;">
+            <strong>💡 Quick Actions:</strong>
+            <a href="/admin/imports" style="margin-left: 1rem;">Import Data</a> •
+            <a href="/reports/consumption">View Consumption</a> •
+            <a href="/admin/imports/history">Import History</a>
+        </div>
+
         <table class="table mt-3">
             <thead>
                 <tr>
-                    <th>MPAN</th>
+                    <th>MPAN / Meter Code</th>
                     <th>Serial</th>
                     <th>Site</th>
                     <th>Supplier</th>
@@ -51,14 +75,26 @@
             <tbody>
                 {% for meter in meters %}
                     <tr>
-                        <td><strong>{{ meter.mpan }}</strong></td>
-                        <td>{{ meter.serial_number ?: 'N/A' }}</td>
-                        <td>{{ meter.site_name ?: 'Unassigned' }}</td>
-                        <td>{{ meter.supplier_name ?: 'Unassigned' }}</td>
-                        <td>{{ meter.meter_type|title }}</td>
+                        <td>
+                            <strong style="font-family: monospace;">{{ meter.mpan }}</strong>
+                            <button 
+                                onclick="copyToClipboard(this.dataset.mpan)" 
+                                data-mpan="{{ meter.mpan|e('html_attr') }}"
+                                style="margin-left: 0.5rem; padding: 2px 6px; font-size: 0.7rem; cursor: pointer; background: #e9ecef; border: 1px solid #ced4da; border-radius: 3px;"
+                                title="Copy MPAN"
+                            >📋</button>
+                        </td>
+                        <td>{{ meter.serial_number ?: '—' }}</td>
+                        <td>{{ meter.site_name ?: '<span style="color: #999;">Unassigned</span>'|raw }}</td>
+                        <td>{{ meter.supplier_name ?: '<span style="color: #999;">Unassigned</span>'|raw }}</td>
+                        <td>
+                            <span style="padding: 2px 8px; background: #e9ecef; border-radius: 3px; font-size: 0.85rem;">
+                                {{ meter.meter_type|title }}
+                            </span>
+                        </td>
                         <td>
                             {% if meter.is_half_hourly %}
-                                <span class="status status-success">Yes</span>
+                                <span class="status status-success">✓ Yes</span>
                             {% else %}
                                 <span class="status status-muted">No</span>
                             {% endif %}
@@ -72,18 +108,59 @@
                         </td>
                         <td>
                             {% if meter.is_active %}
-                                <span class="status status-success">Active</span>
+                                <span class="status status-success">● Active</span>
                             {% else %}
-                                <span class="status status-muted">Inactive</span>
+                                <span class="status status-muted">○ Inactive</span>
                             {% endif %}
                         </td>
-                        <td>{{ meter.created_at ? meter.created_at|date("d/m/Y") : 'N/A' }}</td>
+                        <td style="color: #666;">{{ meter.created_at ? meter.created_at|date("d/m/Y") : '—' }}</td>
                     </tr>
                 {% endfor %}
             </tbody>
         </table>
     {% else %}
-        <p class="mt-3">No meters found. Add one manually or run an import to populate the list.</p>
+        <div class="mt-3" style="padding: 2rem; text-align: center; background: #f8f9fa; border-radius: 4px;">
+            <p style="font-size: 1.1rem; color: #666;">No meters found.</p>
+            <p style="color: #999;">Add meters manually or they will be created automatically during import if configured.</p>
+        </div>
     {% endif %}
 </section>
+
+<script>
+function copyToClipboard(text) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(function() {
+            // Could show a toast notification here
+            const btn = event.target;
+            const originalText = btn.textContent;
+            btn.textContent = '✓';
+            setTimeout(function() {
+                btn.textContent = originalText;
+            }, 1000);
+        }).catch(function(err) {
+            console.error('Failed to copy:', err);
+        });
+    } else {
+        // Fallback for older browsers
+        const textArea = document.createElement('textarea');
+        textArea.value = text;
+        textArea.style.position = 'fixed';
+        textArea.style.left = '-999999px';
+        document.body.appendChild(textArea);
+        textArea.select();
+        try {
+            document.execCommand('copy');
+            const btn = event.target;
+            const originalText = btn.textContent;
+            btn.textContent = '✓';
+            setTimeout(function() {
+                btn.textContent = originalText;
+            }, 1000);
+        } catch (err) {
+            console.error('Failed to copy:', err);
+        }
+        document.body.removeChild(textArea);
+    }
+}
+</script>
 {% endblock %}
