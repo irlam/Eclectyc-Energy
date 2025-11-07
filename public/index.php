@@ -7,6 +7,7 @@
 
 use App\Http\Controllers\Admin\ExportsController;
 use App\Http\Controllers\Admin\ImportController;
+use App\Http\Controllers\Admin\MetersController as AdminMetersController;
 use App\Http\Controllers\Admin\SitesController;
 use App\Http\Controllers\Admin\TariffsController;
 use App\Http\Controllers\Admin\UsersController;
@@ -208,6 +209,13 @@ $container->set(TariffsController::class, function(Container $c) {
 
 $container->set(MetersController::class, function(Container $c) {
     return new MetersController($c->get('db'));
+});
+
+$container->set(AdminMetersController::class, function(Container $c) {
+    return new AdminMetersController(
+        $c->get('view'),
+        $c->get('db')
+    );
 });
 
 $container->set(ImportStatusController::class, function(Container $c) {
