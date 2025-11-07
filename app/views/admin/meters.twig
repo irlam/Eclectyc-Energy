@@ -78,7 +78,8 @@
                         <td>
                             <strong style="font-family: monospace;">{{ meter.mpan }}</strong>
                             <button 
-                                onclick="copyToClipboard('{{ meter.mpan }}')" 
+                                onclick="copyToClipboard(this.dataset.mpan)" 
+                                data-mpan="{{ meter.mpan|e('html_attr') }}"
                                 style="margin-left: 0.5rem; padding: 2px 6px; font-size: 0.7rem; cursor: pointer; background: #e9ecef; border: 1px solid #ced4da; border-radius: 3px;"
                                 title="Copy MPAN"
                             >📋</button>

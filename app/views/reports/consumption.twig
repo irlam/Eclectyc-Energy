@@ -75,7 +75,7 @@
                         <td>{{ row.site_name }}</td>
                         <td class="text-right">{{ row.meter_count }}</td>
                         <td class="text-right">{{ row.total_consumption|number_format(1, '.', ',') }}</td>
-                        <td class="text-right">{{ ((row.total_consumption / report.totalConsumption) * 100)|number_format(1) }}%</td>
+                        <td class="text-right">{{ report.totalConsumption > 0 ? ((row.total_consumption / report.totalConsumption) * 100)|number_format(1) : '0.0' }}%</td>
                         <td>
                             {{ row.first_reading|date("d/m/Y") }}
                             &ndash;
