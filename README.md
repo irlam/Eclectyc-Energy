@@ -191,12 +191,25 @@ Visit: https://eclectyc.energy/tools/show
 - `/reports/costs` (manager+) estimates spend per supplier using tariff unit rates.
 - `/admin/sites` (admin only) shows estates with meter counts and status.
 - `/admin/tariffs` (admin only) lists configured supply tariffs.
+- `/admin/tariff-switching` (admin only) analyzes switching opportunities and recommends alternative tariffs based on consumption history.
 - `/admin/users` (admin only) lists seeded accounts for quick role testing.
 - `/admin/imports` (admin only) provides CSV uploads with optional dry-run previews and batch summaries.
 - `/admin/imports/jobs` (admin only) shows all import jobs with real-time progress tracking and filtering.
 - `/admin/imports/history` (admin only) lists recent ingestion runs with filters, decoded metadata, and surfaced errors.
 - `/admin/exports` (admin only) tracks SFTP export jobs, delivery status, and failure messages.
 - `/admin/meters` (admin only) allows you to add, view, and manage meters before importing data.
+
+## Tariff Switching Analysis
+
+The platform includes comprehensive tariff switching analysis capabilities:
+
+- **Compare Tariffs**: Analyze consumption history against all available tariffs
+- **Calculate Savings**: Identify potential cost savings by switching suppliers/tariffs
+- **Historical Tracking**: Save and review past switching analyses
+- **Detailed Breakdowns**: View unit costs, standing charges, and total costs side-by-side
+- **Time-of-Use Support**: Handles peak/off-peak/weekend rate structures
+
+See `docs/tariff_switching_analysis.md` for detailed documentation on using the tariff switching feature.
 
 ## Getting Started with Data Import
 
@@ -256,6 +269,36 @@ php scripts/process_import_jobs.php --once
 php scripts/process_import_jobs.php --limit=5
 ```
 This background worker processes CSV import jobs that are queued via the web interface. Required for async imports to work. Can be run as a cron job (recommended) or as a long-running process with supervisord.
+
+**Enhanced Features:**
+- Automatic retry with exponential backoff (up to 3 retries by default)
+- Failure alerting via email and Slack
+- Priority-based job processing
+- Rich batch attribution (notes, tags, metadata)
+
+### Monitor Import System
+```bash
+# Check system health
+php scripts/monitor_import_system.php --verbose
+
+# Automatically handle stuck jobs and send alerts
+php scripts/monitor_import_system.php --handle-stuck --send-alerts
+```
+Monitors the import system for:
+- Stuck jobs (processing for >60 minutes)
+- High failure rates
+- Queue backlogs
+- Performance metrics and retry statistics
+
+### Cleanup Import Jobs
+```bash
+# Clean up jobs older than 30 days
+php scripts/cleanup_import_jobs.php --days 30 --verbose
+
+# Dry run to preview what would be deleted
+php scripts/cleanup_import_jobs.php --days 30 --dry-run
+```
+Removes old completed, failed, and cancelled import jobs based on retention policy. Also cleans up orphaned CSV files.
 
 ### Run Aggregations
 ```bash
@@ -325,13 +368,21 @@ Configure `SFTP_HOST`, `SFTP_PORT`, `SFTP_USERNAME`, and either `SFTP_PASSWORD` 
 4. Add import job processor (e.g. every minute) - **Required for async imports**:
    - Command: `/usr/bin/php /path/to/eclectyc-energy/scripts/process_import_jobs.php --once`
    - Schedule: `* * * * *`
-5. Optional: add additional tasks for dedicated ranges or exports, for example:
+5. Add import system monitoring (e.g. every 15 minutes) - **Recommended**:
+   - Command: `/usr/bin/php /path/to/eclectyc-energy/scripts/monitor_import_system.php --handle-stuck --send-alerts`
+   - Schedule: `*/15 * * * *`
+6. Add import job cleanup (e.g. weekly on Sundays at 02:00) - **Recommended**:
+   - Command: `/usr/bin/php /path/to/eclectyc-energy/scripts/cleanup_import_jobs.php --days 30 --verbose`
+   - Schedule: `0 2 * * 0`
+7. Optional: add additional tasks for dedicated ranges or exports, for example:
    - Legacy aggregation: `/usr/bin/php /path/to/eclectyc-energy/scripts/aggregate_cron.php --all --verbose`
    - Weekly roll-up every Monday at 02:15: `/usr/bin/php /path/to/eclectyc-energy/scripts/aggregate_weekly.php`
    - Daily SFTP export once credentials are wired: `/usr/bin/php /path/to/eclectyc-energy/scripts/export_sftp.php -t daily`
-6. Ensure each task uses the same PHP version as the site and inherits the correct `.env` file (set `Working directory` to the project root).
+8. Ensure each task uses the same PHP version as the site and inherits the correct `.env` file (set `Working directory` to the project root).
 
 **Note:** The orchestrated aggregation script (`aggregate_orchestrated.php`) provides enhanced monitoring, telemetry, and failure alerts. Use it instead of `aggregate_cron.php` for production deployments.
+
+**Alternative Deployment:** For VPS/dedicated servers, consider using Supervisor or Systemd for the import worker instead of cron. See `docs/operationalizing_async_systems.md` for detailed instructions.
 
 ## Security Considerations
 

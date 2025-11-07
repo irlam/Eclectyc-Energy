@@ -2,6 +2,13 @@
 
 This directory contains test scripts and sample CSV files for the Eclectyc Energy platform.
 
+## Prerequisites
+
+Before running tests, ensure you have:
+1. Installed dependencies: `composer install`
+2. Configured `.env` file with database credentials
+3. Run migrations: `php scripts/migrate.php`
+
 ## Test Scripts
 
 ### test_import_jobs.php
@@ -15,6 +22,21 @@ Integration test for the import job functionality. Validates:
 **Run the test:**
 ```bash
 php tests/test_import_jobs.php
+```
+
+### test_retry_and_monitoring.php
+Integration test for retry logic and monitoring services. Validates:
+- Database schema updates (migration 005)
+- Service instantiation (ImportJobService, ImportMonitoringService, ImportAlertService)
+- Required methods exist on all services
+- System health monitoring functionality
+- Deployment configuration files exist
+- Documentation completeness
+- PHP syntax of new scripts
+
+**Run the test:**
+```bash
+php tests/test_retry_and_monitoring.php
 ```
 
 ## Sample Data Files
@@ -56,6 +78,15 @@ php scripts/import_csv.php -f tests/sample_daily_data.csv -t daily --dry-run
 ```bash
 # Process any queued jobs once and exit
 php scripts/process_import_jobs.php --once
+```
+
+### 4. Test Monitoring and Alerting
+```bash
+# Check import system health
+php scripts/monitor_import_system.php --verbose
+
+# Test cleanup (dry run)
+php scripts/cleanup_import_jobs.php --days 30 --dry-run
 ```
 
 ## Notes

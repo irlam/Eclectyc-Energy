@@ -1,0 +1,105 @@
+{% extends "base.twig" %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<section class="card">
+    <div class="card-header">
+        <div>
+            <h2>{{ page_title }}</h2>
+            <p>Review historical switching analyses for this meter.</p>
+        </div>
+        <a href="/admin/tariff-switching" class="btn btn-primary">
+            🔍 New Analysis
+        </a>
+    </div>
+
+    {% if meter %}
+        <div class="card" style="margin-top: 1.5rem;">
+            <h2 style="font-size: 1.1rem; margin-bottom: 1rem;">🔌 Meter Information</h2>
+            <div class="grid grid-cols-4">
+                <div>
+                    <strong>MPAN</strong><br>
+                    <span class="muted">{{ meter.mpan }}</span>
+                </div>
+                <div>
+                    <strong>Site</strong><br>
+                    <span class="muted">{{ meter.site_name }}</span>
+                </div>
+                <div>
+                    <strong>Type</strong><br>
+                    <span class="muted">{{ meter.meter_type|capitalize }}</span>
+                </div>
+                <div>
+                    <strong>Supplier</strong><br>
+                    <span class="muted">{{ meter.supplier_name ?? 'N/A' }}</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" style="margin-top: 1.5rem;">
+            <h2 style="font-size: 1.1rem; margin-bottom: 1rem;">📊 Historical Analyses</h2>
+            {% if analyses is empty %}
+                <div class="alert alert-info">
+                    ℹ️ No historical analyses found for this meter.
+                </div>
+            {% else %}
+                <div class="table-wrapper">
+                    <table class="table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Analysis Period</th>
+                                <th>Current Tariff</th>
+                                <th>Current Cost</th>
+                                <th>Recommended Tariff</th>
+                                <th>Recommended Cost</th>
+                                <th>Potential Savings</th>
+                                <th>Analyzed By</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for analysis in analyses %}
+                                <tr>
+                                    <td>{{ analysis.created_at|date('Y-m-d H:i') }}</td>
+                                    <td>
+                                        <span class="muted">
+                                            {{ analysis.analysis_start_date|date('Y-m-d') }} to 
+                                            {{ analysis.analysis_end_date|date('Y-m-d') }}
+                                        </span>
+                                    </td>
+                                    <td>{{ analysis.current_tariff_name ?? 'N/A' }}</td>
+                                    <td><strong>£{{ analysis.current_cost|number_format(2) }}</strong></td>
+                                    <td>{{ analysis.recommended_tariff_name ?? 'N/A' }}</td>
+                                    <td>
+                                        {% if analysis.recommended_cost > 0 %}
+                                            <strong>£{{ analysis.recommended_cost|number_format(2) }}</strong>
+                                        {% else %}
+                                            <span class="muted">No recommendation</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if analysis.potential_savings > 0 %}
+                                            <span style="color: var(--brand);">
+                                                £{{ analysis.potential_savings|number_format(2) }}
+                                                ({{ analysis.savings_percent }}%)
+                                            </span>
+                                        {% else %}
+                                            <span class="muted">N/A</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>{{ analysis.analyzed_by_name ?? 'System' }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% endif %}
+        </div>
+    {% else %}
+        <div class="alert alert-danger">
+            ⚠️ Meter not found.
+        </div>
+    {% endif %}
+</section>
+{% endblock %}

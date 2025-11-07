@@ -3,8 +3,8 @@
 {% block title %}Imports{% endblock %}
 
 {% block content %}
-<section class="card">
-    <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 1rem;">
+<section class="card imports-card">
+    <div class="card-header imports-card__header">
         <div>
             <h2>Data Imports</h2>
             <p class="mb-2">Upload CSV files for meter readings. Use dry-run mode to validate files without persisting data.</p>
@@ -13,7 +13,7 @@
     </div>
 
     <!-- Help/Info Section -->
-    <div class="alert alert-info mb-3" style="background: #e8f4fd; border-left: 4px solid #0066cc;">
+    <div class="imports-help-section">
         <strong>📋 CSV Format Requirements</strong>
         <p style="margin: 0.5rem 0 0 0;">Your CSV must include:</p>
         <ul style="margin: 0.5rem 0; padding-left: 1.5rem;">
@@ -23,7 +23,7 @@
         </ul>
         <details style="margin-top: 0.5rem;">
             <summary style="cursor: pointer; font-weight: bold;">Show accepted column names</summary>
-            <div style="margin-top: 0.5rem; font-size: 0.9rem;">
+            <div class="imports-help-details">
                 <p><strong>Meter ID:</strong> MPAN, MPANCore, MeterCode, Meter, MeterID, SerialNumber, SupplyNumber, MPRN</p>
                 <p><strong>Date:</strong> Date, ReadDate, ReadingDate, PeriodDate</p>
                 <p><strong>Time:</strong> Time, ReadTime, ReadingTime</p>
@@ -41,7 +41,7 @@
                 <dl class="mt-2 import-summary">
                     <div>
                         <dt>Batch ID</dt>
-                        <dd><code style="background: #f5f5f5; padding: 2px 6px; border-radius: 3px;">{{ flash.payload.batch_id ?? 'n/a' }}</code></dd>
+                        <dd><code class="imports-code">{{ flash.payload.batch_id ?? 'n/a' }}</code></dd>
                     </div>
                     <div>
                         <dt>File</dt>
@@ -57,11 +57,11 @@
                     </div>
                     <div>
                         <dt>Rows imported</dt>
-                        <dd><strong style="color: #28a745;">{{ flash.payload.records_imported }}</strong></dd>
+                        <dd><strong class="imports-success">{{ flash.payload.records_imported }}</strong></dd>
                     </div>
                     <div>
                         <dt>Rows failed</dt>
-                        <dd><strong style="color: {{ flash.payload.records_failed > 0 ? '#dc3545' : '#6c757d' }};">{{ flash.payload.records_failed }}</strong></dd>
+                        <dd><strong class="imports-{{ flash.payload.records_failed > 0 ? 'error' : 'muted' }}">{{ flash.payload.records_failed }}</strong></dd>
                     </div>
                     <div>
                         <dt>Data points</dt>
@@ -70,7 +70,7 @@
                 </dl>
 
                 {% if flash.payload.errors %}
-                    <div class="mt-2" style="background: #fff3cd; padding: 1rem; border-radius: 4px; border-left: 4px solid #ffc107;">
+                    <div class="imports-errors">
                         <h3 style="margin-top: 0;">⚠️ Sample Errors (first {{ flash.payload.errors|length }})</h3>
                         <ul style="margin-bottom: 0;">
                             {% for error in flash.payload.errors %}
@@ -82,7 +82,7 @@
                                 And {{ flash.payload.records_failed - flash.payload.errors|length }} more errors...
                             </p>
                         {% endif %}
-                        <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #ffc107;">
+                        <div class="imports-errors-solutions">
                             <p><strong>💡 Common Solutions:</strong></p>
                             <ul style="margin: 0;">
                                 <li>Ensure all meters exist in the system: <a href="/admin/meters">Manage Meters</a></li>
@@ -97,11 +97,11 @@
         </div>
     {% endif %}
 
-    <form method="POST" enctype="multipart/form-data" class="form-grid mt-3" id="importForm">
+    <form method="POST" enctype="multipart/form-data" class="imports-form" id="importForm">
         <div class="form-group" style="grid-column: 1 / -1;">
             <label for="csv_file">CSV file</label>
             <input type="file" id="csv_file" name="csv_file" accept=".csv" required onchange="handleFileSelect(event)">
-            <div id="fileInfo" style="margin-top: 0.5rem; font-size: 0.9rem; color: #666;"></div>
+            <div id="fileInfo" class="imports-file-info"></div>
         </div>
 
         <div class="form-group">
@@ -110,27 +110,27 @@
                 <option value="hh">Half-hourly (48 periods per day)</option>
                 <option value="daily">Daily totals (1 value per day)</option>
             </select>
-            <small style="color: #666; display: block; margin-top: 0.25rem;">
+            <small class="form-text">
                 Choose based on your data granularity
             </small>
         </div>
 
         <div class="form-group form-group-inline">
-            <label style="display: flex; align-items: center; gap: 0.5rem;">
+            <label class="imports-checkbox-label">
                 <input type="checkbox" name="dry_run" value="1" id="dry_run">
                 <span>
                     <strong>Dry run</strong> (validate without saving)
-                    <small style="display: block; color: #666;">Recommended for first-time imports</small>
+                    <small class="form-text">Recommended for first-time imports</small>
                 </span>
             </label>
         </div>
 
         <div class="form-group form-group-inline">
-            <label style="display: flex; align-items: center; gap: 0.5rem;">
+            <label class="imports-checkbox-label">
                 <input type="checkbox" name="async" value="1" id="async_checkbox">
                 <span>
                     <strong>Process in background</strong>
-                    <small style="display: block; color: #666;">Queue the job so you can close this page</small>
+                    <small class="form-text">Queue the job so you can close this page</small>
                 </span>
             </label>
         </div>
@@ -150,17 +150,152 @@
     </form>
 
     <!-- Additional Help -->
-    <div style="margin-top: 2rem; padding: 1rem; background: #f8f9fa; border-radius: 4px;">
+    <div class="imports-help-footer">
         <h3 style="margin-top: 0;">Need Help?</h3>
         <ul style="margin: 0.5rem 0;">
             <li><a href="/admin/meters">View all meters</a> to check which MPANs are registered</li>
             <li><a href="/admin/imports/history">View import history</a> to see previous uploads</li>
             <li><a href="/reports/consumption">View consumption report</a> to verify imported data</li>
         </ul>
-        <p style="margin: 0.5rem 0 0 0; font-size: 0.9rem; color: #666;">
+        <p style="margin: 0.5rem 0 0 0; font-size: 0.9rem;">
             <strong>Tip:</strong> Use <em>Process in background</em> to queue the job and track progress from the jobs page.
         </p>
     </div>
+
+    <style>
+    .imports-card {
+        background: linear-gradient(180deg, #0f172a 0%, #111827 45%, #0b1120 100%);
+        color: #e2e8f0;
+        border: none;
+        box-shadow: 0 25px 45px rgba(15, 23, 42, 0.45);
+    }
+
+    .imports-card__header {
+        border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+    }
+
+    .imports-help-section {
+        padding: 1rem 1.25rem;
+        border-radius: 12px;
+        margin-bottom: 1.25rem;
+        background: rgba(30, 64, 175, 0.18);
+        border: 1px solid rgba(129, 140, 248, 0.35);
+        color: #CFE3FF;
+    }
+
+    .imports-help-section strong {
+        color: #e0e7ff;
+    }
+
+    .imports-help-details {
+        margin-top: 0.5rem;
+        font-size: 0.9rem;
+        color: #cbd5e1;
+    }
+
+    .import-summary {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 0.75rem;
+        color: #e2e8f0;
+    }
+
+    .import-summary dt {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        color: #94a3b8;
+        margin-bottom: 0.25rem;
+    }
+
+    .import-summary dd {
+        font-size: 1rem;
+        font-weight: 600;
+        color: #f8fafc;
+    }
+
+    .imports-code {
+        background: rgba(30, 41, 59, 0.7);
+        padding: 0.35rem 0.55rem;
+        border-radius: 6px;
+        box-shadow: inset 0 0 0 1px rgba(71, 85, 105, 0.55);
+        font-family: 'Source Code Pro', Menlo, Monaco, Consolas, "Courier New", monospace;
+    }
+
+    .imports-success {
+        color: #bbf7d0;
+    }
+
+    .imports-error {
+        color: #fca5a5;
+    }
+
+    .imports-muted {
+        color: #94a3b8;
+    }
+
+    .imports-errors {
+        margin-top: 1rem;
+        background: rgba(244, 183, 64, 0.18);
+        padding: 1rem;
+        border-radius: 12px;
+        border: 1px solid rgba(244, 183, 64, 0.45);
+        color: #FFE9C4;
+    }
+
+    .imports-errors-solutions {
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid rgba(244, 183, 64, 0.45);
+    }
+
+    .imports-errors a {
+        color: #60a5fa;
+        text-decoration: underline;
+    }
+
+    .imports-form {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.25rem;
+        margin-top: 1.5rem;
+    }
+
+    .imports-file-info {
+        margin-top: 0.5rem;
+        font-size: 0.9rem;
+        color: #94a3b8;
+    }
+
+    .imports-checkbox-label {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        cursor: pointer;
+    }
+
+    .imports-help-footer {
+        margin-top: 2rem;
+        padding: 1rem 1.25rem;
+        background: rgba(30, 41, 59, 0.6);
+        border-radius: 12px;
+        box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.15);
+        color: #e2e8f0;
+    }
+
+    .imports-help-footer h3 {
+        color: #f8fafc;
+    }
+
+    .imports-help-footer a {
+        color: #60a5fa;
+        text-decoration: none;
+    }
+
+    .imports-help-footer a:hover {
+        text-decoration: underline;
+    }
+    </style>
 </section>
 
 <script>

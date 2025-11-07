@@ -38,8 +38,9 @@ This document captures the current progress of the Eclectyc Energy platform so f
     - Complete documentation and cron setup scripts
 
 - **Data Imports**
-  - Add retry workflows, reprocessing, and richer attribution/notes for batches surfaced in the history dashboard.
-  - Introduce background processing/queueing to avoid long-running requests for large files.
+  - ✅ Queue-backed web imports with job tracking UI and CLI worker scaffold (`process_import_jobs.php`) now in place.
+  - ✅ **Operationalized async ingestion**: Governed retry workflows (exponential backoff, max 3 retries), richer batch attribution (notes, priority, tags, metadata), monitoring service for health checks and stuck jobs, alerting service (email/Slack), automated cleanup with retention policies, and deployment templates (supervisor/systemd/cron).
+
 
 - **CRUD & Admin UI**
   - Add create/edit flows for sites, meters, tariffs; introduce validation, flash messaging, and REST endpoints.
@@ -51,8 +52,9 @@ This document captures the current progress of the Eclectyc Energy platform so f
   - ✅ **Carbon Dashboard**: Real-time carbon intensity display with classification levels and trending.
 
 - **Tariff Engine & Switching**
+  - ✅ **Tariff Switching Analysis**: Implemented comprehensive switching analysis feature with historical tracking, cost comparisons, and savings recommendations.
   - Model complex tariff structures (time bands, flexible offers) and cost comparison workflows.
-  - Prepare for supplier integrations and customer switching analysis.
+  - Prepare for supplier integrations and automated tariff updates.
 
 - **Exports & Automation**
   - Enhance export monitoring with delivery receipts, retention policies, and email packaging.
@@ -63,9 +65,9 @@ This document captures the current progress of the Eclectyc Energy platform so f
 ## Recommended Next Milestones
 
 1. Finalise authentication (session hardening, middleware reuse, role-scope authorisation).
-2. Replace remaining route closures with controllers (`DashboardController`, `MetersController`, `ImportController`).
-3. Operationalise ingestion → aggregation (schedule multi-range aggregations, add comparison caches, automate ingestion retries/alerts).
-4. Build CRUD/editor flows for sites/meters/tariffs including metadata (direction, sub-meters, key metrics).
+2. Replace remaining route closures with controllers (`DashboardController`, `ImportController`) and align directory casing.
+3. Operationalise async ingestion and aggregation: deploy the import worker, wire telemetry/alerts, and schedule comparison cache refreshes.
+4. Build CRUD/editor flows for sites/meters/tariffs including metadata (direction, sub-meters, key metrics) with the refreshed UI patterns.
 5. Deliver the tariff engine, switching analysis, and production-grade exports (SFTP/email) before expanding to carbon/flexible dashboards.
 
 Keep this file updated when major milestones are completed so the roadmap stays accurate.

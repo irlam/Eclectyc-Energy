@@ -1,0 +1,28 @@
+# Systemd service configuration for Eclectyc Energy Import Worker
+# Copy to: /etc/systemd/system/eclectyc-import-worker.service
+# Then run: sudo systemctl daemon-reload && sudo systemctl enable eclectyc-import-worker && sudo systemctl start eclectyc-import-worker
+
+[Unit]
+Description=Eclectyc Energy Import Worker
+After=network.target mysql.service
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+WorkingDirectory=/path/to/eclectyc-energy
+ExecStart=/usr/bin/php /path/to/eclectyc-energy/scripts/process_import_jobs.php
+Restart=always
+RestartSec=10
+StandardOutput=append:/path/to/eclectyc-energy/logs/import_worker.log
+StandardError=append:/path/to/eclectyc-energy/logs/import_worker_error.log
+
+# Optional: Load environment variables from file
+# EnvironmentFile=/path/to/eclectyc-energy/.env
+
+# Optional: Set resource limits
+# LimitNOFILE=10000
+# MemoryLimit=512M
+
+[Install]
+WantedBy=multi-user.target
