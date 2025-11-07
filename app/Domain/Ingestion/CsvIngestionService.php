@@ -147,9 +147,11 @@ class CsvIngestionService
                 $meterStmt->execute(['mpan' => $mpan]);
                 $meter = $meterStmt->fetch();
                 if (!$meter) {
-                    throw new Exception('Meter not found for MPAN ' . $mpan);
+                    // Auto-create meter if it doesn't exist
+                    $meterId = $this->autoCreateMeter($mpan);
+                } else {
+                    $meterId = (int) $meter['id'];
                 }
-                $meterId = (int) $meter['id'];
 
                 $timestamp = $this->resolveDateTimeFromRecord($record, $headerMap);
                 if (!$timestamp) {
@@ -249,9 +251,11 @@ class CsvIngestionService
                 $meterStmt->execute(['mpan' => $mpan]);
                 $meter = $meterStmt->fetch();
                 if (!$meter) {
-                    throw new Exception('Meter not found for MPAN ' . $mpan);
+                    // Auto-create meter if it doesn't exist
+                    $meterId = $this->autoCreateMeter($mpan);
+                } else {
+                    $meterId = (int) $meter['id'];
                 }
-                $meterId = (int) $meter['id'];
 
                 $dateRaw = $this->getValueFromRecord($record, $headerMap, self::HEADER_ALIASES['date']);
                 $dateValue = $this->parseDate($dateRaw);
@@ -348,9 +352,11 @@ class CsvIngestionService
                 $meterStmt->execute(['mpan' => $mpan]);
                 $meter = $meterStmt->fetch();
                 if (!$meter) {
-                    throw new Exception('Meter not found for MPAN ' . $mpan);
+                    // Auto-create meter if it doesn't exist
+                    $meterId = $this->autoCreateMeter($mpan);
+                } else {
+                    $meterId = (int) $meter['id'];
                 }
-                $meterId = (int) $meter['id'];
 
                 $dateRaw = $this->getValueFromRecord($record, $headerMap, self::HEADER_ALIASES['date']);
                 $dateValue = $this->parseDate($dateRaw);
@@ -650,14 +656,26 @@ class CsvIngestionService
             return null;
         }
 
+        // Handle special case: format like "30:00.0" which means 00:30:00 (MM:SS.f format)
+        // When first component is >= 24 and <= 59, treat as minutes:seconds
         if (preg_match('/^(\d{1,3}):(\d{2})(?:\.(\d+))?$/', $value, $matches)) {
             $first = (int) $matches[1];
             $second = (int) $matches[2];
 
+            // If first component is 0-23, treat as HH:MM
             if ($first <= 23) {
                 return [$first, $second, 0];
             }
+            
+            // If first component is 24-59, treat as MM:SS (minutes:seconds)
+            if ($first >= 24 && $first <= 59) {
+                $hours = 0;
+                $minutes = $first;
+                $seconds = $second;
+                return [$hours, $minutes, $seconds];
+            }
 
+            // If first component is >= 60, convert total seconds to H:M:S
             $totalSeconds = ($first * 60) + $second;
             $hours = (int) floor($totalSeconds / 3600);
             $minutes = (int) floor(($totalSeconds % 3600) / 60);
@@ -899,6 +917,35 @@ class CsvIngestionService
             return null;
         }
 
+        // Handle special case: dates with year "0" or missing year (e.g., "30/08/0" or "30/08")
+        // These should use the current year
+        if (preg_match('/^(\d{1,2})\/(\d{1,2})\/0$/', $value, $matches)) {
+            $day = (int) $matches[1];
+            $month = (int) $matches[2];
+            $year = (int) date('Y');
+            
+            try {
+                $date = new DateTimeImmutable(sprintf('%04d-%02d-%02d', $year, $month, $day));
+                return $date;
+            } catch (Exception $e) {
+                // Invalid date, fall through to other parsing methods
+            }
+        }
+        
+        // Handle dates without year (e.g., "30/08") - use current year
+        if (preg_match('/^(\d{1,2})\/(\d{1,2})$/', $value, $matches)) {
+            $day = (int) $matches[1];
+            $month = (int) $matches[2];
+            $year = (int) date('Y');
+            
+            try {
+                $date = new DateTimeImmutable(sprintf('%04d-%02d-%02d', $year, $month, $day));
+                return $date;
+            } catch (Exception $e) {
+                // Invalid date, fall through to other parsing methods
+            }
+        }
+
         $formats = ['d/m/Y', 'Y-m-d', DateTime::RFC3339];
 
         foreach ($formats as $format) {
@@ -931,6 +978,107 @@ class CsvIngestionService
         }
 
         $errors[] = sprintf('Row %d: %s', $rowNumber, $message);
+    }
+
+    /**
+     * Auto-create a meter with a default site/company if it doesn't exist
+     * 
+     * @param string $mpan The MPAN to create
+     * @return int The ID of the newly created meter
+     * @throws Exception If meter creation fails
+     */
+    private function autoCreateMeter(string $mpan): int
+    {
+        try {
+            // Ensure we have a default company
+            $defaultCompanyId = $this->ensureDefaultCompany();
+            
+            // Ensure we have a default site for this company
+            $defaultSiteId = $this->ensureDefaultSite($defaultCompanyId);
+            
+            // Determine meter type from MPAN format (simplified heuristic)
+            $meterType = 'electricity'; // Default to electricity
+            if (preg_match('/^M/i', $mpan)) {
+                $meterType = 'gas'; // MPRN typically starts with M
+            }
+            
+            // Create the meter
+            $stmt = $this->pdo->prepare('
+                INSERT INTO meters (site_id, mpan, meter_type, is_half_hourly, is_active, created_at, updated_at)
+                VALUES (:site_id, :mpan, :meter_type, TRUE, TRUE, NOW(), NOW())
+            ');
+            
+            $stmt->execute([
+                'site_id' => $defaultSiteId,
+                'mpan' => $mpan,
+                'meter_type' => $meterType,
+            ]);
+            
+            return (int) $this->pdo->lastInsertId();
+        } catch (PDOException $e) {
+            throw new Exception('Failed to auto-create meter for MPAN ' . $mpan . ': ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Ensure a default company exists
+     * 
+     * @return int The ID of the default company
+     */
+    private function ensureDefaultCompany(): int
+    {
+        // Check if default company exists
+        $stmt = $this->pdo->prepare('SELECT id FROM companies WHERE name = :name LIMIT 1');
+        $stmt->execute(['name' => 'Default Company']);
+        $company = $stmt->fetch();
+        
+        if ($company) {
+            return (int) $company['id'];
+        }
+        
+        // Create default company
+        $stmt = $this->pdo->prepare('
+            INSERT INTO companies (name, is_active, created_at, updated_at)
+            VALUES (:name, TRUE, NOW(), NOW())
+        ');
+        $stmt->execute(['name' => 'Default Company']);
+        
+        return (int) $this->pdo->lastInsertId();
+    }
+
+    /**
+     * Ensure a default site exists for a company
+     * 
+     * @param int $companyId The company ID
+     * @return int The ID of the default site
+     */
+    private function ensureDefaultSite(int $companyId): int
+    {
+        // Check if default site exists for this company
+        $stmt = $this->pdo->prepare('SELECT id FROM sites WHERE company_id = :company_id AND name = :name LIMIT 1');
+        $stmt->execute([
+            'company_id' => $companyId,
+            'name' => 'Auto-imported Meters',
+        ]);
+        $site = $stmt->fetch();
+        
+        if ($site) {
+            return (int) $site['id'];
+        }
+        
+        // Create default site
+        $stmt = $this->pdo->prepare('
+            INSERT INTO sites (company_id, name, address, postcode, is_active, created_at, updated_at)
+            VALUES (:company_id, :name, :address, :postcode, TRUE, NOW(), NOW())
+        ');
+        $stmt->execute([
+            'company_id' => $companyId,
+            'name' => 'Auto-imported Meters',
+            'address' => 'Auto-generated during CSV import',
+            'postcode' => 'TBD',
+        ]);
+        
+        return (int) $this->pdo->lastInsertId();
     }
 
     private function logAudit(?int $userId, IngestionResult $result): void
