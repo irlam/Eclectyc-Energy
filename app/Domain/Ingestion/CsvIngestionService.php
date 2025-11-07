@@ -82,7 +82,9 @@ class CsvIngestionService
 
         $batchId = $batchId ?: Uuid::uuid4()->toString();
 
+    $delimiter = $this->detectDelimiter($filePath);
     $reader = Reader::from($filePath);
+    $reader->setDelimiter($delimiter);
         $reader->setHeaderOffset(0);
 
         $headerRow = $reader->getHeader();
@@ -454,6 +456,31 @@ class CsvIngestionService
         return strtolower(preg_replace('/[^a-z0-9]+/', '', $value));
     }
 
+    private function detectDelimiter(string $filePath): string
+    {
+        $candidates = [',', "\t", ';', '|'];
+        $bestDelimiter = ',';
+        $highestCount = -1;
+
+        $handle = @fopen($filePath, 'r');
+        if ($handle === false) {
+            return $bestDelimiter;
+        }
+
+        $line = fgets($handle, 65536) ?: '';
+        fclose($handle);
+
+        foreach ($candidates as $delimiter) {
+            $count = substr_count($line, $delimiter);
+            if ($count > $highestCount) {
+                $highestCount = $count;
+                $bestDelimiter = $delimiter;
+            }
+        }
+
+        return $bestDelimiter;
+    }
+
     private function hasAlias(array $headerMap, array $aliases): bool
     {
         return $this->resolveColumnName($headerMap, $aliases) !== null;
@@ -619,6 +646,22 @@ class CsvIngestionService
         $value = $this->normaliseString($value);
         if ($value === '') {
             return null;
+        }
+
+        if (preg_match('/^(\d{1,3}):(\d{2})(?:\.(\d+))?$/', $value, $matches)) {
+            $first = (int) $matches[1];
+            $second = (int) $matches[2];
+
+            if ($first <= 23) {
+                return [$first, $second, 0];
+            }
+
+            $totalSeconds = ($first * 60) + $second;
+            $hours = (int) floor($totalSeconds / 3600);
+            $minutes = (int) floor(($totalSeconds % 3600) / 60);
+            $seconds = $totalSeconds % 60;
+
+            return [$hours % 24, $minutes, $seconds];
         }
 
         if (is_numeric($value) && (float) $value >= 0 && (float) $value <= 1) {

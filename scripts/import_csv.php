@@ -61,6 +61,31 @@ class CliProgressBar
     }
 }
 
+function detectDelimiter(string $filePath): string
+{
+    $candidates = [',', "\t", ';', '|'];
+    $bestDelimiter = ',';
+    $highestCount = -1;
+
+    $handle = @fopen($filePath, 'r');
+    if ($handle === false) {
+        return $bestDelimiter;
+    }
+
+    $line = fgets($handle, 65536) ?: '';
+    fclose($handle);
+
+    foreach ($candidates as $delimiter) {
+        $count = substr_count($line, $delimiter);
+        if ($count > $highestCount) {
+            $highestCount = $count;
+            $bestDelimiter = $delimiter;
+        }
+    }
+
+    return $bestDelimiter;
+}
+
 if (php_sapi_name() !== 'cli') {
     die('This script can only be run from command line.');
 }
@@ -126,9 +151,13 @@ if ($dryRun) {
 $sizeKb = number_format(filesize($csvFile) / 1024, 2);
 echo "Size: {$sizeKb} KB\n";
 
+$detectedDelimiter = detectDelimiter($csvFile);
+echo 'Delimiter: ' . ($detectedDelimiter === "\t" ? 'TAB' : $detectedDelimiter) . "\n";
+
 $totalRows = null;
 try {
     $countReader = Reader::from($csvFile, 'r');
+    $countReader->setDelimiter($detectedDelimiter);
     $countReader->setHeaderOffset(0);
     $totalRows = iterator_count($countReader->getRecords());
     echo 'Rows: ' . $totalRows . "\n";
@@ -150,6 +179,7 @@ try {
 
     try {
     $preview = Reader::from($csvFile, 'r');
+        $preview->setDelimiter($detectedDelimiter);
         $preview->setHeaderOffset(0);
         $headers = $preview->getHeader();
         echo "Headers: " . implode(', ', $headers) . "\n\n";
