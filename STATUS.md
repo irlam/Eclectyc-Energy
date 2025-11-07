@@ -27,9 +27,9 @@ This document captures the current progress of the Eclectyc Energy platform so f
   - Normalise directory casing (`app/http` vs `app/Http`) and remove duplicate route definitions after deployment checks.
 
 - **Data Aggregation & Analytics**
-  - Automate cron/scheduler orchestration for daily and period aggregations with telemetry and failure alerts.
-  - Layer in comparison snapshots (prev day/week/month/year), baseload analytics, and missing-data detection.
-  - Integrate external datasets (temperature, calorific values) to power AI insights and carbon reporting.
+  - ✅ Automate cron/scheduler orchestration for daily and period aggregations with telemetry and failure alerts.
+  - ✅ Layer in comparison snapshots (prev day/week/month/year), baseload analytics, and missing-data detection.
+  - ✅ Integrate external datasets (temperature, calorific values) to power AI insights and carbon reporting.
 
 - **Data Imports**
   - Add retry workflows, reprocessing, and richer attribution/notes for batches surfaced in the history dashboard.

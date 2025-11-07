@@ -195,6 +195,43 @@ php scripts/aggregate_annual.php --date 2025-01-01
 ```
 Each script logs to `audit_logs` and reuses the shared aggregation helper, so you can schedule individual frequencies or run everything in one hit.
 
+### Enhanced Orchestrated Aggregation (Recommended)
+```bash
+# Run all ranges with orchestration, telemetry, and failure alerts
+php scripts/aggregate_orchestrated.php --all --verbose
+
+# Run specific range with monitoring
+php scripts/aggregate_orchestrated.php --range daily --date 2025-11-06
+```
+The orchestrated aggregation provides:
+- Automatic telemetry tracking in `scheduler_executions` table
+- Email alerts for failures and warnings (configured via `ADMIN_EMAIL`)
+- Detailed execution metrics (duration, meters processed, errors)
+- Audit trail for compliance and debugging
+
+### Data Quality Checks
+```bash
+# Run data quality checks for all active meters
+php scripts/run_data_quality_checks.php --verbose
+
+# Check specific date or meter
+php scripts/run_data_quality_checks.php --date 2025-11-06 --meter 123
+```
+Detects missing data, anomalies, outliers, and negative/zero readings. Results are stored in `data_quality_issues` table.
+
+### External Data Import
+```bash
+# Import temperature data
+php scripts/import_external_data.php -t temperature -f data/temp.csv -l London
+
+# Import calorific values (for gas)
+php scripts/import_external_data.php -t calorific -f data/cv.csv -r UK_SE
+
+# Import carbon intensity data
+php scripts/import_external_data.php -t carbon -f data/carbon.csv -r GB
+```
+Integrates external datasets for enhanced analytics and carbon reporting. See `docs/analytics_features.md` for CSV formats.
+
 ### Export via SFTP
 ```bash
 php scripts/export_sftp.php -t daily -d 2025-11-05 -f csv
@@ -204,13 +241,19 @@ Configure `SFTP_HOST`, `SFTP_PORT`, `SFTP_USERNAME`, and either `SFTP_PASSWORD` 
 ## Cron Job Setup (Plesk)
 
 1. Go to "Scheduled Tasks" in Plesk
-2. Add a nightly aggregation task (e.g. 01:30):
-   - Command: `/usr/bin/php /path/to/eclectyc-energy/scripts/aggregate_cron.php --all --verbose`
+2. Add a nightly orchestrated aggregation task (e.g. 01:30) - **Recommended**:
+   - Command: `/usr/bin/php /path/to/eclectyc-energy/scripts/aggregate_orchestrated.php --all --verbose`
    - Schedule: `30 1 * * *`
-3. Optional: add additional tasks for dedicated ranges or exports, for example:
+3. Add a daily data quality check task (e.g. 02:00):
+   - Command: `/usr/bin/php /path/to/eclectyc-energy/scripts/run_data_quality_checks.php --verbose`
+   - Schedule: `0 2 * * *`
+4. Optional: add additional tasks for dedicated ranges or exports, for example:
+   - Legacy aggregation: `/usr/bin/php /path/to/eclectyc-energy/scripts/aggregate_cron.php --all --verbose`
    - Weekly roll-up every Monday at 02:15: `/usr/bin/php /path/to/eclectyc-energy/scripts/aggregate_weekly.php`
    - Daily SFTP export once credentials are wired: `/usr/bin/php /path/to/eclectyc-energy/scripts/export_sftp.php -t daily`
-4. Ensure each task uses the same PHP version as the site and inherits the correct `.env` file (set `Working directory` to the project root).
+5. Ensure each task uses the same PHP version as the site and inherits the correct `.env` file (set `Working directory` to the project root).
+
+**Note:** The orchestrated aggregation script (`aggregate_orchestrated.php`) provides enhanced monitoring, telemetry, and failure alerts. Use it instead of `aggregate_cron.php` for production deployments.
 
 ## Security Considerations
 
@@ -229,6 +272,19 @@ This platform is designed with GDPR in mind:
 - Audit logging for data access
 - User consent tracking capabilities
 - Data export functionality
+
+## Data Aggregation & Analytics
+
+The platform now includes comprehensive data aggregation and analytics features:
+
+- **Automated Orchestration**: Scheduler with telemetry tracking and failure alerts
+- **Comparison Snapshots**: Day/week/month/year-over-year analysis
+- **Baseload Analytics**: Identify minimum constant load and optimization opportunities
+- **Missing Data Detection**: Automated quality checks with outlier detection
+- **External Datasets**: Temperature, calorific values, and carbon intensity integration
+- **Carbon Reporting**: Calculate emissions based on consumption and grid intensity
+
+See `docs/analytics_features.md` for detailed documentation.
 
 ## Troubleshooting
 
