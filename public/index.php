@@ -258,9 +258,9 @@ $errorMiddleware = $app->addErrorMiddleware(
     true
 );
 
-// Custom error handler
-$errorHandler = $errorMiddleware->getDefaultErrorHandler();
-$errorHandler->forceContentType('application/json');
+// Note: Removed forceContentType('application/json') to allow proper HTML error pages
+// for web routes like /admin/imports/history. Slim will use content negotiation to
+// determine whether to return HTML or JSON errors based on the request context.
 
 // Add CORS middleware for API routes
 $app->add(function ($request, $handler) {
