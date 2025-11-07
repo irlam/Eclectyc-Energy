@@ -14,6 +14,7 @@ use App\Http\Controllers\Admin\UsersController;
 use App\Http\Controllers\Api\CarbonIntensityController;
 use App\Http\Controllers\Api\HealthController;
 use App\Http\Controllers\Api\ImportStatusController;
+use App\Http\Controllers\Api\ImportJobController;
 use App\Http\Controllers\Api\MetersController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
@@ -45,6 +46,10 @@ $app->group('/api', function ($group) {
     $group->get('/meters/{mpan}/readings', [MetersController::class, 'readings']);
     $group->get('/import/status', [ImportStatusController::class, 'index']);
     
+    // Import job tracking
+    $group->get('/import/jobs', [ImportJobController::class, 'getJobs']);
+    $group->get('/import/jobs/{batchId}', [ImportJobController::class, 'getStatus']);
+    
     // Carbon intensity endpoints
     $group->get('/carbon-intensity', [CarbonIntensityController::class, 'getCurrent']);
     $group->post('/carbon-intensity/refresh', [CarbonIntensityController::class, 'refresh']);
@@ -65,6 +70,8 @@ $app->group('/admin', function ($group) {
     $group->get('/imports', [ImportController::class, 'index'])->setName('admin.imports');
     $group->post('/imports', [ImportController::class, 'upload'])->setName('admin.imports.upload');
     $group->get('/imports/history', [ImportController::class, 'history'])->setName('admin.imports.history');
+    $group->get('/imports/jobs', [ImportController::class, 'jobs'])->setName('admin.imports.jobs');
+    $group->get('/imports/status/{batchId}', [ImportController::class, 'status'])->setName('admin.imports.status');
     $group->post('/imports/retry', [ImportController::class, 'retry'])->setName('admin.imports.retry');
     $group->get('/exports', [ExportsController::class, 'index'])->setName('admin.exports');
 
