@@ -9,6 +9,7 @@ namespace App\Http\Controllers\Admin;
 use App\Domain\Ingestion\CsvIngestionService;
 use App\Domain\Ingestion\ImportQueueStub;
 use App\Domain\Ingestion\IngestionResult;
+use App\Domain\Ingestion\ImportJobService;
 use PDO;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -167,6 +168,7 @@ class ImportController
 
         $format = strtolower($data['import_type'] ?? 'hh');
         $dryRun = isset($data['dry_run']);
+        $async = isset($data['async']); // New: support async processing
         $uploadedFile = $files['csv_file'] ?? null;
         $errors = [];
 
@@ -186,6 +188,12 @@ class ImportController
             return $this->redirect($response, '/admin/imports');
         }
 
+        // Handle async import
+        if ($async) {
+            return $this->uploadAsync($uploadedFile, $format, $dryRun, $response);
+        }
+
+        // Original synchronous import
         $tempPath = tempnam(sys_get_temp_dir(), 'import_');
         $uploadedFile->moveTo($tempPath);
 
@@ -224,6 +232,50 @@ class ImportController
         }
 
         return $this->redirect($response, '/admin/imports');
+    }
+
+    /**
+     * Handle async upload - queue the job for background processing
+     */
+    private function uploadAsync($uploadedFile, string $format, bool $dryRun, Response $response): Response
+    {
+        try {
+            $jobService = new ImportJobService($this->pdo);
+            
+            // Create a permanent storage directory for import files
+            $storageDir = dirname(__DIR__, 3) . '/storage/imports';
+            if (!is_dir($storageDir)) {
+                mkdir($storageDir, 0755, true);
+            }
+            
+            // Save the file with a unique name
+            $filename = $uploadedFile->getClientFilename();
+            $uniqueFilename = time() . '_' . preg_replace('/[^a-zA-Z0-9_.-]/', '_', $filename);
+            $filePath = $storageDir . '/' . $uniqueFilename;
+            $uploadedFile->moveTo($filePath);
+            
+            // Create the import job
+            $batchId = $jobService->createJob(
+                $filename,
+                $filePath,
+                $format,
+                $this->currentUserId(),
+                $dryRun
+            );
+            
+            $this->setFlash('success', 'Import job queued successfully. You can close this page and check the status later.', [
+                'batch_id' => $batchId,
+                'filename' => $filename,
+                'format' => $format,
+                'async' => true,
+            ]);
+            
+            return $this->redirect($response, '/admin/imports/status/' . $batchId);
+            
+        } catch (\Throwable $e) {
+            $this->setFlash('error', 'Failed to queue import job: ' . $e->getMessage());
+            return $this->redirect($response, '/admin/imports');
+        }
     }
 
     /**
@@ -289,6 +341,69 @@ class ImportController
         $this->setFlash('warning', 'Retry queued. Note: Full retry functionality requires file storage implementation. Original file must be re-uploaded for processing.');
         
         return $this->redirect($response, '/admin/imports/history');
+    }
+
+    /**
+     * View the status of an import job
+     */
+    public function status(Request $request, Response $response, array $args): Response
+    {
+        if (!$this->pdo) {
+            return $this->view->render($response, 'admin/import_status.twig', [
+                'page_title' => 'Import Status',
+                'error' => 'Database connection unavailable.',
+            ]);
+        }
+
+        $batchId = $args['batchId'] ?? null;
+        
+        if (!$batchId) {
+            $this->setFlash('error', 'Batch ID is required.');
+            return $this->redirect($response, '/admin/imports');
+        }
+
+        $jobService = new ImportJobService($this->pdo);
+        $job = $jobService->getJob($batchId);
+
+        if (!$job) {
+            $this->setFlash('error', 'Import job not found.');
+            return $this->redirect($response, '/admin/imports');
+        }
+
+        return $this->view->render($response, 'admin/import_status.twig', [
+            'page_title' => 'Import Status',
+            'job' => $job,
+        ]);
+    }
+
+    /**
+     * List all active/recent import jobs
+     */
+    public function jobs(Request $request, Response $response): Response
+    {
+        if (!$this->pdo) {
+            return $this->view->render($response, 'admin/import_jobs.twig', [
+                'page_title' => 'Import Jobs',
+                'error' => 'Database connection unavailable.',
+                'jobs' => [],
+            ]);
+        }
+
+        $query = $request->getQueryParams();
+        $status = $query['status'] ?? null;
+        $limit = isset($query['limit']) ? max(10, min(100, (int) $query['limit'])) : 50;
+
+        $jobService = new ImportJobService($this->pdo);
+        $jobs = $jobService->getRecentJobs($limit, $status);
+
+        return $this->view->render($response, 'admin/import_jobs.twig', [
+            'page_title' => 'Import Jobs',
+            'jobs' => $jobs,
+            'filters' => [
+                'status' => $status,
+                'limit' => $limit,
+            ],
+        ]);
     }
 
     private function redirect(Response $response, string $path): Response
