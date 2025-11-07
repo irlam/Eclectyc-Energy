@@ -58,12 +58,15 @@ class ImportController
         $statusFilter = isset($query['status']) && $query['status'] !== '' ? strtolower($query['status']) : null;
         $typeFilter = isset($query['type']) && $query['type'] !== '' ? strtolower($query['type']) : null;
 
-        $stmt = $this->pdo->prepare('SELECT a.id, a.user_id, a.new_values, a.status, a.retry_count, a.parent_batch_id, a.created_at, u.name, u.email
-            FROM audit_logs a
-            LEFT JOIN users u ON a.user_id = u.id
-            WHERE a.action = :action
-            ORDER BY a.created_at DESC
-            LIMIT :limit');
+        $stmt = $this->pdo->prepare('
+            SELECT a.id, a.user_id, a.new_values, a.status, a.retry_count, a.parent_batch_id, a.created_at,
+                   u.name AS user_name, u.email AS user_email
+              FROM audit_logs a
+              LEFT JOIN users u ON a.user_id = u.id
+             WHERE a.action = :action
+             ORDER BY a.created_at DESC
+             LIMIT :limit
+        ');
 
         $stmt->bindValue(':action', 'import_csv');
         // fetch extra rows so filters still have data to work with
@@ -96,8 +99,8 @@ class ImportController
 
             $entries[] = [
                 'id' => (int) $row['id'],
-                'user_name' => $row['name'] ?? null,
-                'user_email' => $row['email'] ?? null,
+                'user_name' => $row['user_name'] ?? null,
+                'user_email' => $row['user_email'] ?? null,
                 'created_at' => $row['created_at'],
                 'completed_at' => $row['created_at'],
                 'batch_id' => $payload['batch_id'] ?? null,
