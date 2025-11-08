@@ -140,6 +140,10 @@ class ToolsController
         $logSize = 0;
         $error = null;
         
+        // Get flash message
+        $flash = $_SESSION['tools_flash'] ?? null;
+        unset($_SESSION['tools_flash']);
+        
         if (file_exists($logFile)) {
             $logExists = true;
             $logSize = filesize($logFile);
@@ -183,6 +187,7 @@ class ToolsController
             'log_size' => $logSize,
             'log_size_mb' => $logSize > 0 ? round($logSize / 1048576, 2) : 0,
             'error' => $error,
+            'flash' => $flash,
             'filters' => [
                 'lines' => $lines,
                 'search' => $search,

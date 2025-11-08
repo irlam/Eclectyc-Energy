@@ -13,7 +13,6 @@
         </div>
     {% endif %}
 
-    {% set flash = app.session.tools_flash|default(null) %}
     {% if flash %}
         <div class="alert alert-{{ flash.type }}">
             <p>{{ flash.message }}</p>
