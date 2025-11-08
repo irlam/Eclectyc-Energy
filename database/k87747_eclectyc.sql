@@ -135,12 +135,14 @@ CREATE TABLE IF NOT EXISTS `meters` (
   `install_date` date DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT current_timestamp(),
   `updated_at` timestamp NULL DEFAULT current_timestamp() ON UPDATE current_timestamp(),
+  `batch_id` varchar(36) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Batch ID of import that created this meter',
   PRIMARY KEY (`id`),
   UNIQUE KEY `mpan` (`mpan`),
   KEY `site_id` (`site_id`),
   KEY `supplier_id` (`supplier_id`),
   KEY `idx_meter_type` (`meter_type`),
   KEY `idx_half_hourly` (`is_half_hourly`),
+  KEY `idx_batch_id` (`batch_id`),
   CONSTRAINT `meters_ibfk_1` FOREIGN KEY (`site_id`) REFERENCES `sites` (`id`) ON DELETE SET NULL,
   CONSTRAINT `meters_ibfk_2` FOREIGN KEY (`supplier_id`) REFERENCES `suppliers` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -154,10 +156,12 @@ CREATE TABLE IF NOT EXISTS `meter_readings` (
   `reading_value` decimal(12,4) NOT NULL COMMENT 'kWh or m3',
   `reading_type` enum('actual','estimated') COLLATE utf8mb4_unicode_ci DEFAULT 'actual',
   `created_at` timestamp NULL DEFAULT current_timestamp(),
+  `batch_id` varchar(36) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Batch ID of import that created this reading',
   PRIMARY KEY (`id`),
   UNIQUE KEY `unique_meter_datetime` (`meter_id`,`reading_date`,`reading_time`),
   KEY `idx_meter_date` (`meter_id`,`reading_date`),
   KEY `idx_date` (`reading_date`),
+  KEY `idx_batch_id` (`batch_id`),
   CONSTRAINT `meter_readings_ibfk_1` FOREIGN KEY (`meter_id`) REFERENCES `meters` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -422,6 +426,8 @@ CREATE TABLE IF NOT EXISTS `import_jobs` (
   `retry_count` int(11) DEFAULT 0,
   `max_retries` int(11) DEFAULT 3,
   `parent_job_id` int(10) UNSIGNED DEFAULT NULL,
+  `default_site_id` int(10) UNSIGNED DEFAULT NULL COMMENT 'Default site to assign to auto-created meters',
+  `default_tariff_id` int(10) UNSIGNED DEFAULT NULL COMMENT 'Default tariff to assign to meters',
   `notes` text COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `last_error` text COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   PRIMARY KEY (`id`),
@@ -430,8 +436,12 @@ CREATE TABLE IF NOT EXISTS `import_jobs` (
   KEY `parent_job_id` (`parent_job_id`),
   KEY `idx_status` (`status`),
   KEY `idx_queued_at` (`queued_at`),
+  KEY `idx_default_site` (`default_site_id`),
+  KEY `idx_default_tariff` (`default_tariff_id`),
   CONSTRAINT `import_jobs_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE SET NULL,
-  CONSTRAINT `import_jobs_ibfk_2` FOREIGN KEY (`parent_job_id`) REFERENCES `import_jobs` (`id`) ON DELETE SET NULL
+  CONSTRAINT `import_jobs_ibfk_2` FOREIGN KEY (`parent_job_id`) REFERENCES `import_jobs` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_import_jobs_site` FOREIGN KEY (`default_site_id`) REFERENCES `sites` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_import_jobs_tariff` FOREIGN KEY (`default_tariff_id`) REFERENCES `tariffs` (`id`) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ================================================================

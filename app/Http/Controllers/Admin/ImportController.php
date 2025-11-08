@@ -430,6 +430,142 @@ class ImportController
         ]);
     }
 
+    /**
+     * Delete an import job and all associated data
+     */
+    public function deleteJob(Request $request, Response $response, array $args): Response
+    {
+        if (!$this->pdo) {
+            $this->setFlash('error', 'Database connection unavailable.');
+            return $this->redirect($response, '/admin/imports/jobs');
+        }
+
+        $jobId = isset($args['id']) ? (int) $args['id'] : null;
+        
+        if (!$jobId) {
+            $this->setFlash('error', 'Job ID is required.');
+            return $this->redirect($response, '/admin/imports/jobs');
+        }
+
+        try {
+            $this->pdo->beginTransaction();
+
+            // Get job details including batch_id
+            $stmt = $this->pdo->prepare('
+                SELECT batch_id, file_path, import_type, status
+                FROM import_jobs
+                WHERE id = :id
+            ');
+            $stmt->execute(['id' => $jobId]);
+            $job = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$job) {
+                $this->pdo->rollBack();
+                $this->setFlash('error', 'Import job not found.');
+                return $this->redirect($response, '/admin/imports/jobs');
+            }
+
+            // Don't allow deletion of jobs that are currently processing
+            if ($job['status'] === 'processing') {
+                $this->pdo->rollBack();
+                $this->setFlash('error', 'Cannot delete a job that is currently processing. Please wait for it to complete or fail.');
+                return $this->redirect($response, '/admin/imports/jobs');
+            }
+
+            $batchId = $job['batch_id'];
+            $deletedReadings = 0;
+            $deletedMeters = 0;
+
+            // Delete meter readings associated with this batch
+            // Note: meter_readings table may have a batch_id column to track which import created them
+            // If not, we may need to rely on audit logs or other tracking mechanisms
+            $checkBatchColumn = $this->pdo->query("
+                SELECT COUNT(*) as count 
+                FROM information_schema.COLUMNS 
+                WHERE TABLE_SCHEMA = DATABASE() 
+                AND TABLE_NAME = 'meter_readings' 
+                AND COLUMN_NAME = 'batch_id'
+            ")->fetch(PDO::FETCH_ASSOC);
+
+            if ($checkBatchColumn['count'] > 0) {
+                $deleteReadingsStmt = $this->pdo->prepare('
+                    DELETE FROM meter_readings WHERE batch_id = :batch_id
+                ');
+                $deleteReadingsStmt->execute(['batch_id' => $batchId]);
+                $deletedReadings = $deleteReadingsStmt->rowCount();
+            }
+
+            // Check if meters were created by this import (auto-created meters)
+            // Similar approach - check if meters table has batch_id column
+            $checkMetersBatchColumn = $this->pdo->query("
+                SELECT COUNT(*) as count 
+                FROM information_schema.COLUMNS 
+                WHERE TABLE_SCHEMA = DATABASE() 
+                AND TABLE_NAME = 'meters' 
+                AND COLUMN_NAME = 'batch_id'
+            ")->fetch(PDO::FETCH_ASSOC);
+
+            if ($checkMetersBatchColumn['count'] > 0) {
+                // Only delete meters that have no other readings
+                $deleteMetersStmt = $this->pdo->prepare('
+                    DELETE m FROM meters m
+                    WHERE m.batch_id = :batch_id
+                    AND NOT EXISTS (
+                        SELECT 1 FROM meter_readings mr 
+                        WHERE mr.meter_id = m.id 
+                        AND (mr.batch_id != :batch_id OR mr.batch_id IS NULL)
+                    )
+                ');
+                $deleteMetersStmt->execute(['batch_id' => $batchId]);
+                $deletedMeters = $deleteMetersStmt->rowCount();
+            }
+
+            // Delete audit log entries for this import
+            $deleteAuditStmt = $this->pdo->prepare('
+                DELETE FROM audit_logs 
+                WHERE action = :action 
+                AND JSON_EXTRACT(new_values, "$.batch_id") = :batch_id
+            ');
+            $deleteAuditStmt->execute([
+                'action' => 'import_csv',
+                'batch_id' => $batchId,
+            ]);
+
+            // Delete the import job itself
+            $deleteJobStmt = $this->pdo->prepare('DELETE FROM import_jobs WHERE id = :id');
+            $deleteJobStmt->execute(['id' => $jobId]);
+
+            // Delete the uploaded file if it exists
+            if (!empty($job['file_path']) && file_exists($job['file_path'])) {
+                @unlink($job['file_path']);
+            }
+
+            $this->pdo->commit();
+
+            $message = "Import job deleted successfully.";
+            if ($deletedReadings > 0 || $deletedMeters > 0) {
+                $message .= " Removed: {$deletedReadings} reading(s)";
+                if ($deletedMeters > 0) {
+                    $message .= ", {$deletedMeters} meter(s)";
+                }
+                $message .= ".";
+            }
+
+            $this->setFlash('success', $message);
+
+        } catch (\PDOException $e) {
+            $this->pdo->rollBack();
+            error_log('Failed to delete import job: ' . $e->getMessage());
+            $this->setFlash('error', 'Failed to delete import job: ' . $e->getMessage());
+        } catch (\Throwable $e) {
+            $this->pdo->rollBack();
+            error_log('Failed to delete import job: ' . $e->getMessage());
+            $this->setFlash('error', 'An unexpected error occurred while deleting the import job.');
+        }
+
+        return $this->redirect($response, '/admin/imports/jobs');
+    }
+
     private function redirect(Response $response, string $path): Response
     {
         return $response->withHeader('Location', $path)->withStatus(302);

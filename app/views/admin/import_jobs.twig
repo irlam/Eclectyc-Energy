@@ -73,6 +73,17 @@
                         <td>{{ job.queued_at }}</td>
                         <td>
                             <a href="/admin/imports/status/{{ job.batch_id }}" class="btn btn-sm">View</a>
+                            {% if job.status in ['completed', 'failed', 'cancelled'] %}
+                                <form 
+                                    method="POST" 
+                                    action="/admin/imports/jobs/{{ job.id }}/delete" 
+                                    style="display: inline-block;"
+                                    data-confirm-delete="import job '{{ job.filename }}'"
+                                    data-confirm-warning="This will permanently delete the import job '{{ job.filename }}' and all {{ job.processed_rows }} imported records. This action cannot be undone."
+                                >
+                                    <button type="submit" class="btn btn-sm btn-danger">Delete</button>
+                                </form>
+                            {% endif %}
                         </td>
                     </tr>
                     {% endfor %}

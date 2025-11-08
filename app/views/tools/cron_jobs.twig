@@ -1,0 +1,606 @@
+{% extends "base.twig" %}
+
+{% block title %}Cron Jobs Setup{% endblock %}
+
+{% block content %}
+<section class="card cron-card">
+    <div class="card-header cron-card__header">
+        <div>
+            <h2>Cron Jobs Configuration</h2>
+            <p class="mb-0" style="color: var(--muted); font-size: 0.9rem;">
+                Automated task scheduling for maintaining the Eclectyc Energy Platform
+            </p>
+        </div>
+        <a href="/tools" class="btn btn-secondary">← Back to Tools</a>
+    </div>
+
+    <div class="cron-intro">
+        <div class="cron-intro-content">
+            <h3>🕐 What are Cron Jobs?</h3>
+            <p>Cron jobs are scheduled tasks that run automatically at specified intervals. The Eclectyc Energy Platform uses cron jobs to:</p>
+            <ul>
+                <li>Aggregate and process energy consumption data</li>
+                <li>Import data from external sources</li>
+                <li>Export reports to external systems</li>
+                <li>Monitor system health and send alerts</li>
+                <li>Clean up old data and temporary files</li>
+                <li>Fetch real-time carbon intensity data</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="cron-sections">
+        <!-- Quick Setup -->
+        <div class="cron-section">
+            <h3>🚀 Quick Setup</h3>
+            <div class="cron-setup-card">
+                <p><strong>To configure all recommended cron jobs:</strong></p>
+                <ol>
+                    <li>Open your crontab editor: <code>crontab -e</code></li>
+                    <li>Copy the entire "Complete Cron Configuration" section below</li>
+                    <li>Paste it into your crontab file</li>
+                    <li>Update the <code>/path/to/project</code> to match your installation path</li>
+                    <li>Save and exit</li>
+                </ol>
+                <div class="cron-verify">
+                    <strong>Verify:</strong> <code>crontab -l</code> to list all configured cron jobs
+                </div>
+            </div>
+        </div>
+
+        <!-- Critical Jobs -->
+        <div class="cron-section">
+            <h3>🔴 Critical Jobs (Required)</h3>
+            <p class="cron-section-desc">These jobs are essential for core platform functionality.</p>
+
+            <div class="cron-job-card">
+                <div class="cron-job-header">
+                    <h4>Background Import Processing</h4>
+                    <span class="cron-priority cron-priority-critical">CRITICAL</span>
+                </div>
+                <p class="cron-description">Processes queued import jobs asynchronously. Without this, imports won't be processed.</p>
+                
+                <div class="cron-schedule">
+                    <strong>Schedule:</strong> Continuous (via supervisor/systemd) or every minute
+                </div>
+
+                <div class="cron-code-block">
+                    <strong>Cron Entry:</strong>
+                    <code>* * * * * cd /path/to/project && php scripts/process_import_jobs.php >> /var/log/eclectyc/import_jobs.log 2>&1</code>
+                </div>
+
+                <div class="cron-note">
+                    <strong>💡 Better Alternative:</strong> Run as a persistent service using supervisor or systemd instead of cron for continuous processing.
+                </div>
+            </div>
+
+            <div class="cron-job-card">
+                <div class="cron-job-header">
+                    <h4>Daily Data Aggregation</h4>
+                    <span class="cron-priority cron-priority-critical">CRITICAL</span>
+                </div>
+                <p class="cron-description">Aggregates half-hourly data into daily summaries. Required for reports and analysis.</p>
+                
+                <div class="cron-schedule">
+                    <strong>Schedule:</strong> Daily at 1:00 AM
+                </div>
+
+                <div class="cron-code-block">
+                    <strong>Cron Entry:</strong>
+                    <code>0 1 * * * cd /path/to/project && php scripts/aggregate_cron.php --period=daily >> /var/log/eclectyc/aggregate_daily.log 2>&1</code>
+                </div>
+            </div>
+        </div>
+
+        <!-- Important Jobs -->
+        <div class="cron-section">
+            <h3>🟡 Important Jobs (Recommended)</h3>
+            <p class="cron-section-desc">These jobs are important for optimal platform performance.</p>
+
+            <div class="cron-job-card">
+                <div class="cron-job-header">
+                    <h4>Weekly Aggregation</h4>
+                    <span class="cron-priority cron-priority-important">IMPORTANT</span>
+                </div>
+                <p class="cron-description">Aggregates daily data into weekly summaries for trend analysis.</p>
+                
+                <div class="cron-schedule">
+                    <strong>Schedule:</strong> Every Monday at 2:00 AM
+                </div>
+
+                <div class="cron-code-block">
+                    <strong>Cron Entry:</strong>
+                    <code>0 2 * * 1 cd /path/to/project && php scripts/aggregate_cron.php --period=weekly >> /var/log/eclectyc/aggregate_weekly.log 2>&1</code>
+                </div>
+            </div>
+
+            <div class="cron-job-card">
+                <div class="cron-job-header">
+                    <h4>Monthly Aggregation</h4>
+                    <span class="cron-priority cron-priority-important">IMPORTANT</span>
+                </div>
+                <p class="cron-description">Aggregates weekly data into monthly summaries for reporting.</p>
+                
+                <div class="cron-schedule">
+                    <strong>Schedule:</strong> 1st of each month at 3:00 AM
+                </div>
+
+                <div class="cron-code-block">
+                    <strong>Cron Entry:</strong>
+                    <code>0 3 1 * * cd /path/to/project && php scripts/aggregate_cron.php --period=monthly >> /var/log/eclectyc/aggregate_monthly.log 2>&1</code>
+                </div>
+            </div>
+
+            <div class="cron-job-card">
+                <div class="cron-job-header">
+                    <h4>Carbon Intensity Fetching</h4>
+                    <span class="cron-priority cron-priority-important">IMPORTANT</span>
+                </div>
+                <p class="cron-description">Fetches UK grid carbon intensity data for emissions reporting.</p>
+                
+                <div class="cron-schedule">
+                    <strong>Schedule:</strong> Every 30 minutes
+                </div>
+
+                <div class="cron-code-block">
+                    <strong>Cron Entry:</strong>
+                    <code>*/30 * * * * cd /path/to/project && php scripts/fetch_carbon_intensity.php >> /var/log/eclectyc/carbon.log 2>&1</code>
+                </div>
+            </div>
+
+            <div class="cron-job-card">
+                <div class="cron-job-header">
+                    <h4>System Health Monitoring</h4>
+                    <span class="cron-priority cron-priority-important">IMPORTANT</span>
+                </div>
+                <p class="cron-description">Monitors system health and sends alerts for issues.</p>
+                
+                <div class="cron-schedule">
+                    <strong>Schedule:</strong> Every hour
+                </div>
+
+                <div class="cron-code-block">
+                    <strong>Cron Entry:</strong>
+                    <code>0 * * * * cd /path/to/project && php scripts/monitor_import_system.php --alert >> /var/log/eclectyc/monitor.log 2>&1</code>
+                </div>
+            </div>
+        </div>
+
+        <!-- Optional Jobs -->
+        <div class="cron-section">
+            <h3>🟢 Optional Jobs</h3>
+            <p class="cron-section-desc">These jobs enhance functionality but are not required.</p>
+
+            <div class="cron-job-card">
+                <div class="cron-job-header">
+                    <h4>Annual Aggregation</h4>
+                    <span class="cron-priority cron-priority-optional">OPTIONAL</span>
+                </div>
+                <p class="cron-description">Aggregates monthly data into annual summaries for year-over-year analysis.</p>
+                
+                <div class="cron-schedule">
+                    <strong>Schedule:</strong> 1st January at 4:00 AM
+                </div>
+
+                <div class="cron-code-block">
+                    <strong>Cron Entry:</strong>
+                    <code>0 4 1 1 * cd /path/to/project && php scripts/aggregate_cron.php --period=annual >> /var/log/eclectyc/aggregate_annual.log 2>&1</code>
+                </div>
+            </div>
+
+            <div class="cron-job-card">
+                <div class="cron-job-header">
+                    <h4>SFTP Data Export</h4>
+                    <span class="cron-priority cron-priority-optional">OPTIONAL</span>
+                </div>
+                <p class="cron-description">Exports daily summaries to external systems via SFTP.</p>
+                
+                <div class="cron-schedule">
+                    <strong>Schedule:</strong> Daily at 6:00 AM
+                </div>
+
+                <div class="cron-code-block">
+                    <strong>Cron Entry:</strong>
+                    <code>0 6 * * * cd /path/to/project && php scripts/export_sftp.php --type=daily --format=csv >> /var/log/eclectyc/export.log 2>&1</code>
+                </div>
+
+                <div class="cron-note">
+                    <strong>⚠️ Note:</strong> Requires SFTP configuration in .env file
+                </div>
+            </div>
+
+            <div class="cron-job-card">
+                <div class="cron-job-header">
+                    <h4>Import Jobs Cleanup</h4>
+                    <span class="cron-priority cron-priority-optional">OPTIONAL</span>
+                </div>
+                <p class="cron-description">Cleans up old completed import jobs to save disk space.</p>
+                
+                <div class="cron-schedule">
+                    <strong>Schedule:</strong> Weekly on Sunday at 5:00 AM
+                </div>
+
+                <div class="cron-code-block">
+                    <strong>Cron Entry:</strong>
+                    <code>0 5 * * 0 cd /path/to/project && php scripts/cleanup_import_jobs.php --days=30 >> /var/log/eclectyc/cleanup.log 2>&1</code>
+                </div>
+            </div>
+
+            <div class="cron-job-card">
+                <div class="cron-job-header">
+                    <h4>Data Quality Checks</h4>
+                    <span class="cron-priority cron-priority-optional">OPTIONAL</span>
+                </div>
+                <p class="cron-description">Runs data quality validation and reports issues.</p>
+                
+                <div class="cron-schedule">
+                    <strong>Schedule:</strong> Daily at 7:00 AM
+                </div>
+
+                <div class="cron-code-block">
+                    <strong>Cron Entry:</strong>
+                    <code>0 7 * * * cd /path/to/project && php scripts/run_data_quality_checks.php --report >> /var/log/eclectyc/quality.log 2>&1</code>
+                </div>
+            </div>
+        </div>
+
+        <!-- Complete Configuration -->
+        <div class="cron-section">
+            <h3>📋 Complete Cron Configuration</h3>
+            <p class="cron-section-desc">Copy and paste this complete configuration into your crontab.</p>
+            
+            <div class="cron-complete-block">
+                <pre><code># Eclectyc Energy Platform - Cron Jobs Configuration
+# Update /path/to/project with your actual installation path
+
+# === CRITICAL JOBS ===
+# Background import processing (every minute)
+* * * * * cd /path/to/project && php scripts/process_import_jobs.php >> /var/log/eclectyc/import_jobs.log 2>&1
+
+# Daily aggregation (1:00 AM)
+0 1 * * * cd /path/to/project && php scripts/aggregate_cron.php --period=daily >> /var/log/eclectyc/aggregate_daily.log 2>&1
+
+# === IMPORTANT JOBS ===
+# Weekly aggregation (Monday 2:00 AM)
+0 2 * * 1 cd /path/to/project && php scripts/aggregate_cron.php --period=weekly >> /var/log/eclectyc/aggregate_weekly.log 2>&1
+
+# Monthly aggregation (1st of month, 3:00 AM)
+0 3 1 * * cd /path/to/project && php scripts/aggregate_cron.php --period=monthly >> /var/log/eclectyc/aggregate_monthly.log 2>&1
+
+# Carbon intensity (every 30 minutes)
+*/30 * * * * cd /path/to/project && php scripts/fetch_carbon_intensity.php >> /var/log/eclectyc/carbon.log 2>&1
+
+# System health monitoring (hourly)
+0 * * * * cd /path/to/project && php scripts/monitor_import_system.php --alert >> /var/log/eclectyc/monitor.log 2>&1
+
+# === OPTIONAL JOBS ===
+# Annual aggregation (1st January, 4:00 AM)
+0 4 1 1 * cd /path/to/project && php scripts/aggregate_cron.php --period=annual >> /var/log/eclectyc/aggregate_annual.log 2>&1
+
+# SFTP export (6:00 AM)
+# 0 6 * * * cd /path/to/project && php scripts/export_sftp.php --type=daily --format=csv >> /var/log/eclectyc/export.log 2>&1
+
+# Cleanup old jobs (Sunday 5:00 AM)
+0 5 * * 0 cd /path/to/project && php scripts/cleanup_import_jobs.php --days=30 >> /var/log/eclectyc/cleanup.log 2>&1
+
+# Data quality checks (7:00 AM)
+# 0 7 * * * cd /path/to/project && php scripts/run_data_quality_checks.php --report >> /var/log/eclectyc/quality.log 2>&1
+</code></pre>
+            </div>
+
+            <div class="cron-install-steps">
+                <h4>Installation Steps:</h4>
+                <ol>
+                    <li>Create log directory: <code>sudo mkdir -p /var/log/eclectyc && sudo chown www-data:www-data /var/log/eclectyc</code></li>
+                    <li>Open crontab: <code>sudo crontab -u www-data -e</code></li>
+                    <li>Paste the configuration above</li>
+                    <li>Update <code>/path/to/project</code> with your actual path</li>
+                    <li>Uncomment optional jobs as needed</li>
+                    <li>Save and exit</li>
+                </ol>
+            </div>
+        </div>
+
+        <!-- Troubleshooting -->
+        <div class="cron-section">
+            <h3>🔧 Troubleshooting</h3>
+            
+            <div class="cron-troubleshooting">
+                <div class="cron-trouble-item">
+                    <h4>Jobs not running?</h4>
+                    <ul>
+                        <li>Check cron service is running: <code>sudo systemctl status cron</code></li>
+                        <li>Verify crontab is installed: <code>crontab -l</code></li>
+                        <li>Check log files for errors in <code>/var/log/eclectyc/</code></li>
+                        <li>Ensure PHP CLI is available: <code>which php</code></li>
+                    </ul>
+                </div>
+
+                <div class="cron-trouble-item">
+                    <h4>Permission denied errors?</h4>
+                    <ul>
+                        <li>Ensure scripts are executable: <code>chmod +x scripts/*.php</code></li>
+                        <li>Check file ownership: <code>chown -R www-data:www-data /path/to/project</code></li>
+                        <li>Verify log directory permissions: <code>chmod 755 /var/log/eclectyc</code></li>
+                    </ul>
+                </div>
+
+                <div class="cron-trouble-item">
+                    <h4>Database connection errors?</h4>
+                    <ul>
+                        <li>Verify .env file exists and is readable</li>
+                        <li>Check database credentials in .env</li>
+                        <li>Test connection: <code>php scripts/check_system_health.php</code></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Best Practices -->
+        <div class="cron-section">
+            <h3>✅ Best Practices</h3>
+            
+            <div class="cron-best-practices">
+                <div class="cron-practice-item">
+                    <strong>📝 Always log output</strong>
+                    <p>Redirect both stdout and stderr to log files for debugging: <code>>> /var/log/file.log 2>&1</code></p>
+                </div>
+
+                <div class="cron-practice-item">
+                    <strong>🔄 Use log rotation</strong>
+                    <p>Prevent log files from growing too large by configuring logrotate for <code>/var/log/eclectyc/</code></p>
+                </div>
+
+                <div class="cron-practice-item">
+                    <strong>⏰ Stagger job times</strong>
+                    <p>Don't run multiple heavy jobs at the same time to avoid resource contention</p>
+                </div>
+
+                <div class="cron-practice-item">
+                    <strong>🎯 Test before deploying</strong>
+                    <p>Run scripts manually first to ensure they work: <code>php scripts/script.php</code></p>
+                </div>
+
+                <div class="cron-practice-item">
+                    <strong>📊 Monitor execution</strong>
+                    <p>Regularly check log files and use the system health tool to verify jobs are running</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+    .cron-card {
+        background: linear-gradient(180deg, #0f172a 0%, #111827 45%, #0b1120 100%);
+        color: #e2e8f0;
+        border: none;
+        box-shadow: 0 25px 45px rgba(15, 23, 42, 0.45);
+    }
+
+    .cron-card__header {
+        border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+    }
+
+    .cron-intro {
+        padding: 1.5rem;
+        background: rgba(30, 64, 175, 0.15);
+        border-radius: 12px;
+        margin-bottom: 2rem;
+        border: 1px solid rgba(129, 140, 248, 0.25);
+    }
+
+    .cron-intro h3 {
+        margin-top: 0;
+        color: #e0e7ff;
+    }
+
+    .cron-intro ul {
+        margin: 0.5rem 0;
+        padding-left: 1.5rem;
+    }
+
+    .cron-intro li {
+        margin: 0.5rem 0;
+        color: #cbd5e1;
+    }
+
+    .cron-section {
+        margin-bottom: 3rem;
+    }
+
+    .cron-section h3 {
+        font-size: 1.5rem;
+        margin-bottom: 1rem;
+        color: #f8fafc;
+        border-bottom: 2px solid rgba(148, 163, 184, 0.2);
+        padding-bottom: 0.5rem;
+    }
+
+    .cron-section-desc {
+        color: #94a3b8;
+        margin-bottom: 1.5rem;
+        font-style: italic;
+    }
+
+    .cron-setup-card,
+    .cron-job-card {
+        padding: 1.5rem;
+        border-radius: 12px;
+        background: rgba(30, 41, 59, 0.6);
+        box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.15);
+        margin-bottom: 1.5rem;
+    }
+
+    .cron-job-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.75rem;
+    }
+
+    .cron-job-header h4 {
+        margin: 0;
+        color: #f8fafc;
+        font-size: 1.2rem;
+    }
+
+    .cron-priority {
+        padding: 0.3rem 0.7rem;
+        border-radius: 4px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .cron-priority-critical {
+        background: rgba(239, 68, 68, 0.2);
+        color: #fca5a5;
+    }
+
+    .cron-priority-important {
+        background: rgba(251, 191, 36, 0.2);
+        color: #fde047;
+    }
+
+    .cron-priority-optional {
+        background: rgba(34, 197, 94, 0.2);
+        color: #86efac;
+    }
+
+    .cron-description {
+        color: #cbd5e1;
+        margin-bottom: 1rem;
+    }
+
+    .cron-schedule,
+    .cron-code-block,
+    .cron-note,
+    .cron-verify {
+        margin-top: 1rem;
+    }
+
+    .cron-schedule strong,
+    .cron-code-block strong,
+    .cron-note strong {
+        color: #94a3b8;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        display: block;
+        margin-bottom: 0.5rem;
+    }
+
+    .cron-code-block code,
+    .cron-verify code,
+    code {
+        display: block;
+        background: rgba(15, 23, 42, 0.8);
+        padding: 0.75rem;
+        border-radius: 6px;
+        font-family: 'Source Code Pro', monospace;
+        font-size: 0.85rem;
+        color: #a5f3fc;
+        overflow-x: auto;
+        border: 1px solid rgba(71, 85, 105, 0.5);
+    }
+
+    .cron-intro code,
+    .cron-troubleshooting code,
+    .cron-install-steps code,
+    .cron-practice-item code {
+        display: inline;
+        padding: 0.2rem 0.5rem;
+    }
+
+    .cron-note {
+        padding: 0.75rem;
+        background: rgba(251, 191, 36, 0.1);
+        border-left: 3px solid #fbbf24;
+        border-radius: 4px;
+        font-size: 0.9rem;
+        color: #fde68a;
+    }
+
+    .cron-complete-block {
+        background: rgba(15, 23, 42, 0.9);
+        border-radius: 8px;
+        border: 1px solid rgba(71, 85, 105, 0.5);
+        overflow: hidden;
+        margin-bottom: 1.5rem;
+    }
+
+    .cron-complete-block pre {
+        margin: 0;
+        padding: 1.5rem;
+        overflow-x: auto;
+    }
+
+    .cron-complete-block code {
+        display: block;
+        background: transparent;
+        padding: 0;
+        border: none;
+        font-size: 0.8rem;
+        line-height: 1.6;
+        color: #a5f3fc;
+    }
+
+    .cron-install-steps {
+        padding: 1.5rem;
+        background: rgba(30, 41, 59, 0.6);
+        border-radius: 12px;
+        box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.15);
+    }
+
+    .cron-install-steps h4 {
+        margin-top: 0;
+        color: #f8fafc;
+    }
+
+    .cron-install-steps ol {
+        margin: 0.5rem 0;
+        padding-left: 1.5rem;
+    }
+
+    .cron-install-steps li {
+        margin: 0.75rem 0;
+        color: #cbd5e1;
+    }
+
+    .cron-troubleshooting,
+    .cron-best-practices {
+        display: grid;
+        gap: 1.5rem;
+    }
+
+    .cron-trouble-item,
+    .cron-practice-item {
+        padding: 1.25rem;
+        background: rgba(30, 41, 59, 0.6);
+        border-radius: 8px;
+        box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.15);
+    }
+
+    .cron-trouble-item h4,
+    .cron-practice-item strong {
+        margin-top: 0;
+        color: #f8fafc;
+        display: block;
+        margin-bottom: 0.75rem;
+    }
+
+    .cron-trouble-item ul {
+        margin: 0;
+        padding-left: 1.5rem;
+    }
+
+    .cron-trouble-item li,
+    .cron-practice-item p {
+        margin: 0.5rem 0;
+        color: #cbd5e1;
+        font-size: 0.95rem;
+    }
+    </style>
+</section>
+{% endblock %}
