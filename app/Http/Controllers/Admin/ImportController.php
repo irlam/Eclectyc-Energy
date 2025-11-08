@@ -578,6 +578,51 @@ class ImportController
         return $this->redirect($response, '/admin/imports/jobs');
     }
 
+    /**
+     * Cancel a running or queued import job
+     */
+    public function cancelJob(Request $request, Response $response, array $args): Response
+    {
+        if (!$this->pdo) {
+            $this->setFlash('error', 'Database connection unavailable.');
+            return $this->redirect($response, '/admin/imports/jobs');
+        }
+
+        $jobId = isset($args['id']) ? (int) $args['id'] : null;
+        
+        if (!$jobId) {
+            $this->setFlash('error', 'Job ID is required.');
+            return $this->redirect($response, '/admin/imports/jobs');
+        }
+
+        try {
+            // Get the batch_id for this job
+            $stmt = $this->pdo->prepare('SELECT batch_id FROM import_jobs WHERE id = :id');
+            $stmt->execute(['id' => $jobId]);
+            $job = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$job) {
+                $this->setFlash('error', 'Import job not found.');
+                return $this->redirect($response, '/admin/imports/jobs');
+            }
+
+            $jobService = new ImportJobService($this->pdo);
+            $success = $jobService->cancelJob($job['batch_id']);
+
+            if ($success) {
+                $this->setFlash('success', 'Import job cancelled successfully.');
+            } else {
+                $this->setFlash('error', 'Could not cancel job. Only queued or processing jobs can be cancelled.');
+            }
+
+        } catch (\Throwable $e) {
+            error_log('Failed to cancel import job: ' . $e->getMessage());
+            $this->setFlash('error', 'Failed to cancel import job: ' . $e->getMessage());
+        }
+
+        return $this->redirect($response, '/admin/imports/jobs');
+    }
+
     private function redirect(Response $response, string $path): Response
     {
         return $response->withHeader('Location', $path)->withStatus(302);

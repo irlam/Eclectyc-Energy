@@ -68,6 +68,8 @@ $app->group('/tools', function ($group) {
     $group->map(['GET', 'POST'], '/email-test', [ToolsController::class, 'emailTest'])->setName('tools.email');
     $group->get('/cli-tools', [ToolsController::class, 'cliTools'])->setName('tools.cli');
     $group->get('/cron-jobs', [ToolsController::class, 'cronJobs'])->setName('tools.cron');
+    $group->get('/logs', [ToolsController::class, 'viewLogs'])->setName('tools.logs');
+    $group->post('/logs/clear', [ToolsController::class, 'clearLogs'])->setName('tools.logs.clear');
     
     // SFTP configuration routes
     $group->get('/sftp', [SftpController::class, 'index'])->setName('tools.sftp');
@@ -155,6 +157,7 @@ $app->group('/admin', function ($group) {
     $group->get('/imports/status/{batchId}', [ImportController::class, 'status'])->setName('admin.imports.status');
     $group->post('/imports/retry', [ImportController::class, 'retry'])->setName('admin.imports.retry');
     $group->post('/imports/jobs/{id}/delete', [ImportController::class, 'deleteJob'])->setName('admin.imports.delete');
+    $group->post('/imports/jobs/{id}/cancel', [ImportController::class, 'cancelJob'])->setName('admin.imports.cancel');
     $group->get('/exports', [ExportsController::class, 'index'])->setName('admin.exports');
 
     // Meter management
