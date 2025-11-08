@@ -39,6 +39,9 @@ class TariffSwitchingController
 
         // Get list of meters for selection
         $meters = $this->getMeters();
+        
+        // Get all active tariffs for selection
+        $tariffs = $this->getAllTariffs();
 
         // Get flash messages
         $flash = $_SESSION['switching_flash'] ?? null;
@@ -47,6 +50,7 @@ class TariffSwitchingController
         return $this->view->render($response, 'admin/tariff_switching.twig', [
             'page_title' => 'Tariff Switching Analysis',
             'meters' => $meters,
+            'tariffs' => $tariffs,
             'flash' => $flash,
         ]);
     }
@@ -91,10 +95,12 @@ class TariffSwitchingController
         // Get meter details
         $meter = $this->getMeter($meterId);
         $meters = $this->getMeters();
+        $tariffs = $this->getAllTariffs();
 
         return $this->view->render($response, 'admin/tariff_switching.twig', [
             'page_title' => 'Tariff Switching Analysis',
             'meters' => $meters,
+            'tariffs' => $tariffs,
             'selected_meter' => $meter,
             'analysis' => $analysis,
             'form_data' => $data,
@@ -222,6 +228,35 @@ class TariffSwitchingController
         } catch (PDOException $e) {
             error_log('Failed to get meter: ' . $e->getMessage());
             return null;
+        }
+    }
+
+    /**
+     * Get all active tariffs.
+     */
+    private function getAllTariffs(): array
+    {
+        try {
+            $stmt = $this->pdo->query('
+                SELECT 
+                    t.id,
+                    t.name,
+                    t.energy_type,
+                    t.tariff_type,
+                    t.unit_rate,
+                    t.standing_charge,
+                    s.name as supplier_name
+                FROM tariffs t
+                LEFT JOIN suppliers s ON t.supplier_id = s.id
+                WHERE t.is_active = 1
+                    AND (t.valid_to IS NULL OR t.valid_to >= CURDATE())
+                ORDER BY s.name, t.energy_type, t.name
+            ');
+            
+            return $stmt->fetchAll(PDO::FETCH_ASSOC) ?: [];
+        } catch (PDOException $e) {
+            error_log('Failed to get tariffs: ' . $e->getMessage());
+            return [];
         }
     }
 

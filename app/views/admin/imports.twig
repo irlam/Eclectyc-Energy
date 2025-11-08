@@ -115,6 +115,32 @@
             </small>
         </div>
 
+        <div class="form-group">
+            <label for="default_site_id">Default Site (optional)</label>
+            <select id="default_site_id" name="default_site_id">
+                <option value="">-- No default site --</option>
+                {% for site in sites %}
+                    <option value="{{ site.id }}">{{ site.name }}</option>
+                {% endfor %}
+            </select>
+            <small class="form-text">
+                Assign imported meters to this site if not already assigned
+            </small>
+        </div>
+
+        <div class="form-group">
+            <label for="default_tariff_id">Default Tariff (optional)</label>
+            <select id="default_tariff_id" name="default_tariff_id">
+                <option value="">-- No default tariff --</option>
+                {% for tariff in tariffs %}
+                    <option value="{{ tariff.id }}">{{ tariff.name }}</option>
+                {% endfor %}
+            </select>
+            <small class="form-text">
+                Assign imported meters to this tariff if not already assigned
+            </small>
+        </div>
+
         <div class="form-group form-group-inline">
             <label class="imports-checkbox-label">
                 <input type="checkbox" name="dry_run" value="1" id="dry_run">

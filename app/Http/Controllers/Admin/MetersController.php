@@ -33,9 +33,31 @@ class MetersController
             'hh' => 0,
         ];
 
+        // Pagination parameters
+        $query = $request->getQueryParams();
+        $page = isset($query['page']) ? max(1, (int) $query['page']) : 1;
+        $perPage = isset($query['per_page']) ? max(1, min(100, (int) $query['per_page'])) : 10;
+        $offset = ($page - 1) * $perPage;
+
         if ($this->pdo) {
             try {
-                $stmt = $this->pdo->query('
+                // Get total counts first
+                $countStmt = $this->pdo->query('
+                    SELECT 
+                        COUNT(*) as total,
+                        SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) as active,
+                        SUM(CASE WHEN is_half_hourly = 1 THEN 1 ELSE 0 END) as hh
+                    FROM meters
+                ');
+                $counts = $countStmt->fetch();
+                $totals = [
+                    'count' => (int) $counts['total'],
+                    'active' => (int) $counts['active'],
+                    'hh' => (int) $counts['hh'],
+                ];
+
+                // Get paginated meters (ordered by most recently created first)
+                $stmt = $this->pdo->prepare('
                     SELECT
                         m.id,
                         m.mpan,
@@ -50,21 +72,18 @@ class MetersController
                     FROM meters m
                     LEFT JOIN sites s ON s.id = m.site_id
                     LEFT JOIN suppliers sup ON sup.id = m.supplier_id
-                    ORDER BY s.name ASC, m.mpan ASC
+                    ORDER BY m.created_at DESC, m.id DESC
+                    LIMIT :limit OFFSET :offset
                 ');
+                $stmt->bindValue(':limit', $perPage, PDO::PARAM_INT);
+                $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+                $stmt->execute();
                 $meters = $stmt->fetchAll() ?: [];
 
                 foreach ($meters as &$meter) {
                     $meter['is_active'] = (bool) $meter['is_active'];
                     $meter['is_half_hourly'] = (bool) $meter['is_half_hourly'];
                     $meter['is_smart_meter'] = (bool) $meter['is_smart_meter'];
-                    $totals['count']++;
-                    if ($meter['is_active']) {
-                        $totals['active']++;
-                    }
-                    if ($meter['is_half_hourly']) {
-                        $totals['hh']++;
-                    }
                 }
             } catch (PDOException $e) {
                 $meters = [];
@@ -74,11 +93,20 @@ class MetersController
         $flash = $_SESSION['meter_flash'] ?? null;
         unset($_SESSION['meter_flash']);
 
+        // Calculate pagination info
+        $totalPages = $totals['count'] > 0 ? (int) ceil($totals['count'] / $perPage) : 1;
+
         return $this->view->render($response, 'admin/meters.twig', [
             'page_title' => 'Meters Management',
             'meters' => $meters,
             'totals' => $totals,
             'flash' => $flash,
+            'pagination' => [
+                'current_page' => $page,
+                'per_page' => $perPage,
+                'total_pages' => $totalPages,
+                'total_items' => $totals['count'],
+            ],
         ]);
     }
 
@@ -296,6 +324,96 @@ class MetersController
         }
 
         return $this->redirect($response, '/admin/meters');
+    }
+
+    /**
+     * Show carbon intensity data for a specific meter
+     */
+    public function carbonIntensity(Request $request, Response $response, array $args): Response
+    {
+        if (!$this->pdo) {
+            $this->setFlash('error', 'Database connection unavailable.');
+            return $this->redirect($response, '/admin/meters');
+        }
+
+        $meterId = (int) $args['id'];
+        
+        // Get meter details
+        $stmt = $this->pdo->prepare('
+            SELECT m.*, s.name as site_name, sup.name as supplier_name
+            FROM meters m
+            LEFT JOIN sites s ON s.id = m.site_id
+            LEFT JOIN suppliers sup ON sup.id = m.supplier_id
+            WHERE m.id = :id
+        ');
+        $stmt->execute(['id' => $meterId]);
+        $meter = $stmt->fetch();
+
+        if (!$meter) {
+            $this->setFlash('error', 'Meter not found.');
+            return $this->redirect($response, '/admin/meters');
+        }
+
+        // Get query parameters for date range
+        $query = $request->getQueryParams();
+        $days = isset($query['days']) ? max(1, min(90, (int) $query['days'])) : 7;
+        
+        // Get recent consumption data with carbon intensity
+        $stmt = $this->pdo->prepare('
+            SELECT 
+                da.date,
+                da.total_consumption,
+                AVG(eci.intensity) as avg_carbon_intensity,
+                AVG(eci.forecast) as avg_forecast,
+                AVG(eci.actual) as avg_actual
+            FROM daily_aggregations da
+            LEFT JOIN external_carbon_intensity eci 
+                ON DATE(eci.datetime) = da.date
+                AND eci.region = "GB"
+            WHERE da.meter_id = :meter_id
+                AND da.date >= DATE_SUB(CURDATE(), INTERVAL :days DAY)
+            GROUP BY da.date
+            ORDER BY da.date DESC
+        ');
+        $stmt->execute(['meter_id' => $meterId, 'days' => $days]);
+        $data = $stmt->fetchAll() ?: [];
+
+        // Calculate emissions
+        $totalConsumption = 0;
+        $totalEmissions = 0;
+        foreach ($data as &$row) {
+            $row['total_consumption'] = (float) $row['total_consumption'];
+            $row['avg_carbon_intensity'] = $row['avg_carbon_intensity'] ? (float) $row['avg_carbon_intensity'] : null;
+            $row['avg_forecast'] = $row['avg_forecast'] ? (float) $row['avg_forecast'] : null;
+            $row['avg_actual'] = $row['avg_actual'] ? (float) $row['avg_actual'] : null;
+            
+            $carbonIntensity = $row['avg_actual'] ?? $row['avg_carbon_intensity'] ?? 0;
+            $row['emissions_kg'] = ($row['total_consumption'] * $carbonIntensity) / 1000;
+            
+            $totalConsumption += $row['total_consumption'];
+            $totalEmissions += $row['emissions_kg'];
+        }
+
+        // Get latest carbon intensity
+        $stmt = $this->pdo->query('
+            SELECT intensity, forecast, actual, datetime
+            FROM external_carbon_intensity
+            WHERE region = "GB"
+            ORDER BY datetime DESC
+            LIMIT 1
+        ');
+        $latestCarbon = $stmt->fetch();
+
+        return $this->view->render($response, 'admin/meters_carbon.twig', [
+            'page_title' => 'Carbon Intensity - ' . $meter['mpan'],
+            'meter' => $meter,
+            'data' => $data,
+            'days' => $days,
+            'total_consumption' => $totalConsumption,
+            'total_emissions' => $totalEmissions,
+            'avg_emissions' => count($data) > 0 ? $totalEmissions / count($data) : 0,
+            'latest_carbon' => $latestCarbon,
+        ]);
     }
 
     private function validate(array $data, ?int $meterId = null): array

@@ -209,14 +209,14 @@ Visit: https://eclectyc.energy/tools/show
 - `/reports/consumption` (manager+) summarises site demand for the selected window.
 - `/reports/costs` (manager+) estimates spend per supplier using tariff unit rates.
 - `/admin/sites` (admin only) shows estates with meter counts and status.
-- `/admin/tariffs` (admin only) lists configured supply tariffs.
-- `/admin/tariff-switching` (admin only) analyzes switching opportunities and recommends alternative tariffs based on consumption history.
+- `/admin/tariffs` (admin only) lists configured supply tariffs including UK energy suppliers (British Gas, EDF, Octopus Energy, OVO Energy).
+- `/admin/tariff-switching` (admin only) analyzes switching opportunities and recommends alternative tariffs based on consumption history with selectable current tariff.
 - `/admin/users` (admin only) lists seeded accounts for quick role testing.
-- `/admin/imports` (admin only) provides CSV uploads with optional dry-run previews and batch summaries.
+- `/admin/imports` (admin only) provides CSV uploads with optional dry-run previews, batch summaries, and optional default site/tariff assignment for imported meters.
 - `/admin/imports/jobs` (admin only) shows all import jobs with real-time progress tracking and filtering.
 - `/admin/imports/history` (admin only) lists recent ingestion runs with filters, decoded metadata, and surfaced errors.
 - `/admin/exports` (admin only) tracks SFTP export jobs, delivery status, and failure messages.
-- `/admin/meters` (admin only) allows you to add, view, and manage meters before importing data.
+- `/admin/meters` (admin only) allows you to add, view, and manage meters with pagination (10 meters per page by default).
 
 ## Tariff Switching Analysis
 
@@ -227,8 +227,29 @@ The platform includes comprehensive tariff switching analysis capabilities:
 - **Historical Tracking**: Save and review past switching analyses
 - **Detailed Breakdowns**: View unit costs, standing charges, and total costs side-by-side
 - **Time-of-Use Support**: Handles peak/off-peak/weekend rate structures
+- **Selectable Current Tariff**: Choose the tariff currently applied to each meter for accurate comparison
+- **UK Supplier Tariffs**: Pre-loaded with Q4 2024 tariffs from British Gas, EDF Energy, Octopus Energy, and OVO Energy based on Ofgem price cap
 
 See `docs/tariff_switching_analysis.md` for detailed documentation on using the tariff switching feature.
+
+## Import Features
+
+### CSV Import Capabilities
+- **Flexible Column Mapping**: Recognizes common column name variations (MPAN, MeterCode, ReadDateTime, etc.)
+- **Dry Run Mode**: Validate CSV files without saving data to the database
+- **Background Processing**: Queue large imports to run asynchronously
+- **Real-time Progress Tracking**: Monitor import jobs at `/admin/imports/jobs`
+- **Optional Defaults**: Assign imported meters to a default site and/or tariff
+- **Pagination**: Meters page shows 10 meters per page (configurable to 10/25/50/100)
+
+### File Storage Location
+Uploaded CSV files are stored in `storage/imports/` directory when using async imports.
+
+**For Plesk hosting users:** Files are accessible via File Manager at:
+- Path: `/httpdocs/eclectyc-energy/storage/imports/`
+- Navigate: File Manager → your domain → eclectyc-energy → storage → imports
+
+See `storage/README.md` for detailed information about file storage and troubleshooting.
 
 ## Getting Started with Data Import
 

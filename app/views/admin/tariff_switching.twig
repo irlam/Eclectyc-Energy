@@ -27,12 +27,10 @@
                 <div class="grid grid-cols-2">
                     <div class="form-group">
                         <label for="meter_id">Select Meter</label>
-                        <select id="meter_id" name="meter_id" required onchange="updateTariffInfo()">
+                        <select id="meter_id" name="meter_id" required>
                             <option value="">-- Select a meter --</option>
                             {% for meter in meters %}
                                 <option value="{{ meter.id }}" 
-                                        data-tariff-id="{{ meter.current_tariff_id }}"
-                                        data-tariff-name="{{ meter.current_tariff_name }}"
                                         {% if selected_meter and selected_meter.id == meter.id %}selected{% endif %}>
                                     {{ meter.mpan }} - {{ meter.site_name }} ({{ meter.meter_type|capitalize }})
                                 </option>
@@ -40,9 +38,17 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label for="current_tariff_display">Current Tariff</label>
-                        <input type="hidden" id="current_tariff_id" name="current_tariff_id" value="{{ form_data.current_tariff_id ?? '' }}">
-                        <input type="text" id="current_tariff_display" readonly placeholder="Select a meter first">
+                        <label for="current_tariff_id">Current Tariff</label>
+                        <select id="current_tariff_id" name="current_tariff_id" required>
+                            <option value="">-- Select current tariff --</option>
+                            {% for tariff in tariffs %}
+                                <option value="{{ tariff.id }}"
+                                        {% if form_data.current_tariff_id and form_data.current_tariff_id == tariff.id %}selected{% endif %}>
+                                    {{ tariff.name }} - {{ tariff.supplier_name }} ({{ tariff.energy_type|capitalize }})
+                                </option>
+                            {% endfor %}
+                        </select>
+                        <small class="form-text">Select the tariff currently applied to this meter</small>
                     </div>
                 </div>
 
@@ -196,16 +202,6 @@
 </section>
 
 <script>
-function updateTariffInfo() {
-    const select = document.getElementById('meter_id');
-    const option = select.options[select.selectedIndex];
-    const tariffId = option.getAttribute('data-tariff-id');
-    const tariffName = option.getAttribute('data-tariff-name');
-    
-    document.getElementById('current_tariff_id').value = tariffId || '';
-    document.getElementById('current_tariff_display').value = tariffName || 'No tariff assigned';
-}
-
 function setDefaultDates() {
     const today = new Date();
     const ninetyDaysAgo = new Date(today);
@@ -217,8 +213,6 @@ function setDefaultDates() {
 
 // Initialize on page load
 document.addEventListener('DOMContentLoaded', function() {
-    updateTariffInfo();
-    
     // Set default dates if not already set
     if (!document.getElementById('start_date').value || !document.getElementById('end_date').value) {
         setDefaultDates();

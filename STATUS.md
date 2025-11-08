@@ -1,7 +1,7 @@
 # Platform Implementation Status (November 2025)
 
 **Current Status:** ✅ **Production Ready**  
-**Last Updated:** November 7, 2025
+**Last Updated:** November 8, 2025
 
 This document captures the current state of the Eclectyc Energy platform, tracking all completed features and remaining work items.
 
@@ -86,13 +86,16 @@ This document captures the current state of the Eclectyc Energy platform, tracki
 - ✅ **Quick Analysis**: One-click 90-day consumption comparison
 - ✅ **Web Interface**: User-friendly UI at `/admin/tariff-switching`
 - ✅ **Analysis Persistence**: `tariff_switching_analyses` table for audit trail
+- ✅ **Selectable Current Tariff**: Dropdown selection for accurate tariff comparison (Nov 2025)
+- ✅ **UK Supplier Tariffs**: Q4 2024 tariffs from British Gas, EDF, Octopus Energy, OVO Energy (Nov 2025)
 
 **Database:**
 - Migration `006_create_tariff_switching_analyses.sql`
+- Migration `007_add_uk_energy_tariffs_2024.sql` (Nov 2025)
 
 **Key Components:**
 - `TariffSwitchingAnalyzer` - Core analysis engine
-- `TariffSwitchingController` - Web interface controller
+- `TariffSwitchingController` - Web interface controller with tariff selection
 - UI templates for analysis and history views
 
 ### 📊 Analytics & Aggregation ✅ (95% Complete)
@@ -132,17 +135,17 @@ This document captures the current state of the Eclectyc Energy platform, tracki
 - ✅ **Consumption Reports**: Date range selection with quick filters
 - ✅ **Cost Reports**: Tariff-based cost analysis
 - ✅ **Admin Console**: Sites, meters, tariffs, users, imports, exports
-- ✅ **Import Interface**: Enhanced with inline help and error guidance
-- ✅ **Meter Management**: MPAN validation, copy-to-clipboard, quick actions
-- ✅ **Job Monitoring**: Real-time status tracking with auto-refresh
+- ✅ **Import Interface**: Enhanced with inline help, error guidance, and optional site/tariff defaults (Nov 2025)
+- ✅ **Meter Management**: MPAN validation, copy-to-clipboard, quick actions, pagination (Nov 2025)
+- ✅ **Job Monitoring**: Real-time status tracking with auto-refresh and dark theme styling (Nov 2025)
 - ✅ **Responsive Design**: Mobile-friendly across all pages
 - 🟡 **Advanced Visualizations**: Chart.js integration (basic charts present)
 
-**Key Enhancements:**
-- Date range pickers with quick filters (7/30 days)
-- Refresh buttons and "Last updated" timestamps
-- Enhanced empty states with actionable guidance
-- Color-coded status indicators throughout
+**Key Enhancements (November 2025):**
+- Fixed import jobs page CSS to match dark theme
+- Added pagination to meters page (10/25/50/100 per page)
+- Added optional default site and tariff selection for imports
+- Improved tariff switching with selectable current tariff
 
 ### 🔌 API Endpoints ✅ (100% Complete)
 - ✅ `GET /api/health` - Multi-tier system health diagnostics
