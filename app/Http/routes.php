@@ -65,6 +65,8 @@ $app->group('/tools', function ($group) {
     $group->get('/show', [ToolsController::class, 'showStructure'])->setName('tools.show');
     $group->get('/system-health', [ToolsController::class, 'systemHealth'])->setName('tools.health');
     $group->map(['GET', 'POST'], '/email-test', [ToolsController::class, 'emailTest'])->setName('tools.email');
+    $group->get('/cli-tools', [ToolsController::class, 'cliTools'])->setName('tools.cli');
+    $group->get('/cron-jobs', [ToolsController::class, 'cronJobs'])->setName('tools.cron');
 })->add(function ($request, $handler) use ($container) {
     $middleware = new AuthMiddleware($container->get(AuthService::class), ['admin']);
     return $middleware->process($request, $handler);
@@ -140,6 +142,7 @@ $app->group('/admin', function ($group) {
     $group->get('/imports/jobs', [ImportController::class, 'jobs'])->setName('admin.imports.jobs');
     $group->get('/imports/status/{batchId}', [ImportController::class, 'status'])->setName('admin.imports.status');
     $group->post('/imports/retry', [ImportController::class, 'retry'])->setName('admin.imports.retry');
+    $group->post('/imports/jobs/{id}/delete', [ImportController::class, 'deleteJob'])->setName('admin.imports.delete');
     $group->get('/exports', [ExportsController::class, 'index'])->setName('admin.exports');
 
     // Meter management

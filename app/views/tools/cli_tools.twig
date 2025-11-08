@@ -1,0 +1,495 @@
+{% extends "base.twig" %}
+
+{% block title %}CLI Tools{% endblock %}
+
+{% block content %}
+<section class="card cli-tools-card">
+    <div class="card-header cli-tools-card__header">
+        <div>
+            <h2>Command-Line Interface (CLI) Tools</h2>
+            <p class="mb-0" style="color: var(--muted); font-size: 0.9rem;">
+                Essential CLI scripts for system administration, automation, and maintenance
+            </p>
+        </div>
+        <a href="/tools" class="btn btn-secondary">← Back to Tools</a>
+    </div>
+
+    <div class="cli-tools-intro">
+        <p><strong>Location:</strong> All CLI tools are located in the <code>/scripts</code> directory.</p>
+        <p><strong>Usage:</strong> Run scripts from the project root using <code>php scripts/script-name.php [options]</code></p>
+        <p><strong>Permissions:</strong> Ensure scripts are executable: <code>chmod +x scripts/*.php</code></p>
+    </div>
+
+    <div class="cli-tools-sections">
+        <!-- Data Import & Export -->
+        <div class="cli-section">
+            <h3>📥 Data Import & Export</h3>
+            <div class="cli-tools-grid">
+                <div class="cli-tool-card">
+                    <div class="cli-tool-header">
+                        <h4>import_csv.php</h4>
+                        <span class="cli-badge cli-badge-primary">Import</span>
+                    </div>
+                    <p class="cli-description">Import half-hourly energy consumption data from CSV files.</p>
+                    <div class="cli-usage">
+                        <strong>Usage:</strong>
+                        <code>php scripts/import_csv.php --file=/path/to/data.csv</code>
+                    </div>
+                    <div class="cli-options">
+                        <strong>Options:</strong>
+                        <ul>
+                            <li><code>--file</code> - Path to CSV file (required)</li>
+                            <li><code>--skip-validation</code> - Skip data validation</li>
+                            <li><code>--dry-run</code> - Test import without saving</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="cli-tool-card">
+                    <div class="cli-tool-header">
+                        <h4>import_external_data.php</h4>
+                        <span class="cli-badge cli-badge-primary">Import</span>
+                    </div>
+                    <p class="cli-description">Import data from external APIs or data sources.</p>
+                    <div class="cli-usage">
+                        <strong>Usage:</strong>
+                        <code>php scripts/import_external_data.php --source=api</code>
+                    </div>
+                    <div class="cli-options">
+                        <strong>Options:</strong>
+                        <ul>
+                            <li><code>--source</code> - Data source type (api, sftp, ftp)</li>
+                            <li><code>--date</code> - Specific date to import (YYYY-MM-DD)</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="cli-tool-card">
+                    <div class="cli-tool-header">
+                        <h4>export_sftp.php</h4>
+                        <span class="cli-badge cli-badge-success">Export</span>
+                    </div>
+                    <p class="cli-description">Export data to external systems via SFTP.</p>
+                    <div class="cli-usage">
+                        <strong>Usage:</strong>
+                        <code>php scripts/export_sftp.php --type=daily --format=csv</code>
+                    </div>
+                    <div class="cli-options">
+                        <strong>Options:</strong>
+                        <ul>
+                            <li><code>--type</code> - Export type (daily, site, meter)</li>
+                            <li><code>--format</code> - Output format (csv, json, xml)</li>
+                            <li><code>--date</code> - Date for export (default: yesterday)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Background Processing -->
+        <div class="cli-section">
+            <h3>🔄 Background Processing</h3>
+            <div class="cli-tools-grid">
+                <div class="cli-tool-card">
+                    <div class="cli-tool-header">
+                        <h4>process_import_jobs.php</h4>
+                        <span class="cli-badge cli-badge-warning">Worker</span>
+                    </div>
+                    <p class="cli-description">Process queued import jobs asynchronously.</p>
+                    <div class="cli-usage">
+                        <strong>Usage:</strong>
+                        <code>php scripts/process_import_jobs.php</code>
+                    </div>
+                    <div class="cli-options">
+                        <strong>Options:</strong>
+                        <ul>
+                            <li><code>--batch-size</code> - Number of jobs to process per batch (default: 10)</li>
+                            <li><code>--timeout</code> - Maximum processing time in seconds</li>
+                        </ul>
+                    </div>
+                    <div class="cli-note">
+                        <strong>⚠️ Note:</strong> Should run continuously via supervisor or systemd
+                    </div>
+                </div>
+
+                <div class="cli-tool-card">
+                    <div class="cli-tool-header">
+                        <h4>cleanup_import_jobs.php</h4>
+                        <span class="cli-badge cli-badge-info">Maintenance</span>
+                    </div>
+                    <p class="cli-description">Clean up old completed import jobs and temporary files.</p>
+                    <div class="cli-usage">
+                        <strong>Usage:</strong>
+                        <code>php scripts/cleanup_import_jobs.php --days=30</code>
+                    </div>
+                    <div class="cli-options">
+                        <strong>Options:</strong>
+                        <ul>
+                            <li><code>--days</code> - Delete jobs older than N days (default: 30)</li>
+                            <li><code>--status</code> - Only clean specific status (completed, failed)</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Data Aggregation -->
+        <div class="cli-section">
+            <h3>📊 Data Aggregation</h3>
+            <div class="cli-tools-grid">
+                <div class="cli-tool-card">
+                    <div class="cli-tool-header">
+                        <h4>aggregate_cron.php</h4>
+                        <span class="cli-badge cli-badge-primary">Aggregation</span>
+                    </div>
+                    <p class="cli-description">Master aggregation script for running daily, weekly, monthly, or annual aggregations.</p>
+                    <div class="cli-usage">
+                        <strong>Usage:</strong>
+                        <code>php scripts/aggregate_cron.php --period=daily</code>
+                    </div>
+                    <div class="cli-options">
+                        <strong>Options:</strong>
+                        <ul>
+                            <li><code>--period</code> - daily, weekly, monthly, annual</li>
+                            <li><code>--date</code> - Specific date to aggregate (YYYY-MM-DD)</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="cli-tool-card">
+                    <div class="cli-tool-header">
+                        <h4>aggregate_orchestrated.php</h4>
+                        <span class="cli-badge cli-badge-primary">Aggregation</span>
+                    </div>
+                    <p class="cli-description">Orchestrates all aggregation levels in proper sequence.</p>
+                    <div class="cli-usage">
+                        <strong>Usage:</strong>
+                        <code>php scripts/aggregate_orchestrated.php</code>
+                    </div>
+                    <div class="cli-note">
+                        <strong>💡 Tip:</strong> Best for running all aggregations in one go
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- System Monitoring -->
+        <div class="cli-section">
+            <h3>🏥 System Monitoring & Health</h3>
+            <div class="cli-tools-grid">
+                <div class="cli-tool-card">
+                    <div class="cli-tool-header">
+                        <h4>check_system_health.php</h4>
+                        <span class="cli-badge cli-badge-danger">Health</span>
+                    </div>
+                    <p class="cli-description">Comprehensive system health diagnostics and monitoring.</p>
+                    <div class="cli-usage">
+                        <strong>Usage:</strong>
+                        <code>php scripts/check_system_health.php --verbose</code>
+                    </div>
+                    <div class="cli-options">
+                        <strong>Options:</strong>
+                        <ul>
+                            <li><code>--verbose</code> - Show detailed diagnostic information</li>
+                            <li><code>--json</code> - Output in JSON format</li>
+                        </ul>
+                    </div>
+                    <div class="cli-actions">
+                        <a href="/tools/system-health" class="btn btn-sm btn-primary">Run in Web UI</a>
+                    </div>
+                </div>
+
+                <div class="cli-tool-card">
+                    <div class="cli-tool-header">
+                        <h4>monitor_import_system.php</h4>
+                        <span class="cli-badge cli-badge-warning">Monitor</span>
+                    </div>
+                    <p class="cli-description">Monitor import system status and send alerts.</p>
+                    <div class="cli-usage">
+                        <strong>Usage:</strong>
+                        <code>php scripts/monitor_import_system.php</code>
+                    </div>
+                    <div class="cli-options">
+                        <strong>Options:</strong>
+                        <ul>
+                            <li><code>--alert</code> - Send email alerts for issues</li>
+                            <li><code>--threshold</code> - Alert threshold in hours (default: 24)</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="cli-tool-card">
+                    <div class="cli-tool-header">
+                        <h4>run_data_quality_checks.php</h4>
+                        <span class="cli-badge cli-badge-info">Quality</span>
+                    </div>
+                    <p class="cli-description">Run data quality checks and validation.</p>
+                    <div class="cli-usage">
+                        <strong>Usage:</strong>
+                        <code>php scripts/run_data_quality_checks.php</code>
+                    </div>
+                    <div class="cli-options">
+                        <strong>Options:</strong>
+                        <ul>
+                            <li><code>--fix</code> - Auto-fix minor issues</li>
+                            <li><code>--report</code> - Generate detailed report</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Carbon Intensity -->
+        <div class="cli-section">
+            <h3>🌍 Carbon Intensity</h3>
+            <div class="cli-tools-grid">
+                <div class="cli-tool-card">
+                    <div class="cli-tool-header">
+                        <h4>fetch_carbon_intensity.php</h4>
+                        <span class="cli-badge cli-badge-success">Carbon</span>
+                    </div>
+                    <p class="cli-description">Fetch and store UK grid carbon intensity data.</p>
+                    <div class="cli-usage">
+                        <strong>Usage:</strong>
+                        <code>php scripts/fetch_carbon_intensity.php</code>
+                    </div>
+                    <div class="cli-options">
+                        <strong>Options:</strong>
+                        <ul>
+                            <li><code>--date</code> - Fetch data for specific date (YYYY-MM-DD)</li>
+                            <li><code>--backfill</code> - Backfill missing historical data</li>
+                        </ul>
+                    </div>
+                    <div class="cli-note">
+                        <strong>📅 Recommended:</strong> Run every 30 minutes via cron
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Database Management -->
+        <div class="cli-section">
+            <h3>🗄️ Database Management</h3>
+            <div class="cli-tools-grid">
+                <div class="cli-tool-card">
+                    <div class="cli-tool-header">
+                        <h4>migrate.php</h4>
+                        <span class="cli-badge cli-badge-danger">Database</span>
+                    </div>
+                    <p class="cli-description">Run database migrations.</p>
+                    <div class="cli-usage">
+                        <strong>Usage:</strong>
+                        <code>php scripts/migrate.php</code>
+                    </div>
+                    <div class="cli-options">
+                        <strong>Options:</strong>
+                        <ul>
+                            <li><code>--rollback</code> - Rollback last migration</li>
+                            <li><code>--fresh</code> - Drop all tables and re-migrate</li>
+                        </ul>
+                    </div>
+                    <div class="cli-note">
+                        <strong>⚠️ Warning:</strong> Use with caution in production
+                    </div>
+                </div>
+
+                <div class="cli-tool-card">
+                    <div class="cli-tool-header">
+                        <h4>seed.php</h4>
+                        <span class="cli-badge cli-badge-info">Database</span>
+                    </div>
+                    <p class="cli-description">Seed database with sample data for testing.</p>
+                    <div class="cli-usage">
+                        <strong>Usage:</strong>
+                        <code>php scripts/seed.php</code>
+                    </div>
+                    <div class="cli-note">
+                        <strong>💡 Tip:</strong> Only use in development/testing environments
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+    .cli-tools-card {
+        background: linear-gradient(180deg, #0f172a 0%, #111827 45%, #0b1120 100%);
+        color: #e2e8f0;
+        border: none;
+        box-shadow: 0 25px 45px rgba(15, 23, 42, 0.45);
+    }
+
+    .cli-tools-card__header {
+        border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+    }
+
+    .cli-tools-intro {
+        padding: 1.5rem;
+        background: rgba(30, 64, 175, 0.15);
+        border-radius: 12px;
+        margin-bottom: 2rem;
+        border: 1px solid rgba(129, 140, 248, 0.25);
+    }
+
+    .cli-tools-intro code {
+        background: rgba(30, 41, 59, 0.7);
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        font-family: 'Source Code Pro', monospace;
+        font-size: 0.9em;
+        color: #a5f3fc;
+    }
+
+    .cli-section {
+        margin-bottom: 3rem;
+    }
+
+    .cli-section h3 {
+        font-size: 1.5rem;
+        margin-bottom: 1.5rem;
+        color: #f8fafc;
+        border-bottom: 2px solid rgba(148, 163, 184, 0.2);
+        padding-bottom: 0.5rem;
+    }
+
+    .cli-tools-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .cli-tool-card {
+        padding: 1.5rem;
+        border-radius: 12px;
+        background: rgba(30, 41, 59, 0.6);
+        box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.15);
+        transition: all 0.2s ease;
+    }
+
+    .cli-tool-card:hover {
+        background: rgba(30, 41, 59, 0.8);
+        box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.3), 0 4px 12px rgba(0, 0, 0, 0.2);
+        transform: translateY(-2px);
+    }
+
+    .cli-tool-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.75rem;
+    }
+
+    .cli-tool-header h4 {
+        font-size: 1.1rem;
+        color: #f8fafc;
+        margin: 0;
+        font-family: 'Source Code Pro', monospace;
+    }
+
+    .cli-badge {
+        padding: 0.25rem 0.6rem;
+        border-radius: 4px;
+        font-size: 0.7rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .cli-badge-primary {
+        background: rgba(59, 130, 246, 0.2);
+        color: #93c5fd;
+    }
+
+    .cli-badge-success {
+        background: rgba(34, 197, 94, 0.2);
+        color: #86efac;
+    }
+
+    .cli-badge-warning {
+        background: rgba(251, 191, 36, 0.2);
+        color: #fde047;
+    }
+
+    .cli-badge-danger {
+        background: rgba(239, 68, 68, 0.2);
+        color: #fca5a5;
+    }
+
+    .cli-badge-info {
+        background: rgba(14, 165, 233, 0.2);
+        color: #7dd3fc;
+    }
+
+    .cli-description {
+        color: #cbd5e1;
+        margin-bottom: 1rem;
+        font-size: 0.95rem;
+    }
+
+    .cli-usage,
+    .cli-options,
+    .cli-note,
+    .cli-actions {
+        margin-top: 1rem;
+    }
+
+    .cli-usage strong,
+    .cli-options strong,
+    .cli-note strong {
+        color: #94a3b8;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        display: block;
+        margin-bottom: 0.5rem;
+    }
+
+    .cli-usage code {
+        display: block;
+        background: rgba(15, 23, 42, 0.8);
+        padding: 0.75rem;
+        border-radius: 6px;
+        font-family: 'Source Code Pro', monospace;
+        font-size: 0.85rem;
+        color: #a5f3fc;
+        overflow-x: auto;
+        border: 1px solid rgba(71, 85, 105, 0.5);
+    }
+
+    .cli-options ul {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+    }
+
+    .cli-options li {
+        padding: 0.4rem 0;
+        color: #cbd5e1;
+        font-size: 0.9rem;
+    }
+
+    .cli-options code {
+        background: rgba(30, 41, 59, 0.7);
+        padding: 0.15rem 0.4rem;
+        border-radius: 3px;
+        font-family: 'Source Code Pro', monospace;
+        font-size: 0.85em;
+        color: #a5f3fc;
+    }
+
+    .cli-note {
+        padding: 0.75rem;
+        background: rgba(251, 191, 36, 0.1);
+        border-left: 3px solid #fbbf24;
+        border-radius: 4px;
+        font-size: 0.9rem;
+        color: #fde68a;
+    }
+
+    .cli-actions {
+        display: flex;
+        gap: 0.5rem;
+    }
+    </style>
+</section>
+{% endblock %}

@@ -101,6 +101,26 @@ class ToolsController
         ]);
     }
 
+    /**
+     * CLI Tools documentation page
+     */
+    public function cliTools(Request $request, Response $response): Response
+    {
+        return $this->view->render($response, 'tools/cli_tools.twig', [
+            'page_title' => 'CLI Tools',
+        ]);
+    }
+
+    /**
+     * Cron Jobs setup documentation page
+     */
+    public function cronJobs(Request $request, Response $response): Response
+    {
+        return $this->view->render($response, 'tools/cron_jobs.twig', [
+            'page_title' => 'Cron Jobs Setup',
+        ]);
+    }
+
     private function runTool(string $script): string
     {
         $basePath = defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__, 3);

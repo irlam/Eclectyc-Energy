@@ -13,7 +13,154 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeDataTables();
     initializeCharts();
     initializeCarbonIntensity();
+    initializeDeleteConfirmations();
 });
+
+/**
+ * Initialize delete confirmations with "OK" typed confirmation
+ */
+function initializeDeleteConfirmations() {
+    // Find all delete forms with data-confirm-delete attribute
+    const deleteForms = document.querySelectorAll('form[data-confirm-delete]');
+    
+    deleteForms.forEach(form => {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const itemName = form.dataset.confirmDelete || 'this item';
+            const warningMessage = form.dataset.confirmWarning || 
+                'This will permanently delete ' + itemName + ' and all associated data. This action cannot be undone.';
+            
+            showDeleteConfirmation(itemName, warningMessage, () => {
+                // User confirmed, submit the form
+                form.submit();
+            });
+        });
+    });
+    
+    // Also handle delete buttons with data-confirm-delete
+    const deleteButtons = document.querySelectorAll('button[data-confirm-delete], a[data-confirm-delete]');
+    
+    deleteButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            const itemName = button.dataset.confirmDelete || 'this item';
+            const warningMessage = button.dataset.confirmWarning || 
+                'This will permanently delete ' + itemName + ' and all associated data. This action cannot be undone.';
+            const deleteUrl = button.dataset.deleteUrl || button.href;
+            
+            showDeleteConfirmation(itemName, warningMessage, () => {
+                // User confirmed, proceed with deletion
+                if (deleteUrl) {
+                    // Create a form and submit
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = deleteUrl;
+                    document.body.appendChild(form);
+                    form.submit();
+                }
+            });
+        });
+    });
+}
+
+/**
+ * Show delete confirmation modal requiring "OK" to be typed
+ */
+function showDeleteConfirmation(itemName, warningMessage, onConfirm) {
+    // Remove any existing modal
+    const existingModal = document.getElementById('delete-confirmation-modal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    // Create modal HTML
+    const modal = document.createElement('div');
+    modal.id = 'delete-confirmation-modal';
+    modal.className = 'modal-overlay';
+    modal.innerHTML = `
+        <div class="modal-content modal-delete">
+            <div class="modal-header">
+                <h3>⚠️ Confirm Deletion</h3>
+                <button class="modal-close" onclick="closeDeleteModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="delete-warning">
+                    <p><strong>Warning:</strong> ${warningMessage}</p>
+                </div>
+                <div class="delete-confirm-input">
+                    <label for="delete-confirm-text">Type <strong>OK</strong> to confirm deletion:</label>
+                    <input type="text" id="delete-confirm-text" class="delete-input" autocomplete="off" />
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="closeDeleteModal()">Cancel</button>
+                <button class="btn btn-danger" id="confirm-delete-btn" disabled>Delete</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Focus the input
+    const input = document.getElementById('delete-confirm-text');
+    const confirmBtn = document.getElementById('confirm-delete-btn');
+    
+    setTimeout(() => input.focus(), 100);
+    
+    // Enable/disable confirm button based on input
+    input.addEventListener('input', function() {
+        if (this.value.trim() === 'OK') {
+            confirmBtn.disabled = false;
+            confirmBtn.classList.add('btn-danger-enabled');
+        } else {
+            confirmBtn.disabled = true;
+            confirmBtn.classList.remove('btn-danger-enabled');
+        }
+    });
+    
+    // Handle Enter key in input
+    input.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter' && this.value.trim() === 'OK') {
+            confirmBtn.click();
+        }
+    });
+    
+    // Handle confirm button click
+    confirmBtn.addEventListener('click', function() {
+        if (input.value.trim() === 'OK') {
+            closeDeleteModal();
+            onConfirm();
+        }
+    });
+    
+    // Close on background click
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            closeDeleteModal();
+        }
+    });
+    
+    // Close on Escape key
+    document.addEventListener('keydown', function escapeHandler(e) {
+        if (e.key === 'Escape') {
+            closeDeleteModal();
+            document.removeEventListener('keydown', escapeHandler);
+        }
+    });
+}
+
+/**
+ * Close delete confirmation modal
+ */
+function closeDeleteModal() {
+    const modal = document.getElementById('delete-confirmation-modal');
+    if (modal) {
+        modal.classList.add('modal-closing');
+        setTimeout(() => modal.remove(), 200);
+    }
+}
 
 /**
  * Health Check Monitor
@@ -21,6 +168,12 @@ document.addEventListener('DOMContentLoaded', function() {
 function initializeHealthCheck() {
     const healthElement = document.getElementById('health-status');
     if (!healthElement) return;
+    
+    // Make health status clickable
+    healthElement.style.cursor = 'pointer';
+    healthElement.addEventListener('click', () => {
+        window.location.href = '/tools/system-health';
+    });
     
     // Check health status every 30 seconds
     checkHealth();
@@ -34,9 +187,37 @@ function initializeHealthCheck() {
             if (data.status === 'healthy') {
                 healthElement.className = 'status status-success';
                 healthElement.textContent = 'System Healthy';
+                healthElement.title = 'All systems operational. Click for details.';
             } else {
                 healthElement.className = 'status status-warning';
-                healthElement.textContent = 'System Degraded';
+                
+                // Build degraded message with reasons
+                let message = 'System Degraded';
+                let reasons = [];
+                
+                if (data.checks) {
+                    if (data.checks.database && data.checks.database.status !== 'healthy') {
+                        reasons.push('Database');
+                    }
+                    if (data.checks.imports && data.checks.imports.status !== 'healthy') {
+                        reasons.push('Recent imports stale');
+                    }
+                    if (data.checks.exports && data.checks.exports.status !== 'healthy') {
+                        reasons.push('Recent exports stale');
+                    }
+                    if (data.checks.disk_space && data.checks.disk_space.status !== 'healthy') {
+                        reasons.push('Low disk space');
+                    }
+                }
+                
+                if (reasons.length > 0) {
+                    message += ': ' + reasons.join(', ');
+                    healthElement.title = 'Issues detected: ' + reasons.join(', ') + '. Click for full diagnostics.';
+                } else {
+                    healthElement.title = 'Some checks are degraded. Click for full diagnostics.';
+                }
+                
+                healthElement.textContent = message;
             }
             
             // Update timestamp
@@ -57,6 +238,7 @@ function initializeHealthCheck() {
             console.error('Health check failed:', error);
             healthElement.className = 'status status-danger';
             healthElement.textContent = 'System Offline';
+            healthElement.title = 'Unable to reach health check endpoint. Click to retry.';
         }
     }
 }
