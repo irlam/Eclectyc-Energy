@@ -223,9 +223,21 @@ class ImportController
         $batchId = Uuid::uuid4()->toString();
         $summary = null;
 
+        // Progress callback for UI feedback
+        $progressCallback = function (int $processed, int $imported, int $warnings) use ($batchId) {
+            // Log progress for UI feedback
+            error_log(sprintf(
+                '[Import Progress] Batch: %s | Processed: %d | Imported: %d | Warnings: %d',
+                substr($batchId, 0, 8),
+                $processed,
+                $imported,
+                $warnings
+            ));
+        };
+
         try {
             /** @var IngestionResult $result */
-            $result = $service->ingestFromCsv($tempPath, $format, $batchId, $dryRun, $this->currentUserId(), $defaultSiteId, $defaultTariffId);
+            $result = $service->ingestFromCsv($tempPath, $format, $batchId, $dryRun, $this->currentUserId(), $progressCallback);
             $summary = $result->toArray();
             $summary['filename'] = $uploadedFile->getClientFilename();
             $summary['dry_run'] = $dryRun;
