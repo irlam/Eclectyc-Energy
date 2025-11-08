@@ -79,9 +79,13 @@
                             <td class="text-right">{{ row.total_consumption|number_format(1, '.', ',') }}</td>
                             <td class="text-right">{{ (report.totalConsumption > 0 and row.total_consumption is defined) ? ((row.total_consumption / report.totalConsumption) * 100)|number_format(1) : '0.0' }}%</td>
                             <td>
-                                {{ row.first_reading|date("d/m/Y") }}
-                                &ndash;
-                                {{ row.last_reading|date("d/m/Y") }}
+                                {% if row.first_reading and row.last_reading %}
+                                    {{ row.first_reading|date("d/m/Y") }}
+                                    &ndash;
+                                    {{ row.last_reading|date("d/m/Y") }}
+                                {% else %}
+                                    <span style="color: #94a3b8;">No data</span>
+                                {% endif %}
                             </td>
                         </tr>
                     {% endfor %}

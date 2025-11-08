@@ -1,0 +1,228 @@
+{% extends "base.twig" %}
+
+{% block title %}SFTP Configurations{% endblock %}
+
+{% block content %}
+<section class="card sftp-card">
+    <div class="card-header sftp-card__header">
+        <div>
+            <h2>SFTP Configurations</h2>
+            <p class="mb-0" style="color: var(--muted); font-size: 0.9rem;">
+                Configure SFTP servers to automatically retrieve and import CSV files
+            </p>
+        </div>
+        <a href="/tools/sftp/create" class="btn btn-primary">➕ New Configuration</a>
+    </div>
+
+    {% if flash %}
+        <div class="alert alert-{{ flash.type }}">
+            <p>{{ flash.message }}</p>
+        </div>
+    {% endif %}
+
+    {% if error %}
+        <div class="alert alert-error">
+            <p>{{ error }}</p>
+        </div>
+    {% endif %}
+
+    {% if configurations is not empty %}
+        <div class="sftp-table-wrapper">
+            <table class="table sftp-table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Host</th>
+                        <th>Port</th>
+                        <th>Remote Directory</th>
+                        <th>File Pattern</th>
+                        <th>Import Type</th>
+                        <th>Auto Import</th>
+                        <th>Last Connection</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for config in configurations %}
+                        <tr>
+                            <td><strong>{{ config.name }}</strong></td>
+                            <td>{{ config.host }}</td>
+                            <td>{{ config.port }}</td>
+                            <td><code>{{ config.remote_directory }}</code></td>
+                            <td><code>{{ config.file_pattern }}</code></td>
+                            <td>{{ config.import_type|upper }}</td>
+                            <td>
+                                {% if config.auto_import %}
+                                    <span class="badge badge-success">Yes</span>
+                                {% else %}
+                                    <span class="badge badge-secondary">No</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if config.last_connection_at %}
+                                    {{ config.last_connection_at|date("d/m/Y H:i") }}
+                                {% else %}
+                                    <span style="color: #94a3b8;">Never</span>
+                                {% endif %}
+                                {% if config.last_error %}
+                                    <br><small style="color: #f87171;">{{ config.last_error }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="action-buttons">
+                                    <a href="/tools/sftp/{{ config.id }}/files" class="btn btn-sm btn-primary" title="Browse Files">📁</a>
+                                    <button onclick="testConnection({{ config.id }})" class="btn btn-sm btn-secondary" title="Test Connection">🔌</button>
+                                    <a href="/tools/sftp/{{ config.id }}/edit" class="btn btn-sm btn-secondary" title="Edit">✏️</a>
+                                    <form method="POST" action="/tools/sftp/{{ config.id }}/delete" style="display: inline;" onsubmit="return confirm('Are you sure you want to delete this configuration?');">
+                                        <button type="submit" class="btn btn-sm btn-danger" title="Delete">🗑️</button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="sftp-no-data">
+            <div class="sftp-icon">📁</div>
+            <h3>No SFTP Configurations</h3>
+            <p>Create your first SFTP configuration to start automatically importing CSV files from remote servers.</p>
+            <a href="/tools/sftp/create" class="btn btn-primary">➕ Create Configuration</a>
+        </div>
+    {% endif %}
+
+    <div class="form-actions mt-3">
+        <a href="/tools" class="btn btn-secondary">← Back to Tools</a>
+    </div>
+</section>
+
+<script>
+function testConnection(configId) {
+    const btn = event.target;
+    btn.disabled = true;
+    btn.textContent = '⏳';
+    
+    fetch(`/tools/sftp/${configId}/test`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('✅ ' + data.message);
+            } else {
+                alert('❌ ' + data.message);
+            }
+            btn.disabled = false;
+            btn.textContent = '🔌';
+        })
+        .catch(error => {
+            alert('❌ Test failed: ' + error.message);
+            btn.disabled = false;
+            btn.textContent = '🔌';
+        });
+}
+</script>
+
+<style>
+.sftp-card {
+    background: linear-gradient(180deg, #0f172a 0%, #111827 45%, #0b1120 100%);
+    color: #e2e8f0;
+    border: none;
+    box-shadow: 0 25px 45px rgba(15, 23, 42, 0.45);
+}
+
+.sftp-card__header {
+    border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+}
+
+.sftp-table-wrapper {
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: inset 0 0 0 1px rgba(51, 65, 85, 0.45);
+    background: rgba(15, 23, 42, 0.6);
+    overflow-x: auto;
+}
+
+.sftp-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    color: #e2e8f0;
+    margin-top: 0;
+}
+
+.sftp-table thead {
+    background: rgba(30, 41, 59, 0.85);
+}
+
+.sftp-table th {
+    padding: 0.85rem 1.1rem;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    color: #94a3b8;
+    border-bottom: 1px solid rgba(71, 85, 105, 0.45);
+    white-space: nowrap;
+}
+
+.sftp-table td {
+    padding: 0.9rem 1.1rem;
+    border-bottom: 1px solid rgba(51, 65, 85, 0.45);
+    vertical-align: middle;
+    font-size: 0.95rem;
+}
+
+.sftp-table tbody tr:hover {
+    background: rgba(79, 70, 229, 0.14);
+}
+
+.sftp-table code {
+    background: rgba(30, 41, 59, 0.7);
+    padding: 0.25rem 0.45rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 0.25rem;
+    flex-wrap: wrap;
+}
+
+.btn-sm {
+    padding: 0.35rem 0.6rem;
+    font-size: 0.875rem;
+}
+
+.sftp-no-data {
+    text-align: center;
+    padding: 3rem 1.5rem;
+    color: #94a3b8;
+}
+
+.sftp-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+}
+
+.sftp-no-data h3 {
+    color: #f8fafc;
+    margin-bottom: 0.5rem;
+}
+
+.badge {
+    display: inline-block;
+    padding: 0.25em 0.6em;
+    font-size: 0.75em;
+    font-weight: bold;
+    line-height: 1;
+    color: #fff;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: 0.25rem;
+}
+
+.badge-success { background-color: #28a745; }
+.badge-secondary { background-color: #6c757d; }
+</style>
+{% endblock %}

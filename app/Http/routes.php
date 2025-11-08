@@ -22,6 +22,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\NotFoundController;
 use App\Http\Controllers\ReportsController;
 use App\Http\Controllers\ToolsController;
+use App\Http\Controllers\Tools\SftpController;
 use App\Http\Middleware\AuthMiddleware;
 use App\Services\AuthService;
 use Slim\Psr7\Stream;
@@ -67,6 +68,17 @@ $app->group('/tools', function ($group) {
     $group->map(['GET', 'POST'], '/email-test', [ToolsController::class, 'emailTest'])->setName('tools.email');
     $group->get('/cli-tools', [ToolsController::class, 'cliTools'])->setName('tools.cli');
     $group->get('/cron-jobs', [ToolsController::class, 'cronJobs'])->setName('tools.cron');
+    
+    // SFTP configuration routes
+    $group->get('/sftp', [SftpController::class, 'index'])->setName('tools.sftp');
+    $group->get('/sftp/create', [SftpController::class, 'create'])->setName('tools.sftp.create');
+    $group->post('/sftp', [SftpController::class, 'store'])->setName('tools.sftp.store');
+    $group->get('/sftp/{id}/edit', [SftpController::class, 'edit'])->setName('tools.sftp.edit');
+    $group->post('/sftp/{id}', [SftpController::class, 'update'])->setName('tools.sftp.update');
+    $group->post('/sftp/{id}/delete', [SftpController::class, 'delete'])->setName('tools.sftp.delete');
+    $group->get('/sftp/{id}/test', [SftpController::class, 'testConnection'])->setName('tools.sftp.test');
+    $group->get('/sftp/{id}/files', [SftpController::class, 'listFiles'])->setName('tools.sftp.files');
+    $group->post('/sftp/{id}/import', [SftpController::class, 'importFile'])->setName('tools.sftp.import');
 })->add(function ($request, $handler) use ($container) {
     $middleware = new AuthMiddleware($container->get(AuthService::class), ['admin']);
     return $middleware->process($request, $handler);
