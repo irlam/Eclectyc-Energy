@@ -1,0 +1,352 @@
+{% extends "base.twig" %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block content %}
+<section class="card carbon-card">
+    <div class="card-header carbon-card__header">
+        <div>
+            <h2>Carbon Intensity &amp; Emissions</h2>
+            <p class="mb-0" style="color: var(--muted); font-size: 0.9rem;">
+                Meter: {{ meter.mpan }} - {{ meter.site_name }}
+            </p>
+        </div>
+        <a href="/admin/meters" class="btn btn-sm btn-secondary">← Back to Meters</a>
+    </div>
+
+    <!-- Meter Info -->
+    <div class="meter-info">
+        <div class="info-item">
+            <span>MPAN</span>
+            <strong>{{ meter.mpan }}</strong>
+        </div>
+        <div class="info-item">
+            <span>Site</span>
+            <strong>{{ meter.site_name }}</strong>
+        </div>
+        <div class="info-item">
+            <span>Type</span>
+            <strong>{{ meter.meter_type|capitalize }}</strong>
+        </div>
+        <div class="info-item">
+            <span>Supplier</span>
+            <strong>{{ meter.supplier_name ?? 'Not set' }}</strong>
+        </div>
+    </div>
+
+    <!-- Latest Carbon Intensity -->
+    {% if latest_carbon %}
+    <div class="carbon-latest">
+        <h3>Current Grid Carbon Intensity</h3>
+        <div class="carbon-metrics">
+            <div class="carbon-metric">
+                <span>Current Intensity</span>
+                <strong class="carbon-value">{{ (latest_carbon.actual ?? latest_carbon.intensity)|number_format(1) }}</strong>
+                <small>gCO₂/kWh</small>
+            </div>
+            <div class="carbon-metric">
+                <span>Forecast</span>
+                <strong class="carbon-value">{{ (latest_carbon.forecast ?? '-')|number_format(1) }}</strong>
+                <small>gCO₂/kWh</small>
+            </div>
+            <div class="carbon-metric">
+                <span>Last Updated</span>
+                <strong>{{ latest_carbon.datetime|date('d/m/Y H:i') }}</strong>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Summary Stats -->
+    <div class="emissions-summary">
+        <div class="summary-stat">
+            <div class="stat-icon">⚡</div>
+            <div>
+                <span>Total Consumption</span>
+                <strong>{{ total_consumption|number_format(2) }} kWh</strong>
+                <small>Last {{ days }} days</small>
+            </div>
+        </div>
+        <div class="summary-stat">
+            <div class="stat-icon">🌍</div>
+            <div>
+                <span>Total Emissions</span>
+                <strong>{{ total_emissions|number_format(2) }} kg CO₂</strong>
+                <small>Last {{ days }} days</small>
+            </div>
+        </div>
+        <div class="summary-stat">
+            <div class="stat-icon">📊</div>
+            <div>
+                <span>Average Daily</span>
+                <strong>{{ avg_emissions|number_format(2) }} kg CO₂</strong>
+                <small>Per day average</small>
+            </div>
+        </div>
+    </div>
+
+    <!-- Date Range Selector -->
+    <form method="GET" class="date-selector">
+        <label for="days">Time Period:</label>
+        <select id="days" name="days" onchange="this.form.submit()">
+            <option value="7" {% if days == 7 %}selected{% endif %}>Last 7 days</option>
+            <option value="14" {% if days == 14 %}selected{% endif %}>Last 14 days</option>
+            <option value="30" {% if days == 30 %}selected{% endif %}>Last 30 days</option>
+            <option value="60" {% if days == 60 %}selected{% endif %}>Last 60 days</option>
+            <option value="90" {% if days == 90 %}selected{% endif %}>Last 90 days</option>
+        </select>
+    </form>
+
+    <!-- Data Table -->
+    {% if data %}
+    <div class="data-table-wrapper">
+        <table class="table carbon-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th class="text-right">Consumption<br><small>(kWh)</small></th>
+                    <th class="text-right">Carbon Intensity<br><small>(gCO₂/kWh)</small></th>
+                    <th class="text-right">Emissions<br><small>(kg CO₂)</small></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in data %}
+                <tr>
+                    <td>{{ row.date|date('d/m/Y') }}</td>
+                    <td class="text-right">{{ row.total_consumption|number_format(2) }}</td>
+                    <td class="text-right {% if row.avg_carbon_intensity %}{% if row.avg_carbon_intensity < 150 %}text-success{% elseif row.avg_carbon_intensity > 300 %}text-danger{% endif %}{% endif %}">
+                        {% if row.avg_actual %}
+                            {{ row.avg_actual|number_format(1) }}
+                        {% elseif row.avg_carbon_intensity %}
+                            {{ row.avg_carbon_intensity|number_format(1) }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </td>
+                    <td class="text-right">{{ row.emissions_kg|number_format(2) }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="no-data">
+        <p>No consumption data available for this meter in the selected period.</p>
+        <p><small>Carbon intensity data is calculated from daily aggregations and grid carbon intensity readings.</small></p>
+    </div>
+    {% endif %}
+
+    <style>
+    .carbon-card {
+        background: linear-gradient(180deg, #0f172a 0%, #111827 45%, #0b1120 100%);
+        color: #e2e8f0;
+        border: none;
+        box-shadow: 0 25px 45px rgba(15, 23, 42, 0.45);
+    }
+
+    .carbon-card__header {
+        border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .meter-info {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1rem;
+        margin: 1.5rem;
+        padding: 1rem;
+        background: rgba(30, 41, 59, 0.4);
+        border-radius: 12px;
+    }
+
+    .info-item {
+        text-align: center;
+    }
+
+    .info-item span {
+        display: block;
+        font-size: 0.8rem;
+        color: #94a3b8;
+        text-transform: uppercase;
+        margin-bottom: 0.25rem;
+    }
+
+    .info-item strong {
+        display: block;
+        font-size: 1.1rem;
+        color: #f8fafc;
+    }
+
+    .carbon-latest {
+        margin: 1.5rem;
+        padding: 1.5rem;
+        background: rgba(34, 197, 94, 0.1);
+        border: 1px solid rgba(34, 197, 94, 0.3);
+        border-radius: 12px;
+    }
+
+    .carbon-latest h3 {
+        margin: 0 0 1rem 0;
+        color: #f8fafc;
+    }
+
+    .carbon-metrics {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .carbon-metric {
+        text-align: center;
+    }
+
+    .carbon-metric span {
+        display: block;
+        font-size: 0.8rem;
+        color: #94a3b8;
+        text-transform: uppercase;
+        margin-bottom: 0.5rem;
+    }
+
+    .carbon-value {
+        display: block;
+        font-size: 2rem;
+        color: #22c55e;
+        margin-bottom: 0.25rem;
+    }
+
+    .carbon-metric small {
+        display: block;
+        font-size: 0.75rem;
+        color: #94a3b8;
+    }
+
+    .emissions-summary {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin: 1.5rem;
+    }
+
+    .summary-stat {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem;
+        background: rgba(30, 41, 59, 0.6);
+        border-radius: 12px;
+        border: 1px solid rgba(148, 163, 184, 0.15);
+    }
+
+    .stat-icon {
+        font-size: 2rem;
+    }
+
+    .summary-stat span {
+        display: block;
+        font-size: 0.8rem;
+        color: #94a3b8;
+        text-transform: uppercase;
+    }
+
+    .summary-stat strong {
+        display: block;
+        font-size: 1.3rem;
+        color: #f8fafc;
+        margin: 0.25rem 0;
+    }
+
+    .summary-stat small {
+        display: block;
+        font-size: 0.75rem;
+        color: #94a3b8;
+    }
+
+    .date-selector {
+        margin: 1.5rem;
+        padding: 1rem;
+        background: rgba(30, 41, 59, 0.4);
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+    }
+
+    .date-selector label {
+        color: #e2e8f0;
+        font-weight: 500;
+    }
+
+    .date-selector select {
+        padding: 0.5rem 1rem;
+        background: rgba(15, 23, 42, 0.8);
+        border: 1px solid rgba(148, 163, 184, 0.3);
+        border-radius: 8px;
+        color: #e2e8f0;
+        font-size: 0.95rem;
+    }
+
+    .data-table-wrapper {
+        margin: 1.5rem;
+        border-radius: 14px;
+        overflow: hidden;
+        box-shadow: inset 0 0 0 1px rgba(51, 65, 85, 0.45);
+    }
+
+    .carbon-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        color: #e2e8f0;
+        margin: 0;
+    }
+
+    .carbon-table thead {
+        background: rgba(30, 41, 59, 0.85);
+    }
+
+    .carbon-table th {
+        padding: 0.85rem 1.1rem;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.08em;
+        color: #94a3b8;
+        border-bottom: 1px solid rgba(71, 85, 105, 0.45);
+    }
+
+    .carbon-table td {
+        padding: 0.9rem 1.1rem;
+        border-bottom: 1px solid rgba(51, 65, 85, 0.45);
+        background: rgba(15, 23, 42, 0.6);
+    }
+
+    .carbon-table tbody tr:hover {
+        background: rgba(79, 70, 229, 0.14);
+    }
+
+    .text-success {
+        color: #22c55e !important;
+    }
+
+    .text-danger {
+        color: #ef4444 !important;
+    }
+
+    .no-data {
+        margin: 1.5rem;
+        padding: 2rem;
+        text-align: center;
+        background: rgba(30, 41, 59, 0.6);
+        border-radius: 12px;
+        color: #94a3b8;
+    }
+
+    .no-data p:first-child {
+        font-size: 1.1rem;
+        color: #cbd5e1;
+    }
+    </style>
+</section>
+{% endblock %}

@@ -1,0 +1,150 @@
+{% extends "base.twig" %}
+
+{% block title %}System Health Diagnostics{% endblock %}
+
+{% block content %}
+<section class="card health-card">
+    <div class="card-header health-card__header">
+        <div>
+            <h2>System Health Diagnostics</h2>
+            <p class="mb-0" style="color: var(--muted); font-size: 0.9rem;">
+                Comprehensive health check and degraded services diagnostics
+            </p>
+        </div>
+        <div style="display: flex; gap: 0.5rem;">
+            <a href="/tools/system-health" class="btn btn-sm {% if not verbose %}btn-primary{% else %}btn-secondary{% endif %}">Normal</a>
+            <a href="/tools/system-health?verbose=1" class="btn btn-sm {% if verbose %}btn-primary{% else %}btn-secondary{% endif %}">Verbose</a>
+            <a href="/tools" class="btn btn-sm btn-secondary">← Back to Tools</a>
+        </div>
+    </div>
+
+    {% if health_data %}
+    <div class="health-summary">
+        <div class="health-stat {% if health_data.status == 'healthy' %}health-stat--healthy{% elseif health_data.status == 'degraded' %}health-stat--degraded{% else %}health-stat--critical{% endif %}">
+            <span>Overall Status</span>
+            <strong>
+                {% if health_data.status == 'healthy' %}✅ Healthy
+                {% elseif health_data.status == 'degraded' %}⚠️ Degraded
+                {% else %}❌ Critical
+                {% endif %}
+            </strong>
+        </div>
+        <div class="health-stat">
+            <span>Healthy Services</span>
+            <strong style="color: #22c55e;">{{ health_data.healthy }}</strong>
+        </div>
+        <div class="health-stat">
+            <span>Degraded Services</span>
+            <strong style="color: #f59e0b;">{{ health_data.degraded }}</strong>
+        </div>
+        <div class="health-stat">
+            <span>Critical Issues</span>
+            <strong style="color: #ef4444;">{{ health_data.critical }}</strong>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="health-output">
+        <pre class="health-output__pre">{{ output|e }}</pre>
+    </div>
+
+    <div class="health-actions">
+        <button onclick="window.location.reload()" class="btn btn-primary">🔄 Refresh</button>
+        <a href="/api/health" class="btn btn-secondary" target="_blank">View JSON Output</a>
+        <a href="/docs/troubleshooting_system_degraded.md" class="btn btn-secondary" target="_blank">📖 Troubleshooting Guide</a>
+    </div>
+
+    <style>
+    .health-card {
+        background: linear-gradient(180deg, #0f172a 0%, #111827 45%, #0b1120 100%);
+        color: #e2e8f0;
+        border: none;
+        box-shadow: 0 25px 45px rgba(15, 23, 42, 0.45);
+    }
+
+    .health-card__header {
+        border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .health-summary {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 1rem;
+        margin: 1.5rem;
+    }
+
+    .health-stat {
+        padding: 1rem;
+        border-radius: 12px;
+        background: rgba(30, 41, 59, 0.6);
+        box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.15);
+    }
+
+    .health-stat--healthy {
+        border: 1px solid rgba(34, 197, 94, 0.3);
+        background: rgba(34, 197, 94, 0.1);
+    }
+
+    .health-stat--degraded {
+        border: 1px solid rgba(245, 158, 11, 0.3);
+        background: rgba(245, 158, 11, 0.1);
+    }
+
+    .health-stat--critical {
+        border: 1px solid rgba(239, 68, 68, 0.3);
+        background: rgba(239, 68, 68, 0.1);
+    }
+
+    .health-stat span {
+        display: block;
+        font-size: 0.85rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: #94a3b8;
+    }
+
+    .health-stat strong {
+        font-size: 1.65rem;
+        line-height: 1.2;
+        color: #f8fafc;
+        display: block;
+        margin-top: 0.25rem;
+    }
+
+    .health-output {
+        margin: 1.5rem;
+        border-radius: 12px;
+        background: rgba(15, 23, 42, 0.8);
+        box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.15);
+        overflow: hidden;
+    }
+
+    .health-output__pre {
+        margin: 0;
+        padding: 1.5rem;
+        color: #e2e8f0;
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 0.875rem;
+        line-height: 1.6;
+        overflow-x: auto;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+    }
+
+    .health-actions {
+        display: flex;
+        gap: 0.75rem;
+        margin: 0 1.5rem 1.5rem 1.5rem;
+        flex-wrap: wrap;
+    }
+
+    .health-actions .btn {
+        flex: 1;
+        min-width: 150px;
+    }
+    </style>
+</section>
+{% endblock %}

@@ -1,0 +1,241 @@
+{% extends "base.twig" %}
+
+{% block title %}Email Testing{% endblock %}
+
+{% block content %}
+<section class="card email-card">
+    <div class="card-header email-card__header">
+        <div>
+            <h2>Email Testing</h2>
+            <p class="mb-0" style="color: var(--muted); font-size: 0.9rem;">
+                Test SMTP configuration and send test emails
+            </p>
+        </div>
+        <a href="/tools" class="btn btn-sm btn-secondary">← Back to Tools</a>
+    </div>
+
+    <div class="email-config-status">
+        <div class="config-item {% if mail_configured %}config-item--ok{% else %}config-item--error{% endif %}">
+            <span class="config-icon">{% if mail_configured %}✅{% else %}❌{% endif %}</span>
+            <div>
+                <strong>SMTP Configuration</strong>
+                <p class="mb-0 small">{% if mail_configured %}Mail server configured{% else %}MAIL_HOST not set in .env{% endif %}</p>
+            </div>
+        </div>
+    </div>
+
+    {% if not mail_configured %}
+    <div class="alert alert-warning" style="margin: 1.5rem;">
+        <strong>⚠️ Email Not Configured</strong>
+        <p class="mb-0">To use email functionality, add SMTP settings to your .env file:</p>
+        <pre style="margin-top: 0.5rem; font-size: 0.875rem;">MAIL_HOST=smtp.example.com
+MAIL_PORT=587
+MAIL_USERNAME=your-username
+MAIL_PASSWORD=your-password
+MAIL_ENCRYPTION=tls
+ADMIN_EMAIL=admin@example.com</pre>
+    </div>
+    {% else %}
+    <form method="POST" class="email-form">
+        <div class="form-group">
+            <label for="recipient">Recipient Email Address</label>
+            <input type="email" 
+                   id="recipient" 
+                   name="recipient" 
+                   class="form-control" 
+                   value="{{ recipient }}" 
+                   placeholder="admin@example.com" 
+                   required>
+            <small class="form-text">Email address where test email will be sent</small>
+        </div>
+
+        <div class="form-group">
+            <label for="method">Sending Method</label>
+            <select id="method" name="method" class="form-control">
+                <option value="phpmailer" {% if method == 'phpmailer' %}selected{% endif %}>PHPMailer (SMTP)</option>
+                <option value="mail" {% if method == 'mail' %}selected{% endif %}>PHP mail() Function</option>
+            </select>
+            <small class="form-text">PHPMailer recommended for production use</small>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">📧 Send Test Email</button>
+            <button type="reset" class="btn btn-secondary">Clear</button>
+        </div>
+    </form>
+    {% endif %}
+
+    {% if output %}
+    <div class="email-result {% if success %}email-result--success{% else %}email-result--error{% endif %}">
+        <div class="email-result__header">
+            <strong>{% if success %}✅ Test Result{% else %}❌ Test Failed{% endif %}</strong>
+        </div>
+        <pre class="email-result__output">{{ output|e }}</pre>
+    </div>
+    {% endif %}
+
+    <div class="email-help">
+        <h3>📖 Quick Reference</h3>
+        <div class="help-grid">
+            <div class="help-item">
+                <strong>Gmail</strong>
+                <code>smtp.gmail.com:587 (TLS)</code>
+                <small>Use App Password, not regular password</small>
+            </div>
+            <div class="help-item">
+                <strong>Office 365</strong>
+                <code>smtp.office365.com:587 (TLS)</code>
+            </div>
+            <div class="help-item">
+                <strong>SendGrid</strong>
+                <code>smtp.sendgrid.net:587 (TLS)</code>
+                <small>Username: apikey</small>
+            </div>
+            <div class="help-item">
+                <strong>Mailgun</strong>
+                <code>smtp.mailgun.org:587 (TLS)</code>
+            </div>
+        </div>
+        <p class="mt-3">
+            <a href="/docs/email_system_usage.md" target="_blank">📄 Complete Email Documentation</a>
+        </p>
+    </div>
+
+    <style>
+    .email-card {
+        background: linear-gradient(180deg, #0f172a 0%, #111827 45%, #0b1120 100%);
+        color: #e2e8f0;
+        border: none;
+        box-shadow: 0 25px 45px rgba(15, 23, 42, 0.45);
+    }
+
+    .email-card__header {
+        border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .email-config-status {
+        margin: 1.5rem;
+    }
+
+    .config-item {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+        padding: 1rem;
+        border-radius: 12px;
+        background: rgba(30, 41, 59, 0.6);
+        border: 1px solid rgba(148, 163, 184, 0.15);
+    }
+
+    .config-item--ok {
+        border-color: rgba(34, 197, 94, 0.3);
+        background: rgba(34, 197, 94, 0.1);
+    }
+
+    .config-item--error {
+        border-color: rgba(239, 68, 68, 0.3);
+        background: rgba(239, 68, 68, 0.1);
+    }
+
+    .config-icon {
+        font-size: 1.5rem;
+    }
+
+    .email-form {
+        margin: 1.5rem;
+        padding: 1.5rem;
+        border-radius: 12px;
+        background: rgba(30, 41, 59, 0.4);
+        border: 1px solid rgba(148, 163, 184, 0.15);
+    }
+
+    .form-actions {
+        display: flex;
+        gap: 0.75rem;
+        margin-top: 1.5rem;
+    }
+
+    .email-result {
+        margin: 1.5rem;
+        border-radius: 12px;
+        overflow: hidden;
+        border: 1px solid rgba(148, 163, 184, 0.15);
+    }
+
+    .email-result--success {
+        border-color: rgba(34, 197, 94, 0.3);
+    }
+
+    .email-result--error {
+        border-color: rgba(239, 68, 68, 0.3);
+    }
+
+    .email-result__header {
+        padding: 1rem 1.5rem;
+        background: rgba(30, 41, 59, 0.6);
+        border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+    }
+
+    .email-result__output {
+        margin: 0;
+        padding: 1.5rem;
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 0.875rem;
+        line-height: 1.6;
+        background: rgba(15, 23, 42, 0.8);
+        color: #e2e8f0;
+        overflow-x: auto;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+    }
+
+    .email-help {
+        margin: 1.5rem;
+        padding: 1.5rem;
+        border-radius: 12px;
+        background: rgba(30, 41, 59, 0.4);
+        border: 1px solid rgba(148, 163, 184, 0.15);
+    }
+
+    .email-help h3 {
+        margin-bottom: 1rem;
+        color: #f8fafc;
+    }
+
+    .help-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-top: 1rem;
+    }
+
+    .help-item {
+        padding: 1rem;
+        border-radius: 8px;
+        background: rgba(15, 23, 42, 0.6);
+    }
+
+    .help-item strong {
+        display: block;
+        margin-bottom: 0.5rem;
+        color: #f8fafc;
+    }
+
+    .help-item code {
+        display: block;
+        font-size: 0.8rem;
+        color: #38bdf8;
+        margin-bottom: 0.25rem;
+    }
+
+    .help-item small {
+        display: block;
+        color: #94a3b8;
+        font-size: 0.75rem;
+    }
+    </style>
+</section>
+{% endblock %}

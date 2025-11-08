@@ -60,8 +60,11 @@ $app->group('/api', function ($group) {
 
 // Tools Routes
 $app->group('/tools', function ($group) {
+    $group->get('', [ToolsController::class, 'index'])->setName('tools.index');
     $group->get('/check', [ToolsController::class, 'checkStructure'])->setName('tools.check');
     $group->get('/show', [ToolsController::class, 'showStructure'])->setName('tools.show');
+    $group->get('/system-health', [ToolsController::class, 'systemHealth'])->setName('tools.health');
+    $group->map(['GET', 'POST'], '/email-test', [ToolsController::class, 'emailTest'])->setName('tools.email');
 })->add(function ($request, $handler) use ($container) {
     $middleware = new AuthMiddleware($container->get(AuthService::class), ['admin']);
     return $middleware->process($request, $handler);
@@ -144,6 +147,7 @@ $app->group('/admin', function ($group) {
     $group->get('/meters/create', [AdminMetersController::class, 'create'])->setName('admin.meters.create');
     $group->post('/meters', [AdminMetersController::class, 'store'])->setName('admin.meters.store');
     $group->get('/meters/{id}/edit', [AdminMetersController::class, 'edit'])->setName('admin.meters.edit');
+    $group->get('/meters/{id}/carbon', [AdminMetersController::class, 'carbonIntensity'])->setName('admin.meters.carbon');
     $group->post('/meters/{id}', [AdminMetersController::class, 'update'])->setName('admin.meters.update');
     $group->post('/meters/{id}/delete', [AdminMetersController::class, 'delete'])->setName('admin.meters.delete');
     
