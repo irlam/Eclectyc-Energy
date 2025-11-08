@@ -14,10 +14,12 @@ use League\Csv\Reader;
 use PDO;
 use PDOException;
 use Ramsey\Uuid\Uuid;
+use App\Domain\Settings\SystemSettingsService;
 
 class CsvIngestionService
 {
     private PDO $pdo;
+    private ?SystemSettingsService $settings = null;
 
     /**
      * Normalised header aliases recognised by the ingestion service.
@@ -197,6 +199,9 @@ class CsvIngestionService
             if ($progressCallback !== null) {
                 $progressCallback($processed, $successfulRows, count($errors));
             }
+
+            // Apply throttling if enabled
+            $this->applyThrottle($processed);
         }
 
         return new IngestionResult($processed, $successfulRows, $errors, $batchId, $dryRun, [
@@ -1116,6 +1121,43 @@ class CsvIngestionService
             ]);
         } catch (PDOException | Exception $exception) {
             // Fallback logging suppressed to avoid interrupting ingestion
+        }
+    }
+
+    /**
+     * Apply throttling if enabled to prevent server overload
+     * 
+     * @param int $processed Number of records processed so far
+     */
+    private function applyThrottle(int $processed): void
+    {
+        // Lazy load settings service
+        if ($this->settings === null) {
+            try {
+                $this->settings = new SystemSettingsService($this->pdo);
+            } catch (Exception $e) {
+                // If settings table doesn't exist yet, skip throttling
+                return;
+            }
+        }
+
+        try {
+            $throttleSettings = $this->settings->getImportThrottleSettings();
+            
+            if (!$throttleSettings['enabled']) {
+                return;
+            }
+
+            $batchSize = $throttleSettings['batch_size'];
+            $delayMs = $throttleSettings['delay_ms'];
+
+            // Apply delay after every batch
+            if ($processed > 0 && $processed % $batchSize === 0) {
+                usleep($delayMs * 1000); // Convert ms to microseconds
+            }
+        } catch (Exception $e) {
+            // Silently skip throttling if there's an error
+            return;
         }
     }
 }
