@@ -1,0 +1,188 @@
+{% extends "base.twig" %}
+
+{% block title %}Application Logs{% endblock %}
+
+{% block content %}
+<section class="card">
+    <h2>Application Logs</h2>
+    <p class="mb-2">View PHP error logs and application diagnostics.</p>
+
+    {% if error %}
+        <div class="alert alert-error">
+            <p>{{ error }}</p>
+        </div>
+    {% endif %}
+
+    {% if flash %}
+        <div class="alert alert-{{ flash.type }}">
+            <p>{{ flash.message }}</p>
+        </div>
+    {% endif %}
+
+    {% if log_exists %}
+        <div class="log-info mb-3">
+            <div class="info-grid">
+                <div>
+                    <strong>Log Size:</strong> {{ log_size_mb }} MB ({{ log_size|number_format(0, '.', ',') }} bytes)
+                </div>
+                <div>
+                    <strong>Showing:</strong> Last {{ filters.lines }} lines
+                </div>
+            </div>
+        </div>
+
+        <div class="filters mb-3">
+            <form method="GET" class="form-inline">
+                <label for="lines">Lines:</label>
+                <select name="lines" id="lines" onchange="this.form.submit()">
+                    <option value="50" {% if filters.lines == 50 %}selected{% endif %}>50</option>
+                    <option value="100" {% if filters.lines == 100 %}selected{% endif %}>100</option>
+                    <option value="200" {% if filters.lines == 200 %}selected{% endif %}>200</option>
+                    <option value="500" {% if filters.lines == 500 %}selected{% endif %}>500</option>
+                    <option value="1000" {% if filters.lines == 1000 %}selected{% endif %}>1000</option>
+                </select>
+
+                <label for="level" class="ml-2">Level:</label>
+                <select name="level" id="level" onchange="this.form.submit()">
+                    <option value="">All</option>
+                    <option value="FATAL" {% if filters.level == 'FATAL' %}selected{% endif %}>FATAL</option>
+                    <option value="ERROR" {% if filters.level == 'ERROR' %}selected{% endif %}>ERROR</option>
+                    <option value="WARNING" {% if filters.level == 'WARNING' %}selected{% endif %}>WARNING</option>
+                    <option value="NOTICE" {% if filters.level == 'NOTICE' %}selected{% endif %}>NOTICE</option>
+                </select>
+
+                <label for="search" class="ml-2">Search:</label>
+                <input type="text" name="search" id="search" value="{{ filters.search }}" placeholder="Filter logs...">
+                
+                <button type="submit" class="btn btn-sm">Filter</button>
+                {% if filters.search or filters.level %}
+                    <a href="/tools/logs?lines={{ filters.lines }}" class="btn btn-sm btn-secondary">Clear Filters</a>
+                {% endif %}
+            </form>
+        </div>
+
+        <div class="log-viewer">
+            <pre class="log-content">{{ log_content|e }}</pre>
+        </div>
+
+        <div class="form-actions mt-3">
+            <a href="/tools" class="btn btn-secondary">Back to Tools</a>
+            <button onclick="window.location.reload()" class="btn btn-secondary">Refresh</button>
+            <form method="POST" action="/tools/logs/clear" style="display: inline-block;" onsubmit="return confirm('Are you sure you want to clear the log file? A backup will be created.');">
+                <button type="submit" class="btn btn-danger">Clear Logs</button>
+            </form>
+        </div>
+    {% else %}
+        <p class="no-logs">No log file exists yet. Logs will appear here once the application generates them.</p>
+        <div class="form-actions mt-3">
+            <a href="/tools" class="btn btn-secondary">Back to Tools</a>
+        </div>
+    {% endif %}
+</section>
+
+<style>
+.log-info {
+    padding: 1rem;
+    background: rgba(15, 23, 42, 0.4);
+    border-radius: 8px;
+    border: 1px solid rgba(71, 85, 105, 0.5);
+}
+
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.info-grid strong {
+    color: #60a5fa;
+    margin-right: 0.5rem;
+}
+
+.form-inline {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.form-inline label {
+    margin: 0;
+    color: var(--ink);
+}
+
+.form-inline select,
+.form-inline input[type="text"] {
+    padding: 5px 10px;
+    background: rgba(255, 255, 255, 0.08);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    color: var(--ink);
+}
+
+.form-inline input[type="text"] {
+    min-width: 200px;
+}
+
+.ml-2 {
+    margin-left: 20px;
+}
+
+.log-viewer {
+    background: #0f172a;
+    border: 1px solid rgba(71, 85, 105, 0.5);
+    border-radius: 8px;
+    padding: 1rem;
+    max-height: 600px;
+    overflow-y: auto;
+    margin: 1rem 0;
+}
+
+.log-content {
+    margin: 0;
+    padding: 0;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', 'source-code-pro', monospace;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: #e2e8f0;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+}
+
+.no-logs {
+    text-align: center;
+    padding: 3rem;
+    color: #94a3b8;
+    font-style: italic;
+}
+
+.alert {
+    padding: 1rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+}
+
+.alert-error {
+    background-color: rgba(220, 53, 69, 0.2);
+    border: 1px solid rgba(220, 53, 69, 0.5);
+    color: #ff6b6b;
+}
+
+.alert-success {
+    background-color: rgba(39, 224, 165, 0.2);
+    border: 1px solid rgba(39, 224, 165, 0.5);
+    color: var(--brand);
+}
+
+.alert-warning {
+    background-color: rgba(255, 193, 7, 0.2);
+    border: 1px solid rgba(255, 193, 7, 0.5);
+    color: #ffc107;
+}
+
+.btn-sm {
+    padding: 5px 12px;
+    font-size: 0.875em;
+}
+</style>
+{% endblock %}

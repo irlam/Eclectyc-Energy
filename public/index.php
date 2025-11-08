@@ -20,6 +20,7 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\NotFoundController;
 use App\Http\Controllers\ReportsController;
 use App\Http\Controllers\ToolsController;
+use App\Http\Controllers\Tools\SftpController;
 use App\Http\Middleware\AuthMiddleware;
 use App\Services\AuthService;
 use DI\Container;
@@ -231,7 +232,11 @@ $container->set(ImportStatusController::class, function(Container $c) {
 });
 
 $container->set(ToolsController::class, function(Container $c) {
-    return new ToolsController($c->get('view'));
+    return new ToolsController($c->get('view'), $c->get('db'));
+});
+
+$container->set(SftpController::class, function(Container $c) {
+    return new SftpController($c->get('view'), $c->get('db'));
 });
 
 $container->set(AuthMiddleware::class, function(Container $c) {

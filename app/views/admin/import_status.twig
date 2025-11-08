@@ -177,6 +177,11 @@
             <div class="form-actions mt-3">
                 <a href="/admin/imports" class="btn btn-secondary">Back to Imports</a>
                 <a href="/admin/imports/jobs" class="btn btn-secondary">View All Jobs</a>
+                {% if job.status in ['queued', 'processing'] %}
+                    <form method="POST" action="/admin/imports/jobs/{{ job.id }}/cancel" style="display: inline-block;" onsubmit="return confirm('Are you sure you want to cancel this import job?');">
+                        <button type="submit" class="btn btn-warning">Cancel Job</button>
+                    </form>
+                {% endif %}
             </div>
         </div>
 

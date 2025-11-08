@@ -121,6 +121,140 @@ class ToolsController
         ]);
     }
 
+    /**
+     * View application logs
+     */
+    public function viewLogs(Request $request, Response $response): Response
+    {
+        $basePath = defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__, 3);
+        $logFile = $basePath . '/logs/php-error.log';
+        
+        // Get query parameters
+        $queryParams = $request->getQueryParams();
+        $lines = isset($queryParams['lines']) ? max(10, min(1000, (int)$queryParams['lines'])) : 100;
+        $search = $queryParams['search'] ?? '';
+        $level = $queryParams['level'] ?? '';
+        
+        $logContent = '';
+        $logExists = false;
+        $logSize = 0;
+        $error = null;
+        
+        // Get flash message
+        $flash = $_SESSION['tools_flash'] ?? null;
+        unset($_SESSION['tools_flash']);
+        
+        if (file_exists($logFile)) {
+            $logExists = true;
+            $logSize = filesize($logFile);
+            
+            try {
+                // Read the last N lines from the file
+                if ($logSize > 0) {
+                    $logContent = $this->readLastLines($logFile, $lines);
+                    
+                    // Apply filters
+                    if (!empty($search) || !empty($level)) {
+                        $logLines = explode("\n", $logContent);
+                        $filteredLines = [];
+                        
+                        foreach ($logLines as $line) {
+                            $matchesSearch = empty($search) || stripos($line, $search) !== false;
+                            $matchesLevel = empty($level) || stripos($line, $level) !== false;
+                            
+                            if ($matchesSearch && $matchesLevel) {
+                                $filteredLines[] = $line;
+                            }
+                        }
+                        
+                        $logContent = implode("\n", $filteredLines);
+                    }
+                } else {
+                    $logContent = '(Log file is empty)';
+                }
+            } catch (\Exception $e) {
+                $error = 'Failed to read log file: ' . $e->getMessage();
+                $logContent = '';
+            }
+        } else {
+            $error = 'Log file does not exist: ' . $logFile;
+        }
+        
+        return $this->view->render($response, 'tools/logs.twig', [
+            'page_title' => 'Application Logs',
+            'log_content' => $logContent,
+            'log_exists' => $logExists,
+            'log_size' => $logSize,
+            'log_size_mb' => $logSize > 0 ? round($logSize / 1048576, 2) : 0,
+            'error' => $error,
+            'flash' => $flash,
+            'filters' => [
+                'lines' => $lines,
+                'search' => $search,
+                'level' => $level,
+            ],
+        ]);
+    }
+
+    /**
+     * Clear application logs
+     */
+    public function clearLogs(Request $request, Response $response): Response
+    {
+        $basePath = defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__, 3);
+        $logFile = $basePath . '/logs/php-error.log';
+        
+        try {
+            if (file_exists($logFile)) {
+                // Create a backup before clearing
+                $backupFile = $logFile . '.backup.' . date('Y-m-d_H-i-s');
+                copy($logFile, $backupFile);
+                
+                // Clear the log file
+                file_put_contents($logFile, '');
+                
+                $_SESSION['tools_flash'] = [
+                    'type' => 'success',
+                    'message' => 'Log file cleared successfully. Backup created at: ' . basename($backupFile),
+                ];
+            } else {
+                $_SESSION['tools_flash'] = [
+                    'type' => 'warning',
+                    'message' => 'Log file does not exist.',
+                ];
+            }
+        } catch (\Exception $e) {
+            $_SESSION['tools_flash'] = [
+                'type' => 'error',
+                'message' => 'Failed to clear log file: ' . $e->getMessage(),
+            ];
+        }
+        
+        return $response->withHeader('Location', '/tools/logs')->withStatus(302);
+    }
+
+    /**
+     * Read last N lines from a file efficiently
+     */
+    private function readLastLines(string $filepath, int $lines = 100): string
+    {
+        $file = new \SplFileObject($filepath, 'r');
+        $file->seek(PHP_INT_MAX);
+        $lastLine = $file->key();
+        $offset = max(0, $lastLine - $lines);
+        
+        $result = [];
+        for ($i = $offset; $i <= $lastLine; $i++) {
+            $file->seek($i);
+            $line = $file->current();
+            if (!empty(trim($line))) {
+                $result[] = $line;
+            }
+        }
+        
+        return implode('', $result);
+    }
+
     private function runTool(string $script): string
     {
         $basePath = defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__, 3);

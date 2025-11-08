@@ -337,4 +337,36 @@ class ImportJobService
         $stmt->execute([$daysOld]);
         return $stmt->rowCount();
     }
+
+    /**
+     * Cancel a running or queued job
+     */
+    public function cancelJob(string $batchId): bool
+    {
+        $stmt = $this->pdo->prepare('
+            SELECT status FROM import_jobs WHERE batch_id = ?
+        ');
+        $stmt->execute([$batchId]);
+        $job = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$job) {
+            return false;
+        }
+        
+        // Only allow cancelling jobs that are queued or processing
+        if (!in_array($job['status'], ['queued', 'processing'])) {
+            return false;
+        }
+        
+        $stmt = $this->pdo->prepare('
+            UPDATE import_jobs 
+            SET status = "cancelled",
+                completed_at = NOW(),
+                error_message = "Job cancelled by user"
+            WHERE batch_id = ?
+        ');
+        
+        $stmt->execute([$batchId]);
+        return true;
+    }
 }

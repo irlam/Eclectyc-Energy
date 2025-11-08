@@ -73,6 +73,16 @@
                         <td>{{ job.queued_at }}</td>
                         <td>
                             <a href="/admin/imports/status/{{ job.batch_id }}" class="btn btn-sm">View</a>
+                            {% if job.status in ['queued', 'processing'] %}
+                                <form 
+                                    method="POST" 
+                                    action="/admin/imports/jobs/{{ job.id }}/cancel" 
+                                    style="display: inline-block;"
+                                    onsubmit="return confirm('Are you sure you want to cancel this import job?');"
+                                >
+                                    <button type="submit" class="btn btn-sm btn-warning">Cancel</button>
+                                </form>
+                            {% endif %}
                             {% if job.status in ['completed', 'failed', 'cancelled'] %}
                                 <form 
                                     method="POST" 
@@ -187,6 +197,16 @@
 .btn-sm {
     padding: 3px 8px;
     font-size: 0.875em;
+}
+
+.btn-warning {
+    background-color: rgba(255, 193, 7, 0.2);
+    color: #ffc107;
+    border: 1px solid rgba(255, 193, 7, 0.5);
+}
+
+.btn-warning:hover {
+    background-color: rgba(255, 193, 7, 0.3);
 }
 </style>
 {% endblock %}
