@@ -34,19 +34,21 @@ class ReportsController
 
         if ($this->pdo) {
             try {
+                // Modified query to show ALL sites, including those with no data
                 $stmt = $this->pdo->prepare('
                     SELECT
+                        s.id AS site_id,
                         s.name AS site_name,
-                        COUNT(DISTINCT da.meter_id) AS meter_count,
-                        SUM(da.total_consumption) AS total_consumption,
-                        MIN(da.date) AS first_reading,
-                        MAX(da.date) AS last_reading
-                    FROM daily_aggregations da
-                    JOIN meters m ON da.meter_id = m.id
-                    JOIN sites s ON m.site_id = s.id
-                    WHERE da.date BETWEEN :start AND :end
+                        COUNT(DISTINCT CASE WHEN da.date BETWEEN :start AND :end THEN m.id END) AS meter_count,
+                        COALESCE(SUM(CASE WHEN da.date BETWEEN :start AND :end THEN da.total_consumption END), 0) AS total_consumption,
+                        MIN(CASE WHEN da.date BETWEEN :start AND :end THEN da.date END) AS first_reading,
+                        MAX(CASE WHEN da.date BETWEEN :start AND :end THEN da.date END) AS last_reading
+                    FROM sites s
+                    LEFT JOIN meters m ON s.id = m.site_id AND m.is_active = 1
+                    LEFT JOIN daily_aggregations da ON m.id = da.meter_id
+                    WHERE s.is_active = 1
                     GROUP BY s.id, s.name
-                    ORDER BY total_consumption DESC
+                    ORDER BY total_consumption DESC, s.name ASC
                 ');
                 $stmt->execute([
                     'start' => $period['start']->format('Y-m-d'),

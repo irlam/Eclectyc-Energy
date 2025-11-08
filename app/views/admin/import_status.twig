@@ -62,32 +62,71 @@
                 <div class="progress-section mt-3">
                     <h3>Progress</h3>
                     {% if job.total_rows %}
-                        <div class="progress-bar">
-                            <div class="progress-fill" style="width: {{ job.progress_percent }}%"></div>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: {{ job.progress_percent }}%">
+                                    <span class="progress-percent">{{ job.progress_percent }}%</span>
+                                </div>
+                            </div>
+                            <div class="progress-details">
+                                <span class="progress-count">{{ job.processed_rows|number_format(0, '.', ',') }} / {{ job.total_rows|number_format(0, '.', ',') }} rows</span>
+                                {% if job.started_at and job.processed_rows > 0 and job.total_rows > 0 %}
+                                    {% set elapsed_seconds = date().getTimestamp() - (job.started_at|date('U')) %}
+                                    {% set rows_per_second = elapsed_seconds > 0 ? (job.processed_rows / elapsed_seconds) : 0 %}
+                                    {% set remaining_rows = job.total_rows - job.processed_rows %}
+                                    {% set eta_seconds = rows_per_second > 0 ? (remaining_rows / rows_per_second)|round : 0 %}
+                                    <span class="progress-eta" id="etaDisplay">
+                                        {% if eta_seconds > 0 %}
+                                            ETA: 
+                                            {% if eta_seconds < 60 %}
+                                                {{ eta_seconds|round }} seconds
+                                            {% elseif eta_seconds < 3600 %}
+                                                {{ (eta_seconds / 60)|round }} minutes
+                                            {% else %}
+                                                {{ (eta_seconds / 3600)|round(1) }} hours
+                                            {% endif %}
+                                        {% endif %}
+                                        <span class="progress-speed">(~{{ rows_per_second|number_format(1) }} rows/sec)</span>
+                                    </span>
+                                {% endif %}
+                            </div>
                         </div>
-                        <p class="progress-text">
-                            {{ job.processed_rows }} / {{ job.total_rows }} rows ({{ job.progress_percent }}%)
-                        </p>
                     {% else %}
-                        <p>Processing... (row count not yet available)</p>
+                        <div class="progress-loading">
+                            <div class="spinner"></div>
+                            <p>Processing... (row count not yet available)</p>
+                        </div>
                     {% endif %}
                     
                     <dl class="import-summary mt-2">
                         <div>
                             <dt>Processed</dt>
-                            <dd>{{ job.processed_rows }}</dd>
+                            <dd class="stat-processed">{{ job.processed_rows|number_format(0, '.', ',') }}</dd>
                         </div>
                         <div>
                             <dt>Imported</dt>
-                            <dd>{{ job.imported_rows }}</dd>
+                            <dd class="stat-imported">{{ job.imported_rows|number_format(0, '.', ',') }}</dd>
                         </div>
                         <div>
                             <dt>Failed</dt>
-                            <dd>{{ job.failed_rows }}</dd>
+                            <dd class="stat-failed">{{ job.failed_rows|number_format(0, '.', ',') }}</dd>
+                        </div>
+                        <div>
+                            <dt>Success Rate</dt>
+                            <dd class="stat-success-rate">
+                                {% if job.processed_rows > 0 %}
+                                    {{ ((job.imported_rows / job.processed_rows) * 100)|number_format(1) }}%
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </dd>
                         </div>
                     </dl>
                     
-                    <p class="mt-2"><em>This page will auto-refresh every 5 seconds.</em></p>
+                    <p class="mt-2 auto-refresh-notice">
+                        <span class="refresh-icon">↻</span> 
+                        <em>This page will auto-refresh every 5 seconds.</em>
+                    </p>
                 </div>
             {% endif %}
 
@@ -153,24 +192,156 @@
 </section>
 
 <style>
+.progress-bar-container {
+    margin: 1rem 0;
+}
+
 .progress-bar {
     width: 100%;
-    height: 30px;
-    background-color: #e0e0e0;
-    border-radius: 5px;
+    height: 40px;
+    background: linear-gradient(90deg, #1e293b 0%, #0f172a 100%);
+    border-radius: 8px;
     overflow: hidden;
-    margin: 10px 0;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+    position: relative;
+    border: 1px solid rgba(71, 85, 105, 0.5);
 }
 
 .progress-fill {
     height: 100%;
-    background-color: #4CAF50;
-    transition: width 0.3s ease;
+    background: linear-gradient(90deg, #3b82f6 0%, #2563eb 50%, #1d4ed8 100%);
+    transition: width 0.5s ease;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding-right: 12px;
+    position: relative;
+    overflow: hidden;
 }
 
-.progress-text {
+.progress-fill::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, 
+        transparent 0%, 
+        rgba(255, 255, 255, 0.1) 50%, 
+        transparent 100%);
+    animation: shimmer 2s infinite;
+}
+
+@keyframes shimmer {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(100%); }
+}
+
+.progress-percent {
+    font-size: 0.875rem;
+    font-weight: bold;
+    color: white;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    z-index: 1;
+}
+
+.progress-details {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.75rem;
+    font-size: 0.9rem;
+    color: #94a3b8;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.progress-count {
+    font-weight: 600;
+    color: #e2e8f0;
+}
+
+.progress-eta {
+    color: #60a5fa;
+    font-weight: 500;
+}
+
+.progress-speed {
+    color: #94a3b8;
+    font-size: 0.85rem;
+    margin-left: 0.5rem;
+}
+
+.progress-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 2rem;
+    gap: 1rem;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid rgba(59, 130, 246, 0.2);
+    border-top-color: #3b82f6;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.import-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 0.75rem;
+    padding: 1rem;
+    background: rgba(15, 23, 42, 0.4);
+    border-radius: 8px;
+    margin-top: 1rem;
+}
+
+.import-summary dt {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #94a3b8;
+    margin-bottom: 0.25rem;
+}
+
+.import-summary dd {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #f8fafc;
+    margin: 0;
+}
+
+.stat-processed { color: #60a5fa; }
+.stat-imported { color: #34d399; }
+.stat-failed { color: #f87171; }
+.stat-success-rate { color: #a78bfa; }
+
+.auto-refresh-notice {
     text-align: center;
-    margin: 5px 0;
+    padding: 0.75rem;
+    background: rgba(59, 130, 246, 0.1);
+    border-radius: 6px;
+    border: 1px solid rgba(59, 130, 246, 0.2);
+    color: #93c5fd;
+    font-size: 0.9rem;
+}
+
+.refresh-icon {
+    display: inline-block;
+    animation: rotate 2s linear infinite;
+}
+
+@keyframes rotate {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
 }
 
 .badge {

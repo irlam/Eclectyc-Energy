@@ -1,0 +1,218 @@
+{% extends "base.twig" %}
+
+{% block title %}SFTP Files{% endblock %}
+
+{% block content %}
+<section class="card sftp-card">
+    <div class="card-header sftp-card__header">
+        <div>
+            <h2>Files on {{ configuration.name }}</h2>
+            <p class="mb-0" style="color: var(--muted); font-size: 0.9rem;">
+                <strong>Server:</strong> {{ configuration.host }}:{{ configuration.port }}<br>
+                <strong>Directory:</strong> {{ configuration.remote_directory }}<br>
+                <strong>Pattern:</strong> {{ configuration.file_pattern }}
+            </p>
+        </div>
+        <button onclick="window.location.reload()" class="btn btn-secondary">↻ Refresh</button>
+    </div>
+
+    {% if files is not empty %}
+        <div class="files-table-wrapper">
+            <table class="table files-table">
+                <thead>
+                    <tr>
+                        <th>Filename</th>
+                        <th class="text-right">Size</th>
+                        <th>Modified</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for file in files %}
+                        <tr>
+                            <td>
+                                <span class="file-icon">📄</span>
+                                <strong>{{ file.name }}</strong>
+                            </td>
+                            <td class="text-right">
+                                {% if file.size < 1024 %}
+                                    {{ file.size }} B
+                                {% elseif file.size < 1048576 %}
+                                    {{ (file.size / 1024)|number_format(2) }} KB
+                                {% else %}
+                                    {{ (file.size / 1048576)|number_format(2) }} MB
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if file.modified %}
+                                    {{ file.modified|date("d/m/Y H:i:s") }}
+                                {% else %}
+                                    <span style="color: #94a3b8;">Unknown</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <form method="POST" action="/tools/sftp/{{ configuration.id }}/import" style="display: inline;" onsubmit="return confirm('Import this file: {{ file.name }}?');">
+                                    <input type="hidden" name="filename" value="{{ file.name }}">
+                                    <button type="submit" class="btn btn-sm btn-primary">📥 Import</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="files-info mt-3">
+            <p>
+                <strong>{{ files|length }}</strong> file(s) found matching pattern: 
+                <code>{{ configuration.file_pattern }}</code>
+            </p>
+            {% if configuration.auto_import %}
+                <p class="auto-import-notice">
+                    <span class="badge badge-info">Auto Import Enabled</span>
+                    These files will be automatically imported when the import worker runs.
+                </p>
+            {% endif %}
+        </div>
+    {% else %}
+        <div class="files-no-data">
+            <div class="files-icon">📁</div>
+            <h3>No Files Found</h3>
+            <p>
+                No files matching pattern <code>{{ configuration.file_pattern }}</code> 
+                in directory <code>{{ configuration.remote_directory }}</code>
+            </p>
+            <button onclick="window.location.reload()" class="btn btn-secondary">↻ Refresh</button>
+        </div>
+    {% endif %}
+
+    <div class="form-actions mt-3">
+        <a href="/tools/sftp" class="btn btn-secondary">← Back to Configurations</a>
+    </div>
+</section>
+
+<style>
+.sftp-card {
+    background: linear-gradient(180deg, #0f172a 0%, #111827 45%, #0b1120 100%);
+    color: #e2e8f0;
+    border: none;
+    box-shadow: 0 25px 45px rgba(15, 23, 42, 0.45);
+}
+
+.sftp-card__header {
+    border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+}
+
+.files-table-wrapper {
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: inset 0 0 0 1px rgba(51, 65, 85, 0.45);
+    background: rgba(15, 23, 42, 0.6);
+}
+
+.files-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    color: #e2e8f0;
+    margin-top: 0;
+}
+
+.files-table thead {
+    background: rgba(30, 41, 59, 0.85);
+}
+
+.files-table th {
+    padding: 0.85rem 1.1rem;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    color: #94a3b8;
+    border-bottom: 1px solid rgba(71, 85, 105, 0.45);
+}
+
+.files-table td {
+    padding: 0.9rem 1.1rem;
+    border-bottom: 1px solid rgba(51, 65, 85, 0.45);
+    vertical-align: middle;
+    font-size: 0.95rem;
+}
+
+.files-table tbody tr:hover {
+    background: rgba(79, 70, 229, 0.14);
+}
+
+.file-icon {
+    margin-right: 0.5rem;
+}
+
+.files-no-data {
+    text-align: center;
+    padding: 3rem 1.5rem;
+    color: #94a3b8;
+}
+
+.files-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+}
+
+.files-no-data h3 {
+    color: #f8fafc;
+    margin-bottom: 0.5rem;
+}
+
+.files-no-data code {
+    background: rgba(30, 41, 59, 0.7);
+    padding: 0.25rem 0.45rem;
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+
+.files-info {
+    padding: 1rem 1.25rem;
+    background: rgba(30, 41, 59, 0.6);
+    border-radius: 8px;
+    color: #e2e8f0;
+}
+
+.files-info code {
+    background: rgba(15, 23, 42, 0.7);
+    padding: 0.25rem 0.45rem;
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+
+.auto-import-notice {
+    margin-top: 0.75rem;
+    padding: 0.75rem;
+    background: rgba(59, 130, 246, 0.1);
+    border-radius: 6px;
+    border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.badge {
+    display: inline-block;
+    padding: 0.25em 0.6em;
+    font-size: 0.75em;
+    font-weight: bold;
+    line-height: 1;
+    color: #fff;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: 0.25rem;
+}
+
+.badge-info { background-color: #17a2b8; }
+
+.btn-sm {
+    padding: 0.35rem 0.6rem;
+    font-size: 0.875rem;
+}
+
+.text-right {
+    text-align: right;
+}
+</style>
+{% endblock %}
