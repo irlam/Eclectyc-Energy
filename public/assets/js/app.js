@@ -162,6 +162,9 @@ function closeDeleteModal() {
     }
 }
 
+// Make closeDeleteModal globally accessible for inline event handlers
+window.closeDeleteModal = closeDeleteModal;
+
 /**
  * Health Check Monitor
  */

@@ -73,12 +73,11 @@
                         <th>Smart</th>
                         <th>Status</th>
                         <th>Added</th>
-                        <th>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for meter in meters %}
-                        <tr>
+                        <tr class="meters-row">
                             <td>
                                 <div class="meters-mpan">
                                     <span class="meters-mpan__code">{{ meter.mpan }}</span>
@@ -118,7 +117,9 @@
                                 {% endif %}
                             </td>
                             <td>{{ meter.created_at ? meter.created_at|date("d/m/Y") : 'N/A' }}</td>
-                            <td>
+                        </tr>
+                        <tr class="meters-actions-row">
+                            <td colspan="9">
                                 <div class="meters-actions">
                                     <a href="/admin/meters/{{ meter.id }}/carbon" class="btn btn-sm btn-info" title="View carbon intensity">🌍 Carbon</a>
                                     <a href="/admin/meters/{{ meter.id }}/edit" class="btn btn-sm btn-secondary" title="Edit meter">✏️ Edit</a>
@@ -262,7 +263,6 @@
 
     .meters-table {
         width: 100%;
-        min-width: 1200px;
         border-collapse: separate;
         border-spacing: 0;
         color: #e2e8f0;
@@ -288,7 +288,12 @@
         font-size: 0.95rem;
     }
 
-    .meters-table tbody tr:hover {
+    .meters-table tbody tr.meters-row:hover,
+    .meters-table tbody tr.meters-row:hover + tr.meters-actions-row {
+        background: rgba(79, 70, 229, 0.14);
+    }
+
+    .meters-table tbody tr.meters-actions-row:hover {
         background: rgba(79, 70, 229, 0.14);
     }
 
@@ -402,7 +407,36 @@
 
     .meters-table td:last-child,
     .meters-table th:last-child {
-        text-align: right;
+        text-align: left;
+    }
+
+    .meters-row {
+        border-bottom: none !important;
+    }
+
+    .meters-row td {
+        border-bottom: none !important;
+    }
+
+    .meters-actions-row {
+        background: rgba(30, 41, 59, 0.4);
+    }
+
+    .meters-actions-row td {
+        padding: 0.6rem 1.1rem !important;
+        border-bottom: 1px solid rgba(51, 65, 85, 0.45) !important;
+    }
+
+    .meters-actions {
+        display: flex;
+        gap: 0.5rem;
+        align-items: center;
+        justify-content: flex-start;
+        flex-wrap: wrap;
+    }
+
+    .meters-actions form {
+        margin: 0;
     }
 
     .meters-getting-started {

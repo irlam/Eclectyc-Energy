@@ -12,9 +12,14 @@ INSERT INTO users (email, password_hash, name, role) VALUES
 INSERT INTO suppliers (name, code, contact_email) VALUES
 ('British Gas', 'BG', 'contact@britishgas.co.uk'),
 ('EDF Energy', 'EDF', 'contact@edfenergy.com'),
-('E.ON', 'EON', 'contact@eon.com'),
+('E.ON Next', 'EON', 'contact@eon-next.com'),
 ('Scottish Power', 'SP', 'contact@scottishpower.com'),
-('Octopus Energy', 'OCT', 'contact@octopusenergy.com');
+('Octopus Energy', 'OCT', 'contact@octopusenergy.com'),
+('OVO Energy', 'OVO', 'contact@ovoenergy.com'),
+('Utility Warehouse', 'UW', 'contact@utilitywarehouse.co.uk'),
+('SSE Energy', 'SSE', 'contact@sse.co.uk'),
+('Utilita Energy', 'UTL', 'contact@utilita.co.uk'),
+('Shell Energy', 'SHELL', 'contact@shellenergy.co.uk');
 
 -- Insert regions
 INSERT INTO regions (name, code) VALUES
@@ -48,17 +53,94 @@ INSERT INTO meters (site_id, supplier_id, mpan, serial_number, meter_type, is_sm
 (2, 2, '00-222-333-444-555', 'SM002', 'electricity', TRUE, TRUE),
 (3, 5, '00-333-444-555-666', 'SM003', 'electricity', TRUE, TRUE);
 
--- Insert sample tariffs
+-- Insert sample tariffs (2025 UK Market Rates)
 INSERT INTO tariffs (supplier_id, name, code, energy_type, tariff_type, unit_rate, standing_charge, valid_from) VALUES
-(1, 'Standard Variable', 'BG-SVT-01', 'electricity', 'variable', 28.50, 45.00, '2024-01-01'),
-(1, 'Economy 7', 'BG-E7-01', 'electricity', 'time_of_use', NULL, 45.00, '2024-01-01'),
-(2, 'Fixed 12 Months', 'EDF-FIX12-01', 'electricity', 'fixed', 25.00, 40.00, '2024-01-01'),
-(5, 'Agile Octopus', 'OCT-AGILE-01', 'electricity', 'dynamic', NULL, 38.00, '2024-01-01');
+-- British Gas Tariffs
+(1, 'Standard Variable Electricity', 'BG-SVT-ELEC-01', 'electricity', 'variable', 26.35, 53.68, '2024-10-01'),
+(1, 'Fixed Tariff v81 12M', 'BG-FIX12-V81', 'electricity', 'fixed', 25.00, 50.00, '2025-01-01'),
+(1, 'Electric Driver v16', 'BG-EV-V16', 'electricity', 'time_of_use', NULL, 52.00, '2025-01-01'),
+(1, 'Economy 7 Electricity', 'BG-E7-01', 'electricity', 'time_of_use', NULL, 54.00, '2024-01-01'),
+(1, 'Fixed 24 Months Electricity', 'BG-FIX24-01', 'electricity', 'fixed', 24.50, 48.00, '2025-01-01'),
+(1, 'Standard Variable Gas', 'BG-SVT-GAS-01', 'gas', 'variable', 6.24, 31.00, '2024-10-01'),
 
--- Update Economy 7 tariff with peak/off-peak rates
+-- EDF Energy Tariffs
+(2, 'Standard Variable Electricity', 'EDF-STD-01', 'electricity', 'variable', 26.50, 49.00, '2024-10-01'),
+(2, 'Fixed 12 Months v5', 'EDF-FIX12-V5', 'electricity', 'fixed', 25.00, 47.00, '2025-01-01'),
+(2, 'Fixed 24 Months', 'EDF-FIX24-01', 'electricity', 'fixed', 24.80, 46.00, '2025-01-01'),
+(2, 'GoElectric 35', 'EDF-GO35-01', 'electricity', 'time_of_use', NULL, 48.00, '2025-01-01'),
+(2, 'Blue+ Price Promise', 'EDF-BLUE-01', 'electricity', 'variable', 26.00, 49.00, '2025-01-01'),
+(2, 'Green Electricity', 'EDF-GREEN-01', 'electricity', 'variable', 26.80, 50.00, '2025-01-01'),
+
+-- E.ON Next Tariffs
+(3, 'Next Pledge Tracker', 'EON-PLEDGE-01', 'electricity', 'variable', 26.40, 56.00, '2024-10-01'),
+(3, 'Next Drive v9', 'EON-DRIVE-V9', 'electricity', 'time_of_use', NULL, 55.00, '2025-01-01'),
+(3, 'Fixed 1 Year v12', 'EON-FIX1-V12', 'electricity', 'fixed', 25.20, 54.00, '2025-01-01'),
+(3, 'Fixed 2 Year', 'EON-FIX2-01', 'electricity', 'fixed', 24.90, 52.00, '2025-01-01'),
+
+-- Scottish Power Tariffs
+(4, 'Standard Price Cap', 'SP-STD-CAP-01', 'electricity', 'variable', 26.60, 60.00, '2024-10-01'),
+(4, 'Fixed 1 Year', 'SP-FIX1-01', 'electricity', 'fixed', 25.50, 58.00, '2025-01-01'),
+(4, 'Fixed 2 Year', 'SP-FIX2-01', 'electricity', 'fixed', 25.00, 56.00, '2025-01-01'),
+(4, 'Fixed 3 Year', 'SP-FIX3-01', 'electricity', 'fixed', 24.80, 55.00, '2025-01-01'),
+(4, 'EV Optimise', 'SP-EV-OPT-01', 'electricity', 'time_of_use', NULL, 57.00, '2025-01-01'),
+
+-- Octopus Energy Tariffs
+(5, 'Flexible Octopus', 'OCT-FLEX-01', 'electricity', 'variable', 24.50, 45.00, '2024-10-01'),
+(5, 'Octopus 12M Fixed v6', 'OCT-FIX12-V6', 'electricity', 'fixed', 24.00, 44.00, '2025-01-01'),
+(5, 'Intelligent Octopus Go', 'OCT-GO-01', 'electricity', 'time_of_use', NULL, 47.00, '2025-01-01'),
+(5, 'Agile Octopus', 'OCT-AGILE-01', 'electricity', 'dynamic', NULL, 46.00, '2024-01-01'),
+(5, 'Octopus Tracker', 'OCT-TRACKER-01', 'electricity', 'variable', 23.70, 45.50, '2025-01-01'),
+
+-- OVO Energy Tariffs
+(6, 'Standard Variable', 'OVO-STD-01', 'electricity', 'variable', 26.40, 58.00, '2024-10-01'),
+(6, '1 Year Fixed 24', 'OVO-FIX1-24', 'electricity', 'fixed', 25.10, 56.00, '2025-01-01'),
+(6, 'Charge Anytime', 'OVO-EV-ANYTIME', 'electricity', 'time_of_use', NULL, 57.00, '2025-01-01'),
+(6, 'Zero Carbon', 'OVO-ZERO-01', 'electricity', 'variable', 26.80, 59.00, '2025-01-01'),
+
+-- Utility Warehouse Tariffs
+(7, 'Club Tariff', 'UW-CLUB-01', 'electricity', 'variable', 26.00, 47.00, '2024-10-01'),
+(7, 'Fixed 12 Months', 'UW-FIX12-01', 'electricity', 'fixed', 25.00, 45.00, '2025-01-01'),
+
+-- SSE Energy Tariffs
+(8, 'Standard Variable', 'SSE-STD-01', 'electricity', 'variable', 26.70, 61.00, '2024-10-01'),
+(8, 'Fixed 1 Year v8', 'SSE-FIX1-V8', 'electricity', 'fixed', 25.80, 60.00, '2025-01-01'),
+
+-- Utilita Energy Tariffs (No Standing Charge Option)
+(9, 'Smart PAYG No Standing Charge', 'UTL-PAYG-NSC', 'electricity', 'variable', 52.55, 0.00, '2025-03-01'),
+(9, 'Standard PAYG', 'UTL-PAYG-STD', 'electricity', 'variable', 25.54, 53.68, '2024-10-01'),
+
+-- Shell Energy Tariffs
+(10, 'Fixed 12 Months', 'SHELL-FIX12-01', 'electricity', 'fixed', 25.30, 51.00, '2025-01-01'),
+(10, 'Variable', 'SHELL-VAR-01', 'electricity', 'variable', 26.20, 52.00, '2024-10-01');
+
+-- Update Time of Use tariffs with peak/off-peak rates
 UPDATE tariffs 
 SET peak_rate = 35.00, off_peak_rate = 15.00 
 WHERE code = 'BG-E7-01';
+
+UPDATE tariffs 
+SET peak_rate = 28.00, off_peak_rate = 12.50 
+WHERE code = 'BG-EV-V16';
+
+UPDATE tariffs 
+SET peak_rate = 32.00, off_peak_rate = 13.50 
+WHERE code = 'EDF-GO35-01';
+
+UPDATE tariffs 
+SET peak_rate = 28.50, off_peak_rate = 6.70 
+WHERE code = 'EON-DRIVE-V9';
+
+UPDATE tariffs 
+SET peak_rate = 30.00, off_peak_rate = 7.50 
+WHERE code = 'OCT-GO-01';
+
+UPDATE tariffs 
+SET peak_rate = 29.00, off_peak_rate = 8.00 
+WHERE code = 'SP-EV-OPT-01';
+
+UPDATE tariffs 
+SET peak_rate = 30.50, off_peak_rate = 9.00 
+WHERE code = 'OVO-EV-ANYTIME';
 
 -- Insert sample meter readings (30 Oct 2025 - 06 Nov 2025)
 INSERT INTO meter_readings (meter_id, reading_date, reading_time, reading_value, reading_type) VALUES
