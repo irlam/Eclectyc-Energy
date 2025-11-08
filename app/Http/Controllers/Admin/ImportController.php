@@ -32,9 +32,26 @@ class ImportController
         $flash = $_SESSION['import_flash'] ?? null;
         unset($_SESSION['import_flash']);
 
+        // Fetch sites and tariffs for optional selection
+        $sites = [];
+        $tariffs = [];
+        if ($this->pdo) {
+            try {
+                $sitesStmt = $this->pdo->query('SELECT id, name FROM sites WHERE is_active = 1 ORDER BY name ASC');
+                $sites = $sitesStmt->fetchAll() ?: [];
+                
+                $tariffsStmt = $this->pdo->query('SELECT id, name, supplier_id FROM tariffs WHERE is_active = 1 ORDER BY name ASC');
+                $tariffs = $tariffsStmt->fetchAll() ?: [];
+            } catch (\PDOException $e) {
+                // Silently fail - optional features
+            }
+        }
+
         return $this->view->render($response, 'admin/imports.twig', [
             'page_title' => 'Data Imports',
             'flash' => $flash,
+            'sites' => $sites,
+            'tariffs' => $tariffs,
         ]);
     }
 
@@ -172,6 +189,8 @@ class ImportController
         $format = strtolower($data['import_type'] ?? 'hh');
         $dryRun = isset($data['dry_run']);
         $async = isset($data['async']); // New: support async processing
+        $defaultSiteId = !empty($data['default_site_id']) ? (int) $data['default_site_id'] : null;
+        $defaultTariffId = !empty($data['default_tariff_id']) ? (int) $data['default_tariff_id'] : null;
         $uploadedFile = $files['csv_file'] ?? null;
         $errors = [];
 
@@ -193,7 +212,7 @@ class ImportController
 
         // Handle async import
         if ($async) {
-            return $this->uploadAsync($uploadedFile, $format, $dryRun, $response);
+            return $this->uploadAsync($uploadedFile, $format, $dryRun, $response, $defaultSiteId, $defaultTariffId);
         }
 
         // Original synchronous import
@@ -206,7 +225,7 @@ class ImportController
 
         try {
             /** @var IngestionResult $result */
-            $result = $service->ingestFromCsv($tempPath, $format, $batchId, $dryRun, $this->currentUserId());
+            $result = $service->ingestFromCsv($tempPath, $format, $batchId, $dryRun, $this->currentUserId(), $defaultSiteId, $defaultTariffId);
             $summary = $result->toArray();
             $summary['filename'] = $uploadedFile->getClientFilename();
             $summary['dry_run'] = $dryRun;
@@ -240,7 +259,7 @@ class ImportController
     /**
      * Handle async upload - queue the job for background processing
      */
-    private function uploadAsync($uploadedFile, string $format, bool $dryRun, Response $response): Response
+    private function uploadAsync($uploadedFile, string $format, bool $dryRun, Response $response, ?int $defaultSiteId = null, ?int $defaultTariffId = null): Response
     {
         try {
             $jobService = new ImportJobService($this->pdo);
@@ -257,13 +276,15 @@ class ImportController
             $filePath = $storageDir . '/' . $uniqueFilename;
             $uploadedFile->moveTo($filePath);
             
-            // Create the import job
+            // Create the import job with optional site and tariff
             $batchId = $jobService->createJob(
                 $filename,
                 $filePath,
                 $format,
                 $this->currentUserId(),
-                $dryRun
+                $dryRun,
+                $defaultSiteId,
+                $defaultTariffId
             );
             
             $this->setFlash('success', 'Import job queued successfully. You can close this page and check the status later.', [

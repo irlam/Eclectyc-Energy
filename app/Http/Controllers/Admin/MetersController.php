@@ -33,9 +33,31 @@ class MetersController
             'hh' => 0,
         ];
 
+        // Pagination parameters
+        $query = $request->getQueryParams();
+        $page = isset($query['page']) ? max(1, (int) $query['page']) : 1;
+        $perPage = isset($query['per_page']) ? max(1, min(100, (int) $query['per_page'])) : 10;
+        $offset = ($page - 1) * $perPage;
+
         if ($this->pdo) {
             try {
-                $stmt = $this->pdo->query('
+                // Get total counts first
+                $countStmt = $this->pdo->query('
+                    SELECT 
+                        COUNT(*) as total,
+                        SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) as active,
+                        SUM(CASE WHEN is_half_hourly = 1 THEN 1 ELSE 0 END) as hh
+                    FROM meters
+                ');
+                $counts = $countStmt->fetch();
+                $totals = [
+                    'count' => (int) $counts['total'],
+                    'active' => (int) $counts['active'],
+                    'hh' => (int) $counts['hh'],
+                ];
+
+                // Get paginated meters (ordered by most recently created first)
+                $stmt = $this->pdo->prepare('
                     SELECT
                         m.id,
                         m.mpan,
@@ -50,21 +72,18 @@ class MetersController
                     FROM meters m
                     LEFT JOIN sites s ON s.id = m.site_id
                     LEFT JOIN suppliers sup ON sup.id = m.supplier_id
-                    ORDER BY s.name ASC, m.mpan ASC
+                    ORDER BY m.created_at DESC, m.id DESC
+                    LIMIT :limit OFFSET :offset
                 ');
+                $stmt->bindValue(':limit', $perPage, PDO::PARAM_INT);
+                $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+                $stmt->execute();
                 $meters = $stmt->fetchAll() ?: [];
 
                 foreach ($meters as &$meter) {
                     $meter['is_active'] = (bool) $meter['is_active'];
                     $meter['is_half_hourly'] = (bool) $meter['is_half_hourly'];
                     $meter['is_smart_meter'] = (bool) $meter['is_smart_meter'];
-                    $totals['count']++;
-                    if ($meter['is_active']) {
-                        $totals['active']++;
-                    }
-                    if ($meter['is_half_hourly']) {
-                        $totals['hh']++;
-                    }
                 }
             } catch (PDOException $e) {
                 $meters = [];
@@ -74,11 +93,20 @@ class MetersController
         $flash = $_SESSION['meter_flash'] ?? null;
         unset($_SESSION['meter_flash']);
 
+        // Calculate pagination info
+        $totalPages = $totals['count'] > 0 ? (int) ceil($totals['count'] / $perPage) : 1;
+
         return $this->view->render($response, 'admin/meters.twig', [
             'page_title' => 'Meters Management',
             'meters' => $meters,
             'totals' => $totals,
             'flash' => $flash,
+            'pagination' => [
+                'current_page' => $page,
+                'per_page' => $perPage,
+                'total_pages' => $totalPages,
+                'total_items' => $totals['count'],
+            ],
         ]);
     }
 
