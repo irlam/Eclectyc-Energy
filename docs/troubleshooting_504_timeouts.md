@@ -15,7 +15,28 @@ A 504 Gateway Timeout occurs when:
 
 Import throttling is **disabled by default** to maximize import speed. However, for large imports (>10,000 rows), enabling throttling prevents server overload and timeouts.
 
-### Enable Throttling via Database
+### Enable Throttling via GUI (Recommended)
+
+**NEW**: You can now enable throttling through the admin interface!
+
+1. Navigate to **Admin** → **⚙️ Settings** (or go to `/admin/settings`)
+2. Locate the **Import Throttling** section
+3. Toggle **Import Throttle Enabled** to **ON**
+4. Optionally adjust:
+   - **Batch Size**: Default 100 rows (lower = more frequent pauses)
+   - **Delay Between Batches**: Default 100ms (higher = more pausing)
+   - **Max Execution Time**: Default 300 seconds
+   - **Max Memory**: Default 256 MB
+5. Click **💾 Save Settings**
+
+The interface will show:
+- ✅ Green note when throttling is enabled
+- ⚠️ Warning when throttling is disabled (risk of timeouts)
+- Direct link to this documentation
+
+### Enable Throttling via Database (Alternative)
+
+If you don't have GUI access, you can enable via SQL:
 
 ```sql
 -- Connect to your database
@@ -208,7 +229,28 @@ If you're experiencing 504 timeouts:
 
 ## Where is Throttling Shown in the GUI?
 
-Currently, throttling settings are **not visible in the GUI**. They must be configured via database queries (shown above).
+### System Settings Page (NEW)
+
+Throttling settings are now available in the admin interface at `/admin/settings`:
+
+**How to Access**:
+1. Navigate to Admin menu
+2. Click **⚙️ Settings**
+3. View the **Import Throttling** section
+
+**What You'll See**:
+- **Import Throttle Enabled**: Toggle switch (ON/OFF)
+- **Batch Size**: Number of rows processed before pausing
+- **Delay Between Batches**: Milliseconds to pause
+- **Max Execution Time**: Maximum seconds for import
+- **Max Memory**: Maximum MB allocation
+
+**Visual Indicators**:
+- Toggle shows "Enabled" or "Disabled" status
+- Warning message when throttling is OFF
+- Success note when throttling is ON
+- Links to documentation
+- Reset buttons to restore defaults
 
 ### Current Import Status Display
 
@@ -221,13 +263,12 @@ The import status page (`/admin/imports/status/{batchId}`) shows:
 
 **Note**: The processing speed will be lower when throttling is enabled, which is expected behavior.
 
-### Future Enhancement
+### Quick Access
 
-A System Settings page is planned for future releases to allow GUI-based configuration of:
-- Import throttling settings
-- Execution time limits
-- Memory limits
-- Other system-wide settings
+- **GUI Settings**: `/admin/settings`
+- **Import Jobs**: `/admin/imports/jobs`
+- **Import Status**: `/admin/imports/status/{batchId}`
+- **System Health**: `/tools/system-health`
 
 ## Common Scenarios
 
