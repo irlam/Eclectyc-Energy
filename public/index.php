@@ -30,6 +30,7 @@ declare(strict_types=1);
  * Last updated (UK): 09/11/2025 12:55:00
  */
 
+use App\Http\Controllers\Admin\DocsController;
 use App\Http\Controllers\Admin\ExportsController;
 use App\Http\Controllers\Admin\ImportController;
 use App\Http\Controllers\Admin\MetersController as AdminMetersController;
@@ -265,6 +266,11 @@ $container->set(SftpController::class, fn (ContainerInterface $c) => new SftpCon
 ));
 
 $container->set(SettingsController::class, fn (ContainerInterface $c) => new SettingsController(
+    $c->get('view'),
+    $c->get('db')
+));
+
+$container->set(DocsController::class, fn (ContainerInterface $c) => new DocsController(
     $c->get('view'),
     $c->get('db')
 ));

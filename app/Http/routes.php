@@ -5,6 +5,7 @@
  * Last updated: 06/11/2024 14:45:00
  */
 
+use App\Http\Controllers\Admin\DocsController;
 use App\Http\Controllers\Admin\ExportsController;
 use App\Http\Controllers\Admin\ImportController;
 use App\Http\Controllers\Admin\MetersController as AdminMetersController;
@@ -87,6 +88,10 @@ $app->group('/tools', function ($group) {
     $group->get('/settings', [SettingsController::class, 'index'])->setName('tools.settings');
     $group->post('/settings', [SettingsController::class, 'update'])->setName('tools.settings.update');
     $group->post('/settings/reset', [SettingsController::class, 'reset'])->setName('tools.settings.reset');
+    
+    // Documentation routes
+    $group->get('/docs', [DocsController::class, 'index'])->setName('tools.docs');
+    $group->get('/docs/{filename}', [DocsController::class, 'view'])->setName('tools.docs.view');
 })->add(function ($request, $handler) use ($container) {
     $middleware = new AuthMiddleware($container->get(AuthService::class), ['admin']);
     return $middleware->process($request, $handler);

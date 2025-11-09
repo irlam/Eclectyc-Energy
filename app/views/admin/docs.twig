@@ -1,0 +1,142 @@
+{% extends "base.twig" %}
+
+{% block title %}Documentation{% endblock %}
+
+{% block content %}
+<section class="card">
+    <div class="card-header">
+        <div>
+            <h2>📚 Documentation</h2>
+            <p class="mb-2">Browse system documentation and guides</p>
+        </div>
+    </div>
+
+    {% if docs is empty %}
+        <p>No documentation files found.</p>
+    {% else %}
+        <div class="docs-grid">
+            {% for doc in docs %}
+                <a href="/tools/docs/{{ doc.filename }}" class="doc-card">
+                    <div class="doc-card-icon">
+                        {% if doc.is_root is defined and doc.is_root %}
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                <polyline points="14,2 14,8 20,8"/>
+                                <line x1="12" y1="18" x2="12" y2="12"/>
+                                <line x1="9" y1="15" x2="15" y2="15"/>
+                            </svg>
+                        {% else %}
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                <polyline points="14,2 14,8 20,8"/>
+                            </svg>
+                        {% endif %}
+                    </div>
+                    <div class="doc-card-content">
+                        <h3>{{ doc.title }}</h3>
+                        <div class="doc-card-meta">
+                            <span class="doc-filename">{{ doc.filename }}</span>
+                            <span class="doc-size">{{ (doc.size / 1024)|number_format(1) }} KB</span>
+                            <span class="doc-date">{{ doc.modified|date("d/m/Y") }}</span>
+                        </div>
+                    </div>
+                    <div class="doc-card-arrow">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="9,18 15,12 9,6"/>
+                        </svg>
+                    </div>
+                </a>
+            {% endfor %}
+        </div>
+    {% endif %}
+</section>
+
+<style>
+.docs-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.doc-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.2s ease;
+}
+
+.doc-card:hover {
+    border-color: #3b82f6;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15);
+    transform: translateY(-2px);
+}
+
+.doc-card-icon {
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 8px;
+    color: white;
+}
+
+.doc-card-content {
+    flex: 1;
+    min-width: 0;
+}
+
+.doc-card-content h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #111827;
+}
+
+.doc-card-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    font-size: 0.875rem;
+    color: #6b7280;
+}
+
+.doc-filename {
+    font-family: 'Courier New', monospace;
+    background: #f3f4f6;
+    padding: 0.125rem 0.5rem;
+    border-radius: 4px;
+}
+
+.doc-card-arrow {
+    flex-shrink: 0;
+    color: #9ca3af;
+    transition: transform 0.2s ease;
+}
+
+.doc-card:hover .doc-card-arrow {
+    transform: translateX(4px);
+    color: #3b82f6;
+}
+
+@media (max-width: 768px) {
+    .docs-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .doc-card-meta {
+        flex-direction: column;
+        gap: 0.25rem;
+    }
+}
+</style>
+{% endblock %}
