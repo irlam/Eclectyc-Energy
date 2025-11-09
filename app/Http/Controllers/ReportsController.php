@@ -164,6 +164,96 @@ class ReportsController
         ]);
     }
 
+    /**
+     * Show actual vs estimated data quality report
+     */
+    public function dataQuality(Request $request, Response $response): Response
+    {
+        $period = $this->resolvePeriod($request, 7);
+        $reportData = [
+            'rows' => [],
+            'totalActual' => 0.0,
+            'totalEstimated' => 0.0,
+            'actualPct' => 0,
+        ];
+
+        if ($this->pdo) {
+            try {
+                // Get actual vs estimated breakdown by date
+                $stmt = $this->pdo->prepare('
+                    SELECT 
+                        reading_date,
+                        reading_type,
+                        SUM(reading_value) as total_kwh
+                    FROM meter_readings
+                    WHERE reading_date BETWEEN :start AND :end
+                    GROUP BY reading_date, reading_type
+                    ORDER BY reading_date ASC, reading_type ASC
+                ');
+                $stmt->execute([
+                    'start' => $period['start']->format('Y-m-d'),
+                    'end' => $period['end']->format('Y-m-d'),
+                ]);
+
+                $rawData = $stmt->fetchAll() ?: [];
+                
+                // Organize data by date
+                $dateMap = [];
+                foreach ($rawData as $row) {
+                    $date = $row['reading_date'];
+                    if (!isset($dateMap[$date])) {
+                        $dateMap[$date] = [
+                            'date' => $date,
+                            'actual' => 0.0,
+                            'estimated' => 0.0,
+                            'total' => 0.0,
+                        ];
+                    }
+                    
+                    $value = (float) $row['total_kwh'];
+                    if ($row['reading_type'] === 'actual') {
+                        $dateMap[$date]['actual'] = $value;
+                    } else {
+                        $dateMap[$date]['estimated'] = $value;
+                    }
+                    $dateMap[$date]['total'] += $value;
+                }
+
+                $totalActual = 0.0;
+                $totalEstimated = 0.0;
+                
+                foreach ($dateMap as &$row) {
+                    if ($row['total'] > 0) {
+                        $row['actual_pct'] = round(($row['actual'] / $row['total']) * 100);
+                    } else {
+                        $row['actual_pct'] = 0;
+                    }
+                    $totalActual += $row['actual'];
+                    $totalEstimated += $row['estimated'];
+                }
+
+                $reportData['rows'] = array_values($dateMap);
+                $reportData['totalActual'] = $totalActual;
+                $reportData['totalEstimated'] = $totalEstimated;
+                $total = $totalActual + $totalEstimated;
+                
+                if ($total > 0) {
+                    $reportData['actualPct'] = round(($totalActual / $total) * 100);
+                }
+            } catch (\Throwable $e) {
+                $reportData['error'] = 'Unable to load data quality report: ' . $e->getMessage();
+            }
+        } else {
+            $reportData['error'] = 'Database connection not available.';
+        }
+
+        return $this->view->render($response, 'reports/data_quality.twig', [
+            'page_title' => 'Data Quality Report',
+            'period' => $period,
+            'report' => $reportData,
+        ]);
+    }
+
     private function resolvePeriod(Request $request, int $days): array
     {
         $query = $request->getQueryParams();
