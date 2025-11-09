@@ -39,7 +39,9 @@ use App\Http\Controllers\Admin\SitesController;
 use App\Http\Controllers\Admin\TariffsController;
 use App\Http\Controllers\Admin\TariffSwitchingController;
 use App\Http\Controllers\Admin\UsersController;
+use App\Http\Controllers\Api\CarbonIntensityController;
 use App\Http\Controllers\Api\HealthController;
+use App\Http\Controllers\Api\ImportJobController;
 use App\Http\Controllers\Api\ImportStatusController;
 use App\Http\Controllers\Api\MetersController;
 use App\Http\Controllers\AuthController;
@@ -252,6 +254,14 @@ $container->set(AdminMetersController::class, fn (ContainerInterface $c) => new 
 ));
 
 $container->set(ImportStatusController::class, fn (ContainerInterface $c) => new ImportStatusController(
+    $c->get('db')
+));
+
+$container->set(ImportJobController::class, fn (ContainerInterface $c) => new ImportJobController(
+    $c->get('db')
+));
+
+$container->set(CarbonIntensityController::class, fn (ContainerInterface $c) => new CarbonIntensityController(
     $c->get('db')
 ));
 
