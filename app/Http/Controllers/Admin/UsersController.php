@@ -6,6 +6,8 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Models\User;
+use App\Models\Permission;
 use PDO;
 use PDOException;
 use Psr\Http\Message\ResponseInterface as Response;
@@ -54,11 +56,18 @@ class UsersController
         unset($_SESSION['user_flash']);
 
         $formData = $this->pullFormData();
+        
+        // Get all permissions grouped by category
+        $permissions = [];
+        if ($this->pdo) {
+            $permissions = Permission::getAllGrouped();
+        }
 
         return $this->view->render($response, 'admin/users_create.twig', [
             'page_title' => 'Create User',
             'flash' => $flash,
             'form_data' => $formData,
+            'permissions' => $permissions,
         ]);
     }
 
@@ -142,6 +151,18 @@ class UsersController
                 $isActive ? 1 : 0
             ]);
 
+            $userId = $this->pdo->lastInsertId();
+
+            // Handle permissions
+            $permissions = $data['permissions'] ?? [];
+            if (!empty($permissions) && is_array($permissions)) {
+                $user = User::find((int) $userId);
+                if ($user) {
+                    $currentUserId = $_SESSION['user']['id'] ?? null;
+                    $user->syncPermissions(array_map('intval', $permissions), $currentUserId);
+                }
+            }
+
             $this->setFlash('success', "User '{$name}' has been created successfully.");
             return $this->redirect($response, '/admin/users');
 
@@ -181,12 +202,21 @@ class UsersController
         unset($_SESSION['user_flash']);
 
         $formData = $this->pullFormData($user);
+        
+        // Get all permissions grouped by category
+        $permissions = Permission::getAllGrouped();
+        
+        // Get user's current permissions
+        $userModel = User::find($userId);
+        $userPermissions = $userModel ? $userModel->getPermissionIds() : [];
 
         return $this->view->render($response, 'admin/users_edit.twig', [
             'page_title' => 'Edit User',
             'user' => $user,
             'flash' => $flash,
             'form_data' => $formData,
+            'permissions' => $permissions,
+            'user_permissions' => $userPermissions,
         ]);
     }
 
@@ -285,6 +315,15 @@ class UsersController
             $stmt->bindValue(':id', $userId, PDO::PARAM_INT);
 
             $stmt->execute();
+
+            // Handle permissions
+            $permissions = $data['permissions'] ?? [];
+            $userModel = User::find($userId);
+            if ($userModel) {
+                $currentUserId = $_SESSION['user']['id'] ?? null;
+                $permissionIds = is_array($permissions) ? array_map('intval', $permissions) : [];
+                $userModel->syncPermissions($permissionIds, $currentUserId);
+            }
 
             $this->setFlash('success', 'User updated successfully.');
             return $this->redirect($response, '/admin/users');

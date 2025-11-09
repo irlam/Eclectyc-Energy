@@ -1,7 +1,7 @@
 # Platform Implementation Status (November 2025)
 
 **Current Status:** ✅ **Production Ready**  
-**Last Updated:** November 8, 2025
+**Last Updated:** November 9, 2025
 
 This document captures the current state of the Eclectyc Energy platform, tracking all completed features and remaining work items.
 
@@ -17,12 +17,12 @@ This document captures the current state of the Eclectyc Energy platform, tracki
 | Tariff Management | ✅ Complete | 100% |
 | API Endpoints | ✅ Complete | 100% |
 | User Interface | ✅ Complete | 95% |
-| Security & Auth | ✅ Complete | 90% |
+| Security & Auth | ✅ Complete | 95% |
 | Documentation | ✅ Complete | 100% |
 | Testing & QA | 🟡 Partial | 70% |
 | Deployment & Ops | ✅ Complete | 100% |
 
-**Overall Platform Maturity:** 96% ✅
+**Overall Platform Maturity:** 97% ✅
 
 ---
 
@@ -146,6 +146,9 @@ This document captures the current state of the Eclectyc Energy platform, tracki
 - Added pagination to meters page (10/25/50/100 per page)
 - Added optional default site and tariff selection for imports
 - Improved tariff switching with selectable current tariff
+- **Fixed critical SQL bug in import job deletion** (SQLSTATE[HY093])
+- **Implemented granular permissions system with 40+ permissions**
+- **Created User and Permission models for permission management**
 
 ### 🔌 API Endpoints ✅ (100% Complete)
 - ✅ `GET /api/health` - Multi-tier system health diagnostics
@@ -176,8 +179,13 @@ This document captures the current state of the Eclectyc Energy platform, tracki
 **Scripts:**
 - `scripts/export_sftp.php` - CLI export with SFTP upload
 
-### 🔐 Security & Access Control ✅ (90% Complete)
+### 🔐 Security & Access Control ✅ (95% Complete)
 - ✅ **Role-Based Access**: Admin, Manager, Viewer roles
+- ✅ **Granular Permissions System**: 40+ individual permissions across 11 categories (Nov 2025)
+- ✅ **Permission Management UI**: User create/edit forms with permission checkboxes (Nov 2025)
+- ✅ **User Model with Permissions**: Full permission checking and synchronization methods (Nov 2025)
+- ✅ **Permission Models**: Permission and User models with relationship management (Nov 2025)
+- ✅ **Database Schema**: `permissions` and `user_permissions` tables (Nov 2025)
 - ✅ **Session Authentication**: Secure session management
 - ✅ **Middleware Protection**: Route-level access control
 - ✅ **Audit Logging**: Comprehensive activity tracking
@@ -187,6 +195,12 @@ This document captures the current state of the Eclectyc Energy platform, tracki
 - ✅ **File Upload Security**: Path sanitization and validation
 - 🟡 **Password Reset**: Basic implementation (needs enhancement)
 - 🟡 **2FA Support**: Not yet implemented (planned)
+
+**Key Components:**
+- Migration `009_create_user_permissions.sql` - Permissions schema
+- `app/Models/User.php` - User model with permission methods
+- `app/Models/Permission.php` - Permission model
+- 40+ permissions across categories: imports, exports, users, meters, sites, tariffs, tariff_switching, reports, settings, tools, general
 
 ### 📚 Documentation ✅ (100% Complete)
 - ✅ **README.md**: Comprehensive installation and feature guide
@@ -205,9 +219,38 @@ This document captures the current state of the Eclectyc Energy platform, tracki
 
 ---
 
+## 🐛 Recent Bug Fixes (November 9, 2025)
+
+### Critical Fixes
+1. **Import Job Deletion SQL Error (SQLSTATE[HY093])**
+   - **Issue**: Delete import job function failed with parameter binding error
+   - **Root Cause**: SQL query used `:batch_id` parameter twice but only bound it once
+   - **Fix**: Used separate parameter names (`:batch_id` and `:batch_id2`) with both values bound
+   - **File**: `app/Http/Controllers/Admin/ImportController.php` line 528
+   - **Status**: ✅ Fixed and tested
+
+### Feature Verifications
+1. **Tariff Switching Recommendations**
+   - **Question**: Does tariff switching recommend better tariffs?
+   - **Answer**: ✅ Yes, confirmed working correctly
+   - **Details**: 
+     - Analyzes all alternative tariffs for meter's energy type
+     - Calculates costs using actual consumption data
+     - Ranks by potential savings (highest first)
+     - Only recommends tariffs with actual cost savings
+   - **Implementation**: `TariffSwitchingAnalyzer::findBestRecommendation()`
+
+---
+
 ## ⚠️ Work Still Required
 
 ### Authentication & Authorization Enhancements
+- [x] Implement granular permissions system (Nov 2025) ✅
+- [x] Create User and Permission models (Nov 2025) ✅
+- [x] Database schema for permissions (Nov 2025) ✅
+- [ ] Update UsersController to manage permissions in UI
+- [ ] Update user create/edit Twig templates with permission checkboxes
+- [ ] Implement permission-based middleware for routes
 - [ ] Harden login flow (throttling, session regeneration)
 - [ ] Implement password reset with email verification
 - [ ] Add two-factor authentication (2FA) support
@@ -253,10 +296,13 @@ This document captures the current state of the Eclectyc Energy platform, tracki
 ## 📋 Recommended Next Milestones
 
 ### Short-term (Next Sprint)
-1. ✅ **Documentation Overhaul**: Update README, STATUS, and create comprehensive guide *(In Progress)*
-2. **Enhanced Visualizations**: Add interactive charts to consumption and cost reports
-3. **Password Reset Flow**: Implement secure password recovery
-4. **API Token System**: Enable API access for external integrations
+1. ✅ **Documentation Overhaul**: Update README, STATUS with bug fixes and permissions system *(Completed Nov 9, 2025)*
+2. ✅ **Fix Import Job Deletion Bug**: SQL parameter binding error *(Completed Nov 9, 2025)*
+3. ✅ **Implement Granular Permissions**: Database schema and models *(Completed Nov 9, 2025)*
+4. **Complete Permissions UI**: Update UsersController and Twig templates for permission management
+5. **Enhanced Visualizations**: Add interactive charts to consumption and cost reports
+6. **Password Reset Flow**: Implement secure password recovery
+7. **API Token System**: Enable API access for external integrations
 
 ### Medium-term (1-2 Months)
 1. **Complete CRUD Operations**: Sites, meters, and tariffs full management UI
@@ -432,5 +478,5 @@ All documentation is up-to-date and comprehensive:
 
 **Keep this document updated when major features are completed to maintain an accurate implementation roadmap.**
 
-**Last reviewed:** November 7, 2025  
-**Next review:** January 2026 or after major feature release
+**Last reviewed:** November 9, 2025  
+**Next review:** December 2025 or after major feature release

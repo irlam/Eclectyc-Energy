@@ -4,7 +4,7 @@
 
 > A modern, production-ready PHP-based energy management platform with enterprise-grade features for consumption tracking, tariff analysis, carbon reporting, and intelligent automation.
 
-**Last updated:** November 7, 2025  
+**Last updated:** November 9, 2025  
 **Status:** ✅ Production Ready  
 **Deployment:** https://eclectyc.energy/
 
@@ -21,7 +21,7 @@ The Eclectyc Energy platform is a comprehensive solution for energy management t
 🔄 **Background Processing** - Queue-based import jobs with retry logic and monitoring  
 📧 **Alerting & Notifications** - Email and Slack alerts for system events  
 🌍 **Carbon Reporting** - Real-time UK grid carbon intensity integration  
-🔒 **Enterprise Security** - Role-based access control, audit logging, and GDPR compliance  
+🔒 **Enterprise Security** - Granular permission system, role-based access control, audit logging, and GDPR compliance  
 📈 **Data Quality** - Automated quality checks, outlier detection, and gap analysis  
 🚀 **Production Ready** - Complete with deployment configs, monitoring, and maintenance scripts
 
@@ -130,11 +130,14 @@ Running the seeder creates three demo operators, all with the temporary password
 
 | Email | Role | Access |
 | --- | --- | --- |
-| `admin@eclectyc.energy` | admin | Full platform access, user management, tooling |
-| `manager@eclectyc.energy` | manager | Dashboard + reporting modules |
-| `viewer@eclectyc.energy` | viewer | Dashboard only |
+| `admin@eclectyc.energy` | admin | Full platform access, user management, tooling, all permissions |
+| `manager@eclectyc.energy` | manager | Dashboard + reporting modules, most permissions except user management |
+| `viewer@eclectyc.energy` | viewer | Dashboard only, read-only permissions |
 
 Update these passwords immediately after seeding. Remove demo accounts in production environments.
+
+**Granular Permissions (November 2025):**
+The platform now includes a comprehensive permissions system that allows fine-grained control over user access to specific features. Permissions can be managed independently of roles, enabling custom access patterns for each user. See the User Management section below for details.
 
 ## Project Structure
 ```
@@ -211,7 +214,7 @@ Visit: https://eclectyc.energy/tools/show
 - `/admin/sites` (admin only) shows estates with meter counts and status.
 - `/admin/tariffs` (admin only) lists configured supply tariffs including UK energy suppliers (British Gas, EDF, Octopus Energy, OVO Energy).
 - `/admin/tariff-switching` (admin only) analyzes switching opportunities and recommends alternative tariffs based on consumption history with selectable current tariff.
-- `/admin/users` (admin only) lists seeded accounts for quick role testing.
+- `/admin/users` (admin only) lists seeded accounts for quick role testing, with granular permission management for each user.
 - `/admin/imports` (admin only) provides CSV uploads with optional dry-run previews, batch summaries, and optional default site/tariff assignment for imported meters.
 - `/admin/imports/jobs` (admin only) shows all import jobs with real-time progress tracking and filtering.
 - `/admin/imports/history` (admin only) lists recent ingestion runs with filters, decoded metadata, and surfaced errors.
@@ -459,6 +462,51 @@ The platform now includes comprehensive data aggregation and analytics features:
   - API endpoints for integration and manual refresh
 
 See `docs/analytics_features.md` and `docs/carbon_intensity_implementation.md` for detailed documentation.
+
+## User Management & Permissions (November 2025)
+
+The platform includes a comprehensive granular permissions system that provides fine-grained access control beyond basic roles:
+
+### Permission Categories
+- **Imports**: View, upload, manage jobs, retry failed imports
+- **Exports**: View and create exports
+- **Users**: View, create, edit, delete users, manage permissions
+- **Meters**: View, create, edit, delete meters, view carbon intensity
+- **Sites**: View, create, edit, delete sites
+- **Tariffs**: View, create, edit, delete tariffs
+- **Tariff Switching**: View analysis, perform analysis, view history
+- **Reports**: View reports, consumption reports, cost reports
+- **Settings**: View and edit system settings
+- **Tools**: View tools, system health, SFTP management, logs
+- **Dashboard**: General dashboard access
+
+### Managing User Permissions
+1. Navigate to `/admin/users`
+2. Create or edit a user
+3. Select permissions by category
+4. Roles still apply but can be customized with specific permissions
+5. Admin users have all permissions by default
+
+### Permission Inheritance
+- **Admin role**: Automatically has all permissions
+- **Manager role**: Has most permissions except user deletion and sensitive settings
+- **Viewer role**: Has read-only permissions (view-only access)
+
+### Database Schema
+New tables added in migration `009_create_user_permissions.sql`:
+- `permissions` table: Defines all available permissions
+- `user_permissions` table: Junction table for user-permission relationships
+
+## Bug Fixes (November 2025)
+
+### Fixed Issues
+1. **Import Job Deletion Error (SQLSTATE[HY093])**: Fixed SQL parameter binding issue in `ImportController::deleteJob()` method where the `:batch_id` parameter was used twice in a nested query but only bound once. The fix uses separate parameter names (`:batch_id` and `:batch_id2`) for each occurrence.
+
+2. **Tariff Switching Confirmation**: Verified that the tariff switching analysis feature correctly recommends better tariffs based on consumption history. The system:
+   - Analyzes all alternative tariffs for the meter's energy type
+   - Calculates costs using actual consumption data
+   - Ranks alternatives by potential savings (highest first)
+   - Only recommends tariffs that provide actual cost savings
 
 ## Troubleshooting
 

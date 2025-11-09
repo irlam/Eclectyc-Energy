@@ -525,10 +525,13 @@ class ImportController
                     AND NOT EXISTS (
                         SELECT 1 FROM meter_readings mr 
                         WHERE mr.meter_id = m.id 
-                        AND (mr.batch_id != :batch_id OR mr.batch_id IS NULL)
+                        AND (mr.batch_id != :batch_id2 OR mr.batch_id IS NULL)
                     )
                 ');
-                $deleteMetersStmt->execute(['batch_id' => $batchId]);
+                $deleteMetersStmt->execute([
+                    'batch_id' => $batchId,
+                    'batch_id2' => $batchId
+                ]);
                 $deletedMeters = $deleteMetersStmt->rowCount();
             }
 
