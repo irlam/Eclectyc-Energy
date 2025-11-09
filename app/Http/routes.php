@@ -8,6 +8,7 @@
 use App\Http\Controllers\Admin\ExportsController;
 use App\Http\Controllers\Admin\ImportController;
 use App\Http\Controllers\Admin\MetersController as AdminMetersController;
+use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\SitesController;
 use App\Http\Controllers\Admin\TariffsController;
 use App\Http\Controllers\Admin\TariffSwitchingController;
@@ -197,6 +198,11 @@ $app->group('/admin', function ($group) {
     $group->get('/users/{id}/edit', [UsersController::class, 'edit'])->setName('admin.users.edit');
     $group->post('/users/{id}', [UsersController::class, 'update'])->setName('admin.users.update');
     $group->post('/users/{id}/delete', [UsersController::class, 'delete'])->setName('admin.users.delete');
+    
+    // System Settings routes
+    $group->get('/settings', [SettingsController::class, 'index'])->setName('admin.settings');
+    $group->post('/settings', [SettingsController::class, 'update'])->setName('admin.settings.update');
+    $group->post('/settings/reset', [SettingsController::class, 'reset'])->setName('admin.settings.reset');
 })->add(function ($request, $handler) use ($container) {
     $middleware = new AuthMiddleware($container->get(AuthService::class), ['admin']);
     return $middleware->process($request, $handler);

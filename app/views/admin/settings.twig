@@ -1,0 +1,399 @@
+{% extends "base.twig" %}
+
+{% block title %}System Settings{% endblock %}
+
+{% block content %}
+<section class="card">
+    <div class="card-header">
+        <div>
+            <h2>System Settings</h2>
+            <p class="mb-0" style="color: var(--muted); font-size: 0.9rem;">
+                Configure system-wide settings and import throttling
+            </p>
+        </div>
+        <div>
+            <a href="/admin" class="btn btn-sm btn-secondary">← Back to Admin</a>
+        </div>
+    </div>
+
+    {% if flash %}
+        <div class="alert alert-{{ flash.type }}">
+            {{ flash.message }}
+        </div>
+    {% endif %}
+
+    {% if error %}
+        <div class="alert alert-error">
+            <p>{{ error }}</p>
+        </div>
+    {% else %}
+        <form method="POST" action="/admin/settings" class="settings-form">
+            {% for category, categorySettings in settings %}
+                <div class="settings-category">
+                    <h3 class="category-title">{{ category }}</h3>
+                    
+                    {% if category == 'Import Throttling' %}
+                        <div class="category-description">
+                            <p>
+                                <strong>Import throttling</strong> prevents server overload during large CSV imports by processing data in batches with delays.
+                                This helps avoid 504 Gateway Timeout errors but may slow down imports.
+                            </p>
+                            <p class="mb-0">
+                                <a href="/docs/troubleshooting_504_timeouts.md" target="_blank">📖 Learn more about throttling</a>
+                            </p>
+                        </div>
+                    {% endif %}
+
+                    <div class="settings-grid">
+                        {% for key, setting in categorySettings %}
+                            <div class="setting-item">
+                                <div class="setting-header">
+                                    <label for="setting_{{ key }}" class="setting-label">
+                                        {{ key|replace({'_': ' '})|title }}
+                                    </label>
+                                    {% if setting.description %}
+                                        <span class="setting-description">{{ setting.description }}</span>
+                                    {% endif %}
+                                </div>
+
+                                <div class="setting-control">
+                                    {% if setting.type == 'boolean' %}
+                                        <label class="toggle-switch">
+                                            <input 
+                                                type="checkbox" 
+                                                id="setting_{{ key }}" 
+                                                name="{{ key }}"
+                                                {% if setting.value %}checked{% endif %}
+                                                {% if not setting.is_editable %}disabled{% endif %}
+                                            >
+                                            <span class="toggle-slider"></span>
+                                        </label>
+                                        <span class="toggle-label">
+                                            {% if setting.value %}Enabled{% else %}Disabled{% endif %}
+                                        </span>
+                                    {% elseif setting.type == 'integer' %}
+                                        <input 
+                                            type="number" 
+                                            id="setting_{{ key }}" 
+                                            name="{{ key }}"
+                                            value="{{ setting.value }}"
+                                            class="form-input"
+                                            {% if not setting.is_editable %}readonly{% endif %}
+                                            min="0"
+                                            step="1"
+                                        >
+                                        {% if key == 'import_throttle_batch_size' %}
+                                            <span class="input-hint">rows per batch</span>
+                                        {% elseif key == 'import_throttle_delay_ms' %}
+                                            <span class="input-hint">milliseconds</span>
+                                        {% elseif key == 'import_max_execution_time' %}
+                                            <span class="input-hint">seconds</span>
+                                        {% elseif key == 'import_max_memory_mb' %}
+                                            <span class="input-hint">megabytes</span>
+                                        {% endif %}
+                                    {% else %}
+                                        <input 
+                                            type="text" 
+                                            id="setting_{{ key }}" 
+                                            name="{{ key }}"
+                                            value="{{ setting.value }}"
+                                            class="form-input"
+                                            {% if not setting.is_editable %}readonly{% endif %}
+                                        >
+                                    {% endif %}
+
+                                    {% if setting.is_editable %}
+                                        <button 
+                                            type="button" 
+                                            class="btn-reset"
+                                            onclick="resetSetting('{{ key }}')"
+                                            title="Reset to default"
+                                        >
+                                            ↺
+                                        </button>
+                                    {% endif %}
+                                </div>
+
+                                {% if key == 'import_throttle_enabled' and setting.value %}
+                                    <div class="setting-note">
+                                        <strong>Note:</strong> Throttling is currently enabled. Import speeds will be reduced but 504 timeouts should be prevented.
+                                    </div>
+                                {% elseif key == 'import_throttle_enabled' and not setting.value %}
+                                    <div class="setting-note warning">
+                                        <strong>Warning:</strong> Throttling is disabled. Large imports may cause 504 timeouts.
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endfor %}
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">💾 Save Settings</button>
+                <a href="/admin/settings" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+
+        <!-- Hidden form for reset actions -->
+        <form id="resetForm" method="POST" action="/admin/settings/reset" style="display: none;">
+            <input type="hidden" name="setting_key" id="reset_setting_key">
+        </form>
+    {% endif %}
+</section>
+
+<style>
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+    padding-bottom: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.settings-form {
+    padding: 0 1.5rem 1.5rem 1.5rem;
+}
+
+.settings-category {
+    margin-bottom: 2.5rem;
+}
+
+.category-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #f8fafc;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid rgba(59, 130, 246, 0.3);
+}
+
+.category-description {
+    background: rgba(59, 130, 246, 0.1);
+    border-left: 3px solid #3b82f6;
+    padding: 1rem;
+    margin-bottom: 1.5rem;
+    border-radius: 4px;
+}
+
+.category-description p {
+    margin-bottom: 0.5rem;
+    color: #cbd5e1;
+    font-size: 0.9rem;
+}
+
+.category-description a {
+    color: #60a5fa;
+    text-decoration: none;
+}
+
+.category-description a:hover {
+    text-decoration: underline;
+}
+
+.settings-grid {
+    display: grid;
+    gap: 1.5rem;
+}
+
+.setting-item {
+    background: rgba(30, 41, 59, 0.4);
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    border-radius: 8px;
+    padding: 1.25rem;
+}
+
+.setting-header {
+    margin-bottom: 0.75rem;
+}
+
+.setting-label {
+    display: block;
+    font-weight: 600;
+    color: #f8fafc;
+    margin-bottom: 0.25rem;
+    font-size: 0.95rem;
+}
+
+.setting-description {
+    display: block;
+    color: #94a3b8;
+    font-size: 0.85rem;
+    line-height: 1.4;
+}
+
+.setting-control {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.form-input {
+    flex: 0 0 200px;
+    padding: 0.5rem 0.75rem;
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    border-radius: 6px;
+    color: #f8fafc;
+    font-size: 0.9rem;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.form-input:read-only {
+    background: rgba(15, 23, 42, 0.3);
+    cursor: not-allowed;
+    opacity: 0.6;
+}
+
+.input-hint {
+    color: #94a3b8;
+    font-size: 0.85rem;
+}
+
+/* Toggle Switch */
+.toggle-switch {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 26px;
+}
+
+.toggle-switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.toggle-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #475569;
+    transition: 0.3s;
+    border-radius: 26px;
+}
+
+.toggle-slider:before {
+    position: absolute;
+    content: "";
+    height: 18px;
+    width: 18px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: 0.3s;
+    border-radius: 50%;
+}
+
+.toggle-switch input:checked + .toggle-slider {
+    background-color: #3b82f6;
+}
+
+.toggle-switch input:checked + .toggle-slider:before {
+    transform: translateX(24px);
+}
+
+.toggle-switch input:disabled + .toggle-slider {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.toggle-label {
+    color: #cbd5e1;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.btn-reset {
+    background: rgba(148, 163, 184, 0.1);
+    border: 1px solid rgba(148, 163, 184, 0.3);
+    color: #94a3b8;
+    padding: 0.4rem 0.7rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1.1rem;
+    transition: all 0.2s;
+}
+
+.btn-reset:hover {
+    background: rgba(148, 163, 184, 0.2);
+    color: #cbd5e1;
+}
+
+.setting-note {
+    margin-top: 0.75rem;
+    padding: 0.75rem;
+    background: rgba(34, 197, 94, 0.1);
+    border-left: 3px solid #22c55e;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    color: #cbd5e1;
+}
+
+.setting-note.warning {
+    background: rgba(245, 158, 11, 0.1);
+    border-left-color: #f59e0b;
+}
+
+.form-actions {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid rgba(148, 163, 184, 0.16);
+    display: flex;
+    gap: 1rem;
+}
+
+.alert {
+    padding: 1rem 1.5rem;
+    margin: 1.5rem 1.5rem 0 1.5rem;
+    border-radius: 6px;
+    border-left: 4px solid;
+}
+
+.alert-success {
+    background: rgba(34, 197, 94, 0.1);
+    border-left-color: #22c55e;
+    color: #86efac;
+}
+
+.alert-error {
+    background: rgba(239, 68, 68, 0.1);
+    border-left-color: #ef4444;
+    color: #fca5a5;
+}
+
+.alert-warning {
+    background: rgba(245, 158, 11, 0.1);
+    border-left-color: #f59e0b;
+    color: #fcd34d;
+}
+</style>
+
+<script>
+function resetSetting(key) {
+    if (confirm('Reset this setting to its default value?')) {
+        document.getElementById('reset_setting_key').value = key;
+        document.getElementById('resetForm').submit();
+    }
+}
+
+// Update toggle labels dynamically
+document.querySelectorAll('.toggle-switch input[type="checkbox"]').forEach(checkbox => {
+    checkbox.addEventListener('change', function() {
+        const label = this.closest('.setting-control').querySelector('.toggle-label');
+        if (label) {
+            label.textContent = this.checked ? 'Enabled' : 'Disabled';
+        }
+    });
+});
+</script>
+{% endblock %}
