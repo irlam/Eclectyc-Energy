@@ -30,7 +30,7 @@ class SettingsController
     public function index(Request $request, Response $response): Response
     {
         if (!$this->pdo) {
-            return $this->view->render($response, 'admin/settings.twig', [
+            return $this->view->render($response, 'tools/settings.twig', [
                 'page_title' => 'System Settings',
                 'error' => 'Database connection unavailable.',
                 'settings' => [],
@@ -47,14 +47,14 @@ class SettingsController
             // Group settings by category
             $groupedSettings = $this->groupSettings($allSettings);
 
-            return $this->view->render($response, 'admin/settings.twig', [
+            return $this->view->render($response, 'tools/settings.twig', [
                 'page_title' => 'System Settings',
                 'settings' => $groupedSettings,
                 'flash' => $flash,
             ]);
         } catch (\Exception $e) {
             error_log('Failed to load settings: ' . $e->getMessage());
-            return $this->view->render($response, 'admin/settings.twig', [
+            return $this->view->render($response, 'tools/settings.twig', [
                 'page_title' => 'System Settings',
                 'error' => 'Failed to load settings: ' . $e->getMessage(),
                 'settings' => [],
@@ -69,7 +69,7 @@ class SettingsController
     {
         if (!$this->pdo) {
             $this->setFlash('error', 'Database connection unavailable.');
-            return $this->redirect($response, '/admin/settings');
+            return $this->redirect($response, '/tools/settings');
         }
 
         $data = $request->getParsedBody() ?? [];
@@ -111,7 +111,7 @@ class SettingsController
             $this->setFlash('error', 'Failed to update settings: ' . $e->getMessage());
         }
 
-        return $this->redirect($response, '/admin/settings');
+        return $this->redirect($response, '/tools/settings');
     }
 
     /**
@@ -121,7 +121,7 @@ class SettingsController
     {
         if (!$this->pdo) {
             $this->setFlash('error', 'Database connection unavailable.');
-            return $this->redirect($response, '/admin/settings');
+            return $this->redirect($response, '/tools/settings');
         }
 
         $data = $request->getParsedBody() ?? [];
@@ -129,7 +129,7 @@ class SettingsController
 
         if (!$settingKey) {
             $this->setFlash('error', 'Setting key is required.');
-            return $this->redirect($response, '/admin/settings');
+            return $this->redirect($response, '/tools/settings');
         }
 
         try {
@@ -138,7 +138,7 @@ class SettingsController
             
             if (!isset($defaults[$settingKey])) {
                 $this->setFlash('error', 'Unknown setting key.');
-                return $this->redirect($response, '/admin/settings');
+                return $this->redirect($response, '/tools/settings');
             }
 
             $default = $defaults[$settingKey];
@@ -156,7 +156,7 @@ class SettingsController
             $this->setFlash('error', 'Failed to reset setting: ' . $e->getMessage());
         }
 
-        return $this->redirect($response, '/admin/settings');
+        return $this->redirect($response, '/tools/settings');
     }
 
     /**

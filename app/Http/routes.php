@@ -82,6 +82,11 @@ $app->group('/tools', function ($group) {
     $group->get('/sftp/{id}/test', [SftpController::class, 'testConnection'])->setName('tools.sftp.test');
     $group->get('/sftp/{id}/files', [SftpController::class, 'listFiles'])->setName('tools.sftp.files');
     $group->post('/sftp/{id}/import', [SftpController::class, 'importFile'])->setName('tools.sftp.import');
+    
+    // System Settings routes
+    $group->get('/settings', [SettingsController::class, 'index'])->setName('tools.settings');
+    $group->post('/settings', [SettingsController::class, 'update'])->setName('tools.settings.update');
+    $group->post('/settings/reset', [SettingsController::class, 'reset'])->setName('tools.settings.reset');
 })->add(function ($request, $handler) use ($container) {
     $middleware = new AuthMiddleware($container->get(AuthService::class), ['admin']);
     return $middleware->process($request, $handler);
@@ -198,11 +203,6 @@ $app->group('/admin', function ($group) {
     $group->get('/users/{id}/edit', [UsersController::class, 'edit'])->setName('admin.users.edit');
     $group->post('/users/{id}', [UsersController::class, 'update'])->setName('admin.users.update');
     $group->post('/users/{id}/delete', [UsersController::class, 'delete'])->setName('admin.users.delete');
-    
-    // System Settings routes
-    $group->get('/settings', [SettingsController::class, 'index'])->setName('admin.settings');
-    $group->post('/settings', [SettingsController::class, 'update'])->setName('admin.settings.update');
-    $group->post('/settings/reset', [SettingsController::class, 'reset'])->setName('admin.settings.reset');
 })->add(function ($request, $handler) use ($container) {
     $middleware = new AuthMiddleware($container->get(AuthService::class), ['admin']);
     return $middleware->process($request, $handler);

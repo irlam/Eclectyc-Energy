@@ -12,7 +12,7 @@
             </p>
         </div>
         <div>
-            <a href="/admin" class="btn btn-sm btn-secondary">← Back to Admin</a>
+            <a href="/tools" class="btn btn-sm btn-secondary">← Back to Tools</a>
         </div>
     </div>
 
@@ -27,7 +27,7 @@
             <p>{{ error }}</p>
         </div>
     {% else %}
-        <form method="POST" action="/admin/settings" class="settings-form">
+        <form method="POST" action="/tools/settings" class="settings-form">
             {% for category, categorySettings in settings %}
                 <div class="settings-category">
                     <h3 class="category-title">{{ category }}</h3>
@@ -131,12 +131,12 @@
 
             <div class="form-actions">
                 <button type="submit" class="btn btn-primary">💾 Save Settings</button>
-                <a href="/admin/settings" class="btn btn-secondary">Cancel</a>
+                <a href="/tools/settings" class="btn btn-secondary">Cancel</a>
             </div>
         </form>
 
         <!-- Hidden form for reset actions -->
-        <form id="resetForm" method="POST" action="/admin/settings/reset" style="display: none;">
+        <form id="resetForm" method="POST" action="/tools/settings/reset" style="display: none;">
             <input type="hidden" name="setting_key" id="reset_setting_key">
         </form>
     {% endif %}
