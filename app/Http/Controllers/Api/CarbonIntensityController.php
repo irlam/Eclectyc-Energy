@@ -14,9 +14,9 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 
 class CarbonIntensityController
 {
-    private \PDO $pdo;
+    private ?\PDO $pdo;
 
-    public function __construct(\PDO $pdo)
+    public function __construct(?\PDO $pdo)
     {
         $this->pdo = $pdo;
     }
@@ -26,6 +26,17 @@ class CarbonIntensityController
      */
     public function getCurrent(Request $request, Response $response): Response
     {
+        if ($this->pdo === null) {
+            $response->getBody()->write(json_encode([
+                'success' => false,
+                'error' => 'Database connection not available'
+            ]));
+            
+            return $response
+                ->withHeader('Content-Type', 'application/json')
+                ->withStatus(503);
+        }
+        
         try {
             $externalDataService = new ExternalDataService($this->pdo);
             $carbonService = new CarbonIntensityService($externalDataService);
@@ -58,6 +69,17 @@ class CarbonIntensityController
      */
     public function refresh(Request $request, Response $response): Response
     {
+        if ($this->pdo === null) {
+            $response->getBody()->write(json_encode([
+                'success' => false,
+                'error' => 'Database connection not available'
+            ]));
+            
+            return $response
+                ->withHeader('Content-Type', 'application/json')
+                ->withStatus(503);
+        }
+        
         try {
             $externalDataService = new ExternalDataService($this->pdo);
             $carbonService = new CarbonIntensityService($externalDataService);
@@ -100,6 +122,17 @@ class CarbonIntensityController
      */
     public function getHistory(Request $request, Response $response): Response
     {
+        if ($this->pdo === null) {
+            $response->getBody()->write(json_encode([
+                'success' => false,
+                'error' => 'Database connection not available'
+            ]));
+            
+            return $response
+                ->withHeader('Content-Type', 'application/json')
+                ->withStatus(503);
+        }
+        
         try {
             $queryParams = $request->getQueryParams();
             $days = (int) ($queryParams['days'] ?? 7);
