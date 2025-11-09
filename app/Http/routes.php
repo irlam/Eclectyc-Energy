@@ -91,7 +91,7 @@ $app->group('/tools', function ($group) {
     
     // Documentation routes
     $group->get('/docs', [DocsController::class, 'index'])->setName('tools.docs');
-    $group->get('/docs/{filename}', [DocsController::class, 'view'])->setName('tools.docs.view');
+    $group->get('/docs/{filename:.+}', [DocsController::class, 'view'])->setName('tools.docs.view');
 })->add(function ($request, $handler) use ($container) {
     $middleware = new AuthMiddleware($container->get(AuthService::class), ['admin']);
     return $middleware->process($request, $handler);
