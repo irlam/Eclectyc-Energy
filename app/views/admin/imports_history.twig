@@ -9,7 +9,12 @@
             <h2>Import History</h2>
             <p class="mb-2">Review recent ingestion runs captured from the audit log. Use filters to focus on specific batches or outcomes.</p>
         </div>
-        <a class="btn btn-tertiary" href="/admin/imports">Back to importer</a>
+        <div style="display: flex; gap: 0.5rem;">
+            <button type="button" class="btn btn-danger" onclick="deleteAllHistory()" title="Delete all import history">
+                Delete All History
+            </button>
+            <a class="btn btn-tertiary" href="/admin/imports">Back to importer</a>
+        </div>
     </div>
 
     <form method="get" class="filters mb-3">
@@ -38,6 +43,9 @@
         </div>
         <div class="form-actions">
             <button type="submit" class="btn btn-primary">Apply</button>
+            <button type="button" class="btn btn-danger" onclick="deleteSelected()" id="delete-selected-btn" style="display:none;">
+                Delete Selected
+            </button>
         </div>
     </form>
 
@@ -54,6 +62,9 @@
             <table class="table">
                 <thead>
                     <tr>
+                        <th scope="col">
+                            <input type="checkbox" id="select-all" onchange="toggleSelectAll(this)">
+                        </th>
                         <th scope="col">Batch</th>
                         <th scope="col">Type</th>
                         <th scope="col">Status</th>
@@ -63,11 +74,15 @@
                         <th scope="col">Initiated</th>
                         <th scope="col">Operator</th>
                         <th scope="col">Details</th>
+                        <th scope="col">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for entry in entries %}
                         <tr>
+                            <td>
+                                <input type="checkbox" class="entry-checkbox" value="{{ entry.id }}" data-batch-id="{{ entry.batch_id }}">
+                            </td>
                             <td data-heading="Batch">
                                 {{ entry.batch_id }}
                                 {% if entry.is_retry %}
@@ -134,6 +149,11 @@
                                     </details>
                                 {% endif %}
                             </td>
+                            <td data-heading="Actions">
+                                <button type="button" class="btn btn-sm btn-danger" onclick="deleteEntry({{ entry.id }}, '{{ entry.batch_id }}')" title="Delete this import">
+                                    Delete
+                                </button>
+                            </td>
                         </tr>
                     {% endfor %}
                 </tbody>
@@ -141,4 +161,119 @@
         </div>
     {% endif %}
 </section>
+
+<script>
+function toggleSelectAll(checkbox) {
+    const checkboxes = document.querySelectorAll('.entry-checkbox');
+    checkboxes.forEach(cb => cb.checked = checkbox.checked);
+    updateDeleteButton();
+}
+
+function updateDeleteButton() {
+    const checkboxes = document.querySelectorAll('.entry-checkbox:checked');
+    const deleteBtn = document.getElementById('delete-selected-btn');
+    if (checkboxes.length > 0) {
+        deleteBtn.style.display = 'inline-block';
+        deleteBtn.textContent = `Delete Selected (${checkboxes.length})`;
+    } else {
+        deleteBtn.style.display = 'none';
+    }
+}
+
+// Add event listener to all checkboxes
+document.addEventListener('DOMContentLoaded', function() {
+    const checkboxes = document.querySelectorAll('.entry-checkbox');
+    checkboxes.forEach(cb => {
+        cb.addEventListener('change', updateDeleteButton);
+    });
+});
+
+function deleteEntry(entryId, batchId) {
+    if (!confirm(`Are you sure you want to delete this import record (${batchId})?\n\nThis will remove the audit log entry but will NOT delete the imported data.`)) {
+        return;
+    }
+    
+    fetch('/admin/imports/history/' + entryId + '/delete', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Import history entry deleted successfully.');
+            location.reload();
+        } else {
+            alert('Failed to delete entry: ' + (data.message || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        alert('Error deleting entry: ' + error.message);
+    });
+}
+
+function deleteSelected() {
+    const checkboxes = document.querySelectorAll('.entry-checkbox:checked');
+    const ids = Array.from(checkboxes).map(cb => cb.value);
+    
+    if (ids.length === 0) {
+        alert('Please select at least one entry to delete.');
+        return;
+    }
+    
+    if (!confirm(`Are you sure you want to delete ${ids.length} import record(s)?\n\nThis will remove the audit log entries but will NOT delete the imported data.`)) {
+        return;
+    }
+    
+    fetch('/admin/imports/history/delete-bulk', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ ids: ids })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(`Successfully deleted ${data.deleted} import history entr${data.deleted === 1 ? 'y' : 'ies'}.`);
+            location.reload();
+        } else {
+            alert('Failed to delete entries: ' + (data.message || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        alert('Error deleting entries: ' + error.message);
+    });
+}
+
+function deleteAllHistory() {
+    if (!confirm('Are you sure you want to delete ALL import history?\n\nThis will remove all audit log entries but will NOT delete the imported data.\n\nThis action cannot be undone!')) {
+        return;
+    }
+    
+    if (!confirm('FINAL WARNING: This will delete ALL import history records. Are you absolutely sure?')) {
+        return;
+    }
+    
+    fetch('/admin/imports/history/delete-all', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(`Successfully deleted ${data.deleted} import history entr${data.deleted === 1 ? 'y' : 'ies'}.`);
+            location.reload();
+        } else {
+            alert('Failed to delete history: ' + (data.message || 'Unknown error'));
+        }
+    })
+    .catch(error => {
+        alert('Error deleting history: ' + error.message);
+    });
+}
+</script>
 {% endblock %}

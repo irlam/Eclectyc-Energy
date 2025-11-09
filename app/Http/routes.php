@@ -159,6 +159,9 @@ $app->group('/admin', function ($group) {
     $group->get('/imports', [ImportController::class, 'index'])->setName('admin.imports');
     $group->post('/imports', [ImportController::class, 'upload'])->setName('admin.imports.upload');
     $group->get('/imports/history', [ImportController::class, 'history'])->setName('admin.imports.history');
+    $group->post('/imports/history/{id}/delete', [ImportController::class, 'deleteHistory'])->setName('admin.imports.history.delete');
+    $group->post('/imports/history/delete-bulk', [ImportController::class, 'deleteHistoryBulk'])->setName('admin.imports.history.delete-bulk');
+    $group->post('/imports/history/delete-all', [ImportController::class, 'deleteHistoryAll'])->setName('admin.imports.history.delete-all');
     $group->get('/imports/jobs', [ImportController::class, 'jobs'])->setName('admin.imports.jobs');
     $group->get('/imports/status/{batchId}', [ImportController::class, 'status'])->setName('admin.imports.status');
     $group->post('/imports/retry', [ImportController::class, 'retry'])->setName('admin.imports.retry');

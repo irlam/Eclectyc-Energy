@@ -42,6 +42,58 @@
                                 <a href="/docs/troubleshooting_504_timeouts.md" target="_blank">📖 Learn more about throttling</a>
                             </p>
                         </div>
+                        
+                        <div class="preset-selector" style="margin-bottom: 1.5rem;">
+                            <h4 style="color: #f8fafc; font-size: 1rem; margin-bottom: 1rem;">Quick Presets</h4>
+                            <p style="color: #94a3b8; font-size: 0.85rem; margin-bottom: 1rem;">
+                                Select a preset configuration based on your import size, or customize individual settings below.
+                            </p>
+                            <div class="preset-grid">
+                                <button type="button" class="preset-card" onclick="applyPreset('small')">
+                                    <div class="preset-title">Small Imports</div>
+                                    <div class="preset-subtitle">&lt;5,000 rows</div>
+                                    <div class="preset-details">
+                                        <div class="preset-setting">Throttle: <strong>OFF</strong></div>
+                                        <div class="preset-note">Maximum speed, no throttling needed</div>
+                                    </div>
+                                </button>
+                                
+                                <button type="button" class="preset-card" onclick="applyPreset('medium')">
+                                    <div class="preset-title">Medium Imports</div>
+                                    <div class="preset-subtitle">5,000-20,000 rows</div>
+                                    <div class="preset-details">
+                                        <div class="preset-setting">Throttle: <strong>ON</strong></div>
+                                        <div class="preset-setting">Batch Size: <strong>100</strong></div>
+                                        <div class="preset-setting">Delay: <strong>100ms</strong></div>
+                                    </div>
+                                </button>
+                                
+                                <button type="button" class="preset-card" onclick="applyPreset('large')">
+                                    <div class="preset-title">Large Imports</div>
+                                    <div class="preset-subtitle">20,000-100,000 rows</div>
+                                    <div class="preset-details">
+                                        <div class="preset-setting">Throttle: <strong>ON</strong></div>
+                                        <div class="preset-setting">Batch Size: <strong>50</strong></div>
+                                        <div class="preset-setting">Delay: <strong>200ms</strong></div>
+                                        <div class="preset-setting">Max Time: <strong>600s (10 min)</strong></div>
+                                    </div>
+                                </button>
+                                
+                                <button type="button" class="preset-card preset-card-highlight" onclick="applyPreset('very-large')">
+                                    <div class="preset-title">Very Large Imports</div>
+                                    <div class="preset-subtitle">&gt;100,000 rows</div>
+                                    <div class="preset-details">
+                                        <div class="preset-setting">Throttle: <strong>ON</strong></div>
+                                        <div class="preset-setting">Batch Size: <strong>25</strong></div>
+                                        <div class="preset-setting">Delay: <strong>300ms</strong></div>
+                                        <div class="preset-setting">Max Time: <strong>900s (15 min)</strong></div>
+                                        <div class="preset-note" style="color: #fbbf24; margin-top: 0.5rem;">
+                                            ⚠️ Recommended: Use Async Import!
+                                        </div>
+                                    </div>
+                                </button>
+                            </div>
+                        </div>
                     {% endif %}
 
                     <div class="settings-grid">
@@ -344,6 +396,73 @@
     border-left-color: #f59e0b;
 }
 
+/* Preset Cards */
+.preset-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.preset-card {
+    background: rgba(30, 41, 59, 0.6);
+    border: 2px solid rgba(148, 163, 184, 0.2);
+    border-radius: 8px;
+    padding: 1.25rem;
+    text-align: left;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.preset-card:hover {
+    border-color: #3b82f6;
+    background: rgba(59, 130, 246, 0.1);
+    transform: translateY(-2px);
+}
+
+.preset-card-highlight {
+    border-color: rgba(251, 191, 36, 0.4);
+}
+
+.preset-card-highlight:hover {
+    border-color: #fbbf24;
+    background: rgba(251, 191, 36, 0.1);
+}
+
+.preset-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #f8fafc;
+    margin-bottom: 0.25rem;
+}
+
+.preset-subtitle {
+    font-size: 0.8rem;
+    color: #94a3b8;
+    margin-bottom: 0.75rem;
+}
+
+.preset-details {
+    font-size: 0.85rem;
+    color: #cbd5e1;
+    line-height: 1.6;
+}
+
+.preset-setting {
+    margin-bottom: 0.25rem;
+}
+
+.preset-setting strong {
+    color: #60a5fa;
+}
+
+.preset-note {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    font-style: italic;
+    margin-top: 0.5rem;
+}
+
 .form-actions {
     margin-top: 2rem;
     padding-top: 1.5rem;
@@ -384,6 +503,74 @@ function resetSetting(key) {
         document.getElementById('reset_setting_key').value = key;
         document.getElementById('resetForm').submit();
     }
+}
+
+function applyPreset(presetType) {
+    const presets = {
+        'small': {
+            enabled: false,
+            batchSize: 100,
+            delay: 100,
+            maxTime: 300
+        },
+        'medium': {
+            enabled: true,
+            batchSize: 100,
+            delay: 100,
+            maxTime: 300
+        },
+        'large': {
+            enabled: true,
+            batchSize: 50,
+            delay: 200,
+            maxTime: 600
+        },
+        'very-large': {
+            enabled: true,
+            batchSize: 25,
+            delay: 300,
+            maxTime: 900
+        }
+    };
+    
+    const preset = presets[presetType];
+    if (!preset) return;
+    
+    // Apply settings
+    const enabledCheckbox = document.querySelector('input[name="import_throttle_enabled"]');
+    const batchSizeInput = document.querySelector('input[name="import_throttle_batch_size"]');
+    const delayInput = document.querySelector('input[name="import_throttle_delay_ms"]');
+    const maxTimeInput = document.querySelector('input[name="import_max_execution_time"]');
+    
+    if (enabledCheckbox) {
+        enabledCheckbox.checked = preset.enabled;
+        // Trigger change event to update label
+        enabledCheckbox.dispatchEvent(new Event('change'));
+    }
+    
+    if (batchSizeInput) batchSizeInput.value = preset.batchSize;
+    if (delayInput) delayInput.value = preset.delay;
+    if (maxTimeInput) maxTimeInput.value = preset.maxTime;
+    
+    // Visual feedback
+    const presetCards = document.querySelectorAll('.preset-card');
+    presetCards.forEach(card => {
+        card.style.borderColor = 'rgba(148, 163, 184, 0.2)';
+        card.style.background = 'rgba(30, 41, 59, 0.6)';
+    });
+    
+    event.currentTarget.style.borderColor = '#22c55e';
+    event.currentTarget.style.background = 'rgba(34, 197, 94, 0.1)';
+    
+    // Show confirmation message
+    const presetNames = {
+        'small': 'Small Imports',
+        'medium': 'Medium Imports',
+        'large': 'Large Imports',
+        'very-large': 'Very Large Imports'
+    };
+    
+    alert(`${presetNames[presetType]} preset applied. Click "Save Settings" to persist changes.`);
 }
 
 // Update toggle labels dynamically

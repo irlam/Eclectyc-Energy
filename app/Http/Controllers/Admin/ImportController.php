@@ -636,6 +636,105 @@ class ImportController
         return $this->redirect($response, '/admin/imports/jobs');
     }
 
+    /**
+     * Delete a single import history entry
+     */
+    public function deleteHistory(Request $request, Response $response, array $args): Response
+    {
+        if (!$this->pdo) {
+            $response->getBody()->write(json_encode(['success' => false, 'message' => 'Database connection unavailable.']));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+        }
+
+        $entryId = isset($args['id']) ? (int) $args['id'] : null;
+        
+        if (!$entryId) {
+            $response->getBody()->write(json_encode(['success' => false, 'message' => 'Entry ID is required.']));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+        }
+
+        try {
+            $stmt = $this->pdo->prepare('DELETE FROM audit_logs WHERE id = :id AND action = :action');
+            $stmt->execute([
+                'id' => $entryId,
+                'action' => 'import_csv',
+            ]);
+
+            if ($stmt->rowCount() > 0) {
+                $response->getBody()->write(json_encode(['success' => true, 'deleted' => 1]));
+                return $response->withHeader('Content-Type', 'application/json');
+            } else {
+                $response->getBody()->write(json_encode(['success' => false, 'message' => 'Entry not found.']));
+                return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+            }
+        } catch (\PDOException $e) {
+            error_log('Failed to delete import history: ' . $e->getMessage());
+            $response->getBody()->write(json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+        }
+    }
+
+    /**
+     * Delete multiple import history entries
+     */
+    public function deleteHistoryBulk(Request $request, Response $response): Response
+    {
+        if (!$this->pdo) {
+            $response->getBody()->write(json_encode(['success' => false, 'message' => 'Database connection unavailable.']));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+        }
+
+        $data = json_decode($request->getBody()->getContents(), true);
+        $ids = $data['ids'] ?? [];
+
+        if (empty($ids) || !is_array($ids)) {
+            $response->getBody()->write(json_encode(['success' => false, 'message' => 'No IDs provided.']));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(400);
+        }
+
+        try {
+            $placeholders = implode(',', array_fill(0, count($ids), '?'));
+            $stmt = $this->pdo->prepare("DELETE FROM audit_logs WHERE id IN ($placeholders) AND action = ?");
+            
+            $params = array_map('intval', $ids);
+            $params[] = 'import_csv';
+            
+            $stmt->execute($params);
+            $deleted = $stmt->rowCount();
+
+            $response->getBody()->write(json_encode(['success' => true, 'deleted' => $deleted]));
+            return $response->withHeader('Content-Type', 'application/json');
+        } catch (\PDOException $e) {
+            error_log('Failed to delete import history: ' . $e->getMessage());
+            $response->getBody()->write(json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+        }
+    }
+
+    /**
+     * Delete all import history
+     */
+    public function deleteHistoryAll(Request $request, Response $response): Response
+    {
+        if (!$this->pdo) {
+            $response->getBody()->write(json_encode(['success' => false, 'message' => 'Database connection unavailable.']));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+        }
+
+        try {
+            $stmt = $this->pdo->prepare('DELETE FROM audit_logs WHERE action = :action');
+            $stmt->execute(['action' => 'import_csv']);
+            $deleted = $stmt->rowCount();
+
+            $response->getBody()->write(json_encode(['success' => true, 'deleted' => $deleted]));
+            return $response->withHeader('Content-Type', 'application/json');
+        } catch (\PDOException $e) {
+            error_log('Failed to delete import history: ' . $e->getMessage());
+            $response->getBody()->write(json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+        }
+    }
+
     private function redirect(Response $response, string $path): Response
     {
         return $response->withHeader('Location', $path)->withStatus(302);
