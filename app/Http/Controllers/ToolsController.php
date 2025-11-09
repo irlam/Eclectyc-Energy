@@ -62,8 +62,8 @@ class ToolsController
         $args = $verbose ? '--verbose' : '';
         $output = $this->runToolWithArgs('scripts/check_system_health.php', $args);
         
-        // Parse output to extract structured data
-        $healthData = $this->parseHealthOutput($output);
+        // Get actual health data from API for accurate card display
+        $healthData = $this->getHealthDataFromApi();
 
         return $this->view->render($response, 'tools/system_health.twig', [
             'page_title' => 'System Health Diagnostics',
@@ -280,6 +280,60 @@ class ToolsController
         $command = 'php ' . escapeshellarg($path) . ' ' . $args . ' 2>&1';
         $result = shell_exec($command);
         return $result !== null ? trim($result) : 'No output available';
+    }
+
+    /**
+     * Get health data directly from the API endpoint
+     */
+    private function getHealthDataFromApi(): array
+    {
+        $data = [
+            'status' => 'unknown',
+            'healthy' => 0,
+            'degraded' => 0,
+            'critical' => 0,
+        ];
+
+        try {
+            // Try to get health data from the health API endpoint
+            $healthUrl = ($_ENV['APP_URL'] ?? 'http://localhost') . '/api/health';
+            
+            $context = stream_context_create([
+                'http' => [
+                    'timeout' => 5,
+                    'ignore_errors' => true,
+                ],
+            ]);
+            
+            $response = @file_get_contents($healthUrl, false, $context);
+            
+            if ($response !== false) {
+                $health = json_decode($response, true);
+                
+                if (is_array($health)) {
+                    $data['status'] = $health['status'] ?? 'unknown';
+                    
+                    // Count checks by status
+                    if (isset($health['checks']) && is_array($health['checks'])) {
+                        foreach ($health['checks'] as $check) {
+                            $checkStatus = $check['status'] ?? 'unknown';
+                            
+                            if ($checkStatus === 'healthy') {
+                                $data['healthy']++;
+                            } elseif ($checkStatus === 'degraded') {
+                                $data['degraded']++;
+                            } elseif ($checkStatus === 'critical') {
+                                $data['critical']++;
+                            }
+                        }
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            error_log('Failed to get health data from API: ' . $e->getMessage());
+        }
+
+        return $data;
     }
 
     private function parseHealthOutput(string $output): array

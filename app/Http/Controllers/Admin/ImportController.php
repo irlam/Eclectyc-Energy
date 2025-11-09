@@ -536,15 +536,17 @@ class ImportController
             }
 
             // Delete audit log entries for this import
+            // Use JSON_UNQUOTE to properly extract the batch_id value
             $deleteAuditStmt = $this->pdo->prepare('
                 DELETE FROM audit_logs 
                 WHERE action = :action 
-                AND JSON_EXTRACT(new_values, "$.batch_id") = :batch_id
+                AND JSON_UNQUOTE(JSON_EXTRACT(new_values, "$.batch_id")) = :batch_id
             ');
             $deleteAuditStmt->execute([
                 'action' => 'import_csv',
                 'batch_id' => $batchId,
             ]);
+            $deletedAuditLogs = $deleteAuditStmt->rowCount();
 
             // Delete the import job itself
             $deleteJobStmt = $this->pdo->prepare('DELETE FROM import_jobs WHERE id = :id');
@@ -558,12 +560,20 @@ class ImportController
             $this->pdo->commit();
 
             $message = "Import job deleted successfully.";
-            if ($deletedReadings > 0 || $deletedMeters > 0) {
-                $message .= " Removed: {$deletedReadings} reading(s)";
-                if ($deletedMeters > 0) {
-                    $message .= ", {$deletedMeters} meter(s)";
-                }
-                $message .= ".";
+            $details = [];
+            
+            if ($deletedReadings > 0) {
+                $details[] = "{$deletedReadings} reading(s)";
+            }
+            if ($deletedMeters > 0) {
+                $details[] = "{$deletedMeters} meter(s)";
+            }
+            if ($deletedAuditLogs > 0) {
+                $details[] = "{$deletedAuditLogs} audit log(s)";
+            }
+            
+            if (!empty($details)) {
+                $message .= " Removed: " . implode(', ', $details) . ".";
             }
 
             $this->setFlash('success', $message);
