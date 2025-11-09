@@ -149,6 +149,88 @@
     {% endif %}
 </div>
 
+<!-- Data Quality Widgets -->
+<div class="data-quality-section">
+    <h3 class="section-title">📊 Data Quality - Actual vs Estimated</h3>
+    <div class="data-quality-cards">
+        <div class="data-quality-card">
+            <div class="data-quality-header">
+                <h4>Current Month</h4>
+                <span class="data-quality-month">{{ "now"|date("F Y") }}</span>
+            </div>
+            <div class="data-quality-progress">
+                {% set actualPct = data_quality.current_month.actual_pct %}
+                <div class="data-quality-bar">
+                    <div class="data-quality-bar-actual" style="width: {{ actualPct }}%"></div>
+                    <div class="data-quality-bar-estimated" style="width: {{ 100 - actualPct }}%"></div>
+                </div>
+                <div class="data-quality-legend">
+                    <div class="data-quality-legend-item">
+                        <span class="data-quality-dot data-quality-dot-actual"></span>
+                        <span>Actual: {{ actualPct }}%</span>
+                    </div>
+                    <div class="data-quality-legend-item">
+                        <span class="data-quality-dot data-quality-dot-estimated"></span>
+                        <span>Estimated: {{ 100 - actualPct }}%</span>
+                    </div>
+                </div>
+            </div>
+            <div class="data-quality-stats">
+                <div class="data-quality-stat">
+                    <span class="data-quality-stat-label">Total Energy</span>
+                    <span class="data-quality-stat-value">{{ data_quality.current_month.total_kwh|number_format(1, '.', ',') }} kWh</span>
+                </div>
+                <div class="data-quality-stat">
+                    <span class="data-quality-stat-label">Actual</span>
+                    <span class="data-quality-stat-value">{{ data_quality.current_month.actual_kwh|number_format(1, '.', ',') }} kWh</span>
+                </div>
+                <div class="data-quality-stat">
+                    <span class="data-quality-stat-label">Estimated</span>
+                    <span class="data-quality-stat-value">{{ data_quality.current_month.estimated_kwh|number_format(1, '.', ',') }} kWh</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="data-quality-card">
+            <div class="data-quality-header">
+                <h4>Previous Month</h4>
+                <span class="data-quality-month">{{ "first day of last month"|date("F Y") }}</span>
+            </div>
+            <div class="data-quality-progress">
+                {% set actualPct = data_quality.previous_month.actual_pct %}
+                <div class="data-quality-bar">
+                    <div class="data-quality-bar-actual" style="width: {{ actualPct }}%"></div>
+                    <div class="data-quality-bar-estimated" style="width: {{ 100 - actualPct }}%"></div>
+                </div>
+                <div class="data-quality-legend">
+                    <div class="data-quality-legend-item">
+                        <span class="data-quality-dot data-quality-dot-actual"></span>
+                        <span>Actual: {{ actualPct }}%</span>
+                    </div>
+                    <div class="data-quality-legend-item">
+                        <span class="data-quality-dot data-quality-dot-estimated"></span>
+                        <span>Estimated: {{ 100 - actualPct }}%</span>
+                    </div>
+                </div>
+            </div>
+            <div class="data-quality-stats">
+                <div class="data-quality-stat">
+                    <span class="data-quality-stat-label">Total Energy</span>
+                    <span class="data-quality-stat-value">{{ data_quality.previous_month.total_kwh|number_format(1, '.', ',') }} kWh</span>
+                </div>
+                <div class="data-quality-stat">
+                    <span class="data-quality-stat-label">Actual</span>
+                    <span class="data-quality-stat-value">{{ data_quality.previous_month.actual_kwh|number_format(1, '.', ',') }} kWh</span>
+                </div>
+                <div class="data-quality-stat">
+                    <span class="data-quality-stat-label">Estimated</span>
+                    <span class="data-quality-stat-value">{{ data_quality.previous_month.estimated_kwh|number_format(1, '.', ',') }} kWh</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Modern Action Cards -->
 <div class="action-cards">
     <div class="action-card action-card-primary">
