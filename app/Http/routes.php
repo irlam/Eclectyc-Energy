@@ -88,6 +88,10 @@ $app->group('/tools', function ($group) {
     $group->get('/settings', [SettingsController::class, 'index'])->setName('tools.settings');
     $group->post('/settings', [SettingsController::class, 'update'])->setName('tools.settings.update');
     $group->post('/settings/reset', [SettingsController::class, 'reset'])->setName('tools.settings.reset');
+    
+    // Documentation routes
+    $group->get('/docs', [DocsController::class, 'index'])->setName('tools.docs');
+    $group->get('/docs/{filename}', [DocsController::class, 'view'])->setName('tools.docs.view');
 })->add(function ($request, $handler) use ($container) {
     $middleware = new AuthMiddleware($container->get(AuthService::class), ['admin']);
     return $middleware->process($request, $handler);
@@ -207,10 +211,6 @@ $app->group('/admin', function ($group) {
     $group->get('/users/{id}/edit', [UsersController::class, 'edit'])->setName('admin.users.edit');
     $group->post('/users/{id}', [UsersController::class, 'update'])->setName('admin.users.update');
     $group->post('/users/{id}/delete', [UsersController::class, 'delete'])->setName('admin.users.delete');
-    
-    // Documentation routes
-    $group->get('/docs', [DocsController::class, 'index'])->setName('admin.docs');
-    $group->get('/docs/{filename}', [DocsController::class, 'view'])->setName('admin.docs.view');
 })->add(function ($request, $handler) use ($container) {
     $middleware = new AuthMiddleware($container->get(AuthService::class), ['admin']);
     return $middleware->process($request, $handler);
