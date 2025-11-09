@@ -54,7 +54,15 @@ Prevents server overload and 504 timeout errors during large imports.
 
 #### Configuration
 
-Throttling is controlled via the `system_settings` table:
+**Via GUI (Recommended)**:
+1. Navigate to `/admin/settings`
+2. Toggle **Import Throttle Enabled** ON
+3. Adjust batch size and delay as needed
+4. Click **Save Settings**
+
+**Via Database** (if GUI not available):
+
+Throttling is stored in the `system_settings` table:
 
 | Setting | Default | Description |
 |---------|---------|-------------|

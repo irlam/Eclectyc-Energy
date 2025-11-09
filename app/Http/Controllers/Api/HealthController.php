@@ -381,12 +381,17 @@ class HealthController
                 $warnings[] = 'Errors encountered while reading activity tables';
             }
 
+            // Build a more descriptive message
+            $message = $healthy 
+                ? 'Recent activity within thresholds' 
+                : 'Activity warnings: ' . implode(', ', $warnings);
+            
             return [
                 'healthy' => $healthy,
                 'status' => $status,
                 'exports' => $this->serialiseActivity($exports),
                 'imports' => $this->serialiseActivity($imports),
-                'message' => $healthy ? 'Recent activity within thresholds' : 'Activity warnings detected',
+                'message' => $message,
                 'warnings' => $warnings
             ];
         } catch (Exception $exception) {

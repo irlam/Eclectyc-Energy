@@ -255,17 +255,19 @@ class TariffSwitchingAnalyzer
                 SELECT 
                     SUM(reading_value) as total_consumption,
                     COUNT(DISTINCT reading_date) as days_with_data,
-                    DATEDIFF(:end_date, :start_date) + 1 as days_in_period,
+                    DATEDIFF(?, ?) + 1 as days_in_period,
                     AVG(reading_value) as avg_daily_consumption
                 FROM meter_readings
-                WHERE meter_id = :meter_id
-                AND reading_date BETWEEN :start_date AND :end_date
+                WHERE meter_id = ?
+                AND reading_date BETWEEN ? AND ?
             ');
 
             $stmt->execute([
-                'meter_id' => $meterId,
-                'start_date' => $startDate,
-                'end_date' => $endDate,
+                $endDate,
+                $startDate,
+                $meterId,
+                $startDate,
+                $endDate,
             ]);
 
             $result = $stmt->fetch(PDO::FETCH_ASSOC);
