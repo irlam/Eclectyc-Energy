@@ -26,7 +26,11 @@
             <label for="end">End Date</label>
             <input type="date" id="end" name="end" value="{{ period.end|date('Y-m-d') }}" required>
         </div>
-        <div class="form-group" style="display: flex; align-items: flex-end;">
+        <div class="form-group" style="display: flex; flex-direction: column; justify-content: flex-end;">
+            <label class="consumption-checkbox" style="margin-bottom: 0.5rem;">
+                <input type="checkbox" name="per_metric" value="1" {% if showPerMetric %}checked{% endif %}>
+                <span style="margin-left: 0.5rem;">Show per-metric analysis</span>
+            </label>
             <button type="submit" class="btn btn-primary" style="width: 100%;">Update Report</button>
         </div>
         <div class="form-group" style="display: flex; align-items: flex-end; gap: 0.5rem;">
@@ -39,12 +43,28 @@
         <div class="alert alert-danger">{{ report.error }}</div>
     {% endif %}
 
+    {% if showPerMetric and not report.hasMetricData %}
+        <div class="alert alert-warning">
+            <strong>⚠️ No metric variables configured</strong>
+            <p style="margin-top: 0.5rem;">
+                Per-metric analysis requires meters to have metric variables configured. 
+                <a href="/admin/meters" style="color: #fef3c7; text-decoration: underline;">Configure metric variables</a> to enable this feature.
+            </p>
+        </div>
+    {% endif %}
+
     {% if report.rows is not empty %}
         <div class="consumption-stats">
             <div class="consumption-stat">
                 <span>Total consumption</span>
                 <strong>{{ report.totalConsumption|number_format(1, '.', ',') }} kWh</strong>
             </div>
+            {% if showPerMetric and report.hasMetricData %}
+            <div class="consumption-stat" style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3);">
+                <span>Total per metric</span>
+                <strong>{{ report.totalPerMetric|number_format(3, '.', ',') }}</strong>
+            </div>
+            {% endif %}
             <div class="consumption-stat">
                 <span>Sites with data</span>
                 <strong>{{ report.rows|length }}</strong>
@@ -67,6 +87,10 @@
                         <th>Site</th>
                         <th class="text-right">Meters</th>
                         <th class="text-right">Consumption (kWh)</th>
+                        {% if showPerMetric %}
+                        <th class="text-right">Per Metric</th>
+                        <th>Metric Type</th>
+                        {% endif %}
                         <th class="text-right">% of Total</th>
                         <th>Data range</th>
                     </tr>
@@ -77,6 +101,22 @@
                             <td>{{ row.site_name }}</td>
                             <td class="text-right">{{ row.meter_count }}</td>
                             <td class="text-right">{{ row.total_consumption|number_format(1, '.', ',') }}</td>
+                            {% if showPerMetric %}
+                            <td class="text-right">
+                                {% if row.meters_with_metric > 0 %}
+                                    <span style="color: #86efac;">{{ row.total_per_metric|number_format(3, '.', ',') }}</span>
+                                {% else %}
+                                    <span style="color: #94a3b8;">N/A</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if row.metric_names %}
+                                    <span style="font-size: 0.85rem; color: #cbd5e1;">{{ row.metric_names }}</span>
+                                {% else %}
+                                    <span style="color: #94a3b8;">-</span>
+                                {% endif %}
+                            </td>
+                            {% endif %}
                             <td class="text-right">{{ (report.totalConsumption > 0 and row.total_consumption is defined) ? ((row.total_consumption / report.totalConsumption) * 100)|number_format(1) : '0.0' }}%</td>
                             <td>
                                 {% if row.first_reading and row.last_reading %}
@@ -212,6 +252,17 @@
 
     .consumption-no-data a {
         margin-top: 0.5rem;
+    }
+
+    .consumption-checkbox {
+        display: flex;
+        align-items: center;
+        color: #e2e8f0;
+        cursor: pointer;
+    }
+
+    .consumption-checkbox input[type="checkbox"] {
+        cursor: pointer;
     }
     </style>
 </section>

@@ -88,4 +88,40 @@ class Meter extends BaseModel
         
         return (float) ($result['total'] ?? 0);
     }
+    
+    /**
+     * Calculate consumption per metric variable
+     * Returns consumption normalized by the metric variable value
+     * Example: kWh per square meter, kWh per bed, etc.
+     */
+    public function calculateConsumptionPerMetric(string $startDate, string $endDate): ?float
+    {
+        if (!$this->metric_variable_value || $this->metric_variable_value <= 0) {
+            return null;
+        }
+        
+        $totalConsumption = $this->calculateConsumption($startDate, $endDate);
+        
+        return $totalConsumption / (float) $this->metric_variable_value;
+    }
+    
+    /**
+     * Check if meter has a metric variable configured
+     */
+    public function hasMetricVariable(): bool
+    {
+        return !empty($this->metric_variable_name) && !empty($this->metric_variable_value) && $this->metric_variable_value > 0;
+    }
+    
+    /**
+     * Get the metric variable display name
+     */
+    public function getMetricVariableDisplay(): string
+    {
+        if (!$this->hasMetricVariable()) {
+            return 'N/A';
+        }
+        
+        return $this->metric_variable_name . ' (' . number_format($this->metric_variable_value, 2) . ')';
+    }
 }

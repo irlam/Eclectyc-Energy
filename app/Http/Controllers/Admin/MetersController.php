@@ -155,13 +155,15 @@ class MetersController
         $isHalfHourly = isset($data['is_half_hourly']) ? 1 : 0;
         $installationDate = !empty($data['installation_date']) ? $data['installation_date'] : null;
         $isActive = isset($data['is_active']) ? 1 : 0;
+        $metricVariableName = trim($data['metric_variable_name'] ?? '');
+        $metricVariableValue = !empty($data['metric_variable_value']) ? (float) $data['metric_variable_value'] : null;
 
         try {
             $stmt = $this->pdo->prepare('
                 INSERT INTO meters
-                    (site_id, supplier_id, mpan, serial_number, meter_type, is_smart_meter, is_half_hourly, installation_date, is_active)
+                    (site_id, supplier_id, mpan, serial_number, meter_type, is_smart_meter, is_half_hourly, installation_date, is_active, metric_variable_name, metric_variable_value)
                 VALUES
-                    (:site_id, :supplier_id, :mpan, :serial_number, :meter_type, :is_smart_meter, :is_half_hourly, :installation_date, :is_active)
+                    (:site_id, :supplier_id, :mpan, :serial_number, :meter_type, :is_smart_meter, :is_half_hourly, :installation_date, :is_active, :metric_variable_name, :metric_variable_value)
                 ON DUPLICATE KEY UPDATE
                     serial_number = VALUES(serial_number),
                     supplier_id = VALUES(supplier_id),
@@ -169,7 +171,9 @@ class MetersController
                     is_smart_meter = VALUES(is_smart_meter),
                     is_half_hourly = VALUES(is_half_hourly),
                     installation_date = VALUES(installation_date),
-                    is_active = VALUES(is_active)
+                    is_active = VALUES(is_active),
+                    metric_variable_name = VALUES(metric_variable_name),
+                    metric_variable_value = VALUES(metric_variable_value)
             ');
             $stmt->execute([
                 'site_id' => $siteId,
@@ -181,6 +185,8 @@ class MetersController
                 'is_half_hourly' => $isHalfHourly,
                 'installation_date' => $installationDate ?: null,
                 'is_active' => $isActive,
+                'metric_variable_name' => $metricVariableName !== '' ? $metricVariableName : null,
+                'metric_variable_value' => $metricVariableValue,
             ]);
 
             $this->setFlash('success', 'Meter saved successfully.');
@@ -254,6 +260,8 @@ class MetersController
         $isHalfHourly = isset($data['is_half_hourly']) ? 1 : 0;
         $installationDate = !empty($data['installation_date']) ? $data['installation_date'] : null;
         $isActive = isset($data['is_active']) ? 1 : 0;
+        $metricVariableName = trim($data['metric_variable_name'] ?? '');
+        $metricVariableValue = !empty($data['metric_variable_value']) ? (float) $data['metric_variable_value'] : null;
 
         try {
             $stmt = $this->pdo->prepare('
@@ -266,7 +274,9 @@ class MetersController
                     is_smart_meter = :is_smart_meter,
                     is_half_hourly = :is_half_hourly,
                     installation_date = :installation_date,
-                    is_active = :is_active
+                    is_active = :is_active,
+                    metric_variable_name = :metric_variable_name,
+                    metric_variable_value = :metric_variable_value
                 WHERE id = :id
             ');
             $stmt->execute([
@@ -280,6 +290,8 @@ class MetersController
                 'is_half_hourly' => $isHalfHourly,
                 'installation_date' => $installationDate ?: null,
                 'is_active' => $isActive,
+                'metric_variable_name' => $metricVariableName !== '' ? $metricVariableName : null,
+                'metric_variable_value' => $metricVariableValue,
             ]);
 
             $this->setFlash('success', 'Meter updated successfully.');
