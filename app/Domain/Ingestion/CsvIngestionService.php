@@ -1127,6 +1127,32 @@ class CsvIngestionService
     /**
      * Apply throttling if enabled to prevent server overload
      * 
+     * HOW THROTTLING WORKS:
+     * ---------------------
+     * Throttling helps prevent server timeouts during large CSV imports by:
+     * 1. Processing data in small batches (configurable batch size)
+     * 2. Adding a delay (sleep) between batches to reduce server load
+     * 3. Allowing PHP to handle other requests and avoid 504 Gateway Timeouts
+     * 
+     * Settings are controlled via the system_settings table:
+     * - import_throttle_enabled: Boolean to enable/disable throttling
+     * - import_throttle_batch_size: Number of rows to process before pausing (default: 100)
+     * - import_throttle_delay_ms: Milliseconds to wait between batches (default: 100ms)
+     * - import_max_execution_time: Maximum time in seconds for the entire import (default: 300s/5min)
+     * 
+     * RECOMMENDED PRESETS:
+     * - Small imports (<5,000 rows): Throttle OFF (maximum speed)
+     * - Medium imports (5,000-20,000 rows): Batch=100, Delay=100ms
+     * - Large imports (20,000-100,000 rows): Batch=50, Delay=200ms, MaxTime=600s (10 min)
+     * - Very large imports (>100,000 rows): Batch=25, Delay=300ms, MaxTime=900s (15 min), Use Async!
+     * 
+     * VERIFICATION:
+     * The throttling is currently working correctly:
+     * - Applied in all ingestion methods (interval, matrix, daily)
+     * - Uses usleep() to pause execution after each batch
+     * - Batch size determines how often pauses occur
+     * - Settings are lazy-loaded from database on first use
+     * 
      * @param int $processed Number of records processed so far
      */
     private function applyThrottle(int $processed): void
