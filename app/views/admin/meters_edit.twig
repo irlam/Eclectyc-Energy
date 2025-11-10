@@ -102,6 +102,47 @@
             <small class="form-text">When the meter was installed (optional)</small>
         </div>
 
+        <div class="meters-create-metric-section">
+            <label style="display: block; margin-bottom: 0.75rem; font-weight: bold; color: #f8fafc;">📊 Per-Metric Analytics (Optional)</label>
+            <p class="form-text" style="margin-bottom: 1rem; color: #cbd5e1;">
+                Configure a metric variable to normalize energy consumption. For example, "Square Meters" allows you to analyze kWh per square meter.
+            </p>
+            
+            <div class="form-group">
+                <label for="metric_variable_name">Metric Variable Name</label>
+                <input 
+                    type="text" 
+                    id="metric_variable_name" 
+                    name="metric_variable_name" 
+                    class="form-control" 
+                    placeholder="e.g., Square Meters, Beds, Occupancy"
+                    value="{{ meter.metric_variable_name }}"
+                >
+                <small class="form-text">The name of the metric (e.g., "Square Meters", "Beds", "Occupancy")</small>
+            </div>
+
+            <div class="form-group">
+                <label for="metric_variable_value">Metric Variable Value</label>
+                <input 
+                    type="number" 
+                    id="metric_variable_value" 
+                    name="metric_variable_value" 
+                    class="form-control" 
+                    step="0.001"
+                    min="0.001"
+                    placeholder="e.g., 50"
+                    value="{{ meter.metric_variable_value }}"
+                >
+                <small class="form-text">The numeric value for this metric (must be greater than 0)</small>
+            </div>
+            
+            <div class="meters-create-metric-example">
+                <strong>Example Calculation:</strong><br>
+                If consumption is 1.3 kWh and metric value is 50, then:<br>
+                <code>1.3 kWh ÷ 50 = 0.026 kWh per unit</code>
+            </div>
+        </div>
+
         <div class="meters-create-capabilities">
             <label style="display: block; margin-bottom: 0.75rem; font-weight: bold; color: #f8fafc;">Meter Capabilities</label>
             
@@ -183,6 +224,31 @@
 
     .meters-create-checkbox strong {
         color: #f8fafc;
+    }
+
+    .meters-create-metric-section {
+        background: rgba(16, 185, 129, 0.08);
+        padding: 1rem;
+        border-radius: 12px;
+        border: 1px solid rgba(16, 185, 129, 0.25);
+        margin-bottom: 1rem;
+    }
+
+    .meters-create-metric-example {
+        background: rgba(30, 41, 59, 0.6);
+        padding: 0.75rem;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        color: #cbd5e1;
+        margin-top: 0.5rem;
+    }
+
+    .meters-create-metric-example code {
+        background: rgba(15, 23, 42, 0.6);
+        padding: 0.25rem 0.5rem;
+        border-radius: 4px;
+        color: #86efac;
+        font-family: monospace;
     }
     </style>
 </section>

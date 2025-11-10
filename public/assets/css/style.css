@@ -1530,3 +1530,126 @@ input[type="file"]::-webkit-file-upload-button {
     transform: translateY(-1px);
     box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
 }
+
+/* Data Quality Widgets */
+.data-quality-section {
+    margin: 2rem 0;
+}
+
+.section-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #f8fafc;
+    margin-bottom: 1rem;
+}
+
+.data-quality-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 1.5rem;
+}
+
+.data-quality-card {
+    background: linear-gradient(180deg, #0f172a 0%, #111827 45%, #0b1120 100%);
+    border: 1px solid rgba(148, 163, 184, 0.16);
+    border-radius: 16px;
+    padding: 1.5rem;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.data-quality-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.25rem;
+}
+
+.data-quality-header h4 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #f8fafc;
+    margin: 0;
+}
+
+.data-quality-month {
+    font-size: 0.875rem;
+    color: #94a3b8;
+}
+
+.data-quality-progress {
+    margin-bottom: 1.5rem;
+}
+
+.data-quality-bar {
+    display: flex;
+    height: 32px;
+    border-radius: 8px;
+    overflow: hidden;
+    margin-bottom: 0.75rem;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.data-quality-bar-actual {
+    background: linear-gradient(90deg, #10b981, #059669);
+    transition: width 0.3s ease;
+}
+
+.data-quality-bar-estimated {
+    background: linear-gradient(90deg, #ef4444, #dc2626);
+    transition: width 0.3s ease;
+}
+
+.data-quality-legend {
+    display: flex;
+    gap: 1.5rem;
+    justify-content: center;
+}
+
+.data-quality-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: #cbd5e1;
+}
+
+.data-quality-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+
+.data-quality-dot-actual {
+    background: #10b981;
+}
+
+.data-quality-dot-estimated {
+    background: #ef4444;
+}
+
+.data-quality-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid rgba(148, 163, 184, 0.16);
+}
+
+.data-quality-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.data-quality-stat-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: #94a3b8;
+}
+
+.data-quality-stat-value {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #f8fafc;
+}

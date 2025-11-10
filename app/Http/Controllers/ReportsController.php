@@ -27,14 +27,18 @@ class ReportsController
     public function consumption(Request $request, Response $response): Response
     {
         $period = $this->resolvePeriod($request, 7);
+        $showPerMetric = isset($request->getQueryParams()['per_metric']) && $request->getQueryParams()['per_metric'] === '1';
+        
         $reportData = [
             'rows' => [],
             'totalConsumption' => 0.0,
+            'hasMetricData' => false,
         ];
 
         if ($this->pdo) {
             try {
                 // Modified query to show ALL sites, including those with no data
+                // Now also includes metric variable information
                 $stmt = $this->pdo->prepare('
                     SELECT
                         s.id AS site_id,
@@ -42,13 +46,18 @@ class ReportsController
                         COUNT(DISTINCT CASE WHEN da.date BETWEEN :start AND :end THEN m.id END) AS meter_count,
                         COALESCE(SUM(CASE WHEN da.date BETWEEN :start AND :end THEN da.total_consumption END), 0) AS total_consumption,
                         MIN(CASE WHEN da.date BETWEEN :start AND :end THEN da.date END) AS first_reading,
-                        MAX(CASE WHEN da.date BETWEEN :start AND :end THEN da.date END) AS last_reading
+                        MAX(CASE WHEN da.date BETWEEN :start AND :end THEN da.date END) AS last_reading,
+                        GROUP_CONCAT(DISTINCT CASE WHEN m.metric_variable_name IS NOT NULL THEN m.metric_variable_name END) AS metric_names,
+                        SUM(CASE WHEN m.metric_variable_value > 0 AND da.date BETWEEN :start AND :end 
+                            THEN da.total_consumption / m.metric_variable_value 
+                            ELSE 0 END) AS total_per_metric,
+                        COUNT(DISTINCT CASE WHEN m.metric_variable_value > 0 THEN m.id END) AS meters_with_metric
                     FROM sites s
                     LEFT JOIN meters m ON s.id = m.site_id AND m.is_active = 1
                     LEFT JOIN daily_aggregations da ON m.id = da.meter_id
                     WHERE s.is_active = 1
                     GROUP BY s.id, s.name
-                    ORDER BY total_consumption DESC, s.name ASC
+                    ORDER BY ' . ($showPerMetric ? 'total_per_metric DESC, ' : '') . 'total_consumption DESC, s.name ASC
                 ');
                 $stmt->execute([
                     'start' => $period['start']->format('Y-m-d'),
@@ -58,14 +67,26 @@ class ReportsController
                 $rows = $stmt->fetchAll() ?: [];
 
                 $total = 0.0;
+                $totalPerMetric = 0.0;
+                $hasMetricData = false;
+                
                 foreach ($rows as &$row) {
                     $row['total_consumption'] = (float) $row['total_consumption'];
+                    $row['total_per_metric'] = (float) $row['total_per_metric'];
                     $row['meter_count'] = (int) $row['meter_count'];
+                    $row['meters_with_metric'] = (int) $row['meters_with_metric'];
                     $total += $row['total_consumption'];
+                    $totalPerMetric += $row['total_per_metric'];
+                    
+                    if ($row['meters_with_metric'] > 0) {
+                        $hasMetricData = true;
+                    }
                 }
 
                 $reportData['rows'] = $rows;
                 $reportData['totalConsumption'] = $total;
+                $reportData['totalPerMetric'] = $totalPerMetric;
+                $reportData['hasMetricData'] = $hasMetricData;
             } catch (\Throwable $e) {
                 $reportData['error'] = 'Unable to load consumption data right now.';
             }
@@ -77,6 +98,7 @@ class ReportsController
             'page_title' => 'Energy Consumption Report',
             'period' => $period,
             'report' => $reportData,
+            'showPerMetric' => $showPerMetric,
         ]);
     }
 
@@ -137,6 +159,96 @@ class ReportsController
 
         return $this->view->render($response, 'reports/costs.twig', [
             'page_title' => 'Cost Analysis Report',
+            'period' => $period,
+            'report' => $reportData,
+        ]);
+    }
+
+    /**
+     * Show actual vs estimated data quality report
+     */
+    public function dataQuality(Request $request, Response $response): Response
+    {
+        $period = $this->resolvePeriod($request, 7);
+        $reportData = [
+            'rows' => [],
+            'totalActual' => 0.0,
+            'totalEstimated' => 0.0,
+            'actualPct' => 0,
+        ];
+
+        if ($this->pdo) {
+            try {
+                // Get actual vs estimated breakdown by date
+                $stmt = $this->pdo->prepare('
+                    SELECT 
+                        reading_date,
+                        reading_type,
+                        SUM(reading_value) as total_kwh
+                    FROM meter_readings
+                    WHERE reading_date BETWEEN :start AND :end
+                    GROUP BY reading_date, reading_type
+                    ORDER BY reading_date ASC, reading_type ASC
+                ');
+                $stmt->execute([
+                    'start' => $period['start']->format('Y-m-d'),
+                    'end' => $period['end']->format('Y-m-d'),
+                ]);
+
+                $rawData = $stmt->fetchAll() ?: [];
+                
+                // Organize data by date
+                $dateMap = [];
+                foreach ($rawData as $row) {
+                    $date = $row['reading_date'];
+                    if (!isset($dateMap[$date])) {
+                        $dateMap[$date] = [
+                            'date' => $date,
+                            'actual' => 0.0,
+                            'estimated' => 0.0,
+                            'total' => 0.0,
+                        ];
+                    }
+                    
+                    $value = (float) $row['total_kwh'];
+                    if ($row['reading_type'] === 'actual') {
+                        $dateMap[$date]['actual'] = $value;
+                    } else {
+                        $dateMap[$date]['estimated'] = $value;
+                    }
+                    $dateMap[$date]['total'] += $value;
+                }
+
+                $totalActual = 0.0;
+                $totalEstimated = 0.0;
+                
+                foreach ($dateMap as &$row) {
+                    if ($row['total'] > 0) {
+                        $row['actual_pct'] = round(($row['actual'] / $row['total']) * 100);
+                    } else {
+                        $row['actual_pct'] = 0;
+                    }
+                    $totalActual += $row['actual'];
+                    $totalEstimated += $row['estimated'];
+                }
+
+                $reportData['rows'] = array_values($dateMap);
+                $reportData['totalActual'] = $totalActual;
+                $reportData['totalEstimated'] = $totalEstimated;
+                $total = $totalActual + $totalEstimated;
+                
+                if ($total > 0) {
+                    $reportData['actualPct'] = round(($totalActual / $total) * 100);
+                }
+            } catch (\Throwable $e) {
+                $reportData['error'] = 'Unable to load data quality report: ' . $e->getMessage();
+            }
+        } else {
+            $reportData['error'] = 'Database connection not available.';
+        }
+
+        return $this->view->render($response, 'reports/data_quality.twig', [
+            'page_title' => 'Data Quality Report',
             'period' => $period,
             'report' => $reportData,
         ]);

@@ -54,6 +54,7 @@ class CsvIngestionService
         'datetime' => ['datetime', 'timestamp', 'readdatetime', 'read_datetime', 'readingdatetime'],
         'value' => ['reading', 'readvalue', 'read_value', 'value', 'consumption', 'kwh', 'wh', 'usage'],
         'unit' => ['unit', 'units', 'uom'],
+        'reading_type' => ['reading_type', 'readingtype', 'type', 'status', 'ae', 'a_e', 'actual_estimated', 'estimate'],
     ];
 
     public function __construct(PDO $pdo)
@@ -174,6 +175,10 @@ class CsvIngestionService
                 $unitKey = strtolower(trim((string) ($unitRaw ?? 'kWh')));
                 $unitCounts[$unitKey] = ($unitCounts[$unitKey] ?? 0) + 1;
 
+                // Extract reading type (A/E flag)
+                $readingTypeRaw = $this->getValueFromRecord($record, $headerMap, self::HEADER_ALIASES['reading_type']);
+                $readingType = $this->normalizeReadingType($readingTypeRaw);
+
                 $periodNumber = $this->determinePeriodNumber($timestamp);
 
                 if (!$dryRun) {
@@ -183,7 +188,7 @@ class CsvIngestionService
                         'reading_time' => $timestamp->format('H:i:s'),
                         'period_number' => $periodNumber,
                         'reading_value' => $value,
-                        'reading_type' => 'actual',
+                        'reading_type' => $readingType,
                         'batch_id' => $batchId,
                     ]);
                 }
@@ -268,6 +273,10 @@ class CsvIngestionService
                     throw new Exception('Invalid date value');
                 }
 
+                // Extract reading type (A/E flag) - applies to entire row
+                $readingTypeRaw = $this->getValueFromRecord($record, $headerMap, self::HEADER_ALIASES['reading_type']);
+                $readingType = $this->normalizeReadingType($readingTypeRaw);
+
                 $rowValues = 0;
 
                 foreach ($halfHourlyColumns as $period => $columnName) {
@@ -290,7 +299,7 @@ class CsvIngestionService
                             'reading_time' => $time,
                             'period_number' => $period,
                             'reading_value' => $value,
-                            'reading_type' => 'actual',
+                            'reading_type' => $readingType,
                             'batch_id' => $batchId,
                         ]);
                     }
@@ -383,6 +392,10 @@ class CsvIngestionService
                 $unitKey = strtolower(trim((string) ($unitRaw ?? 'kWh')));
                 $unitCounts[$unitKey] = ($unitCounts[$unitKey] ?? 0) + 1;
 
+                // Extract reading type (A/E flag)
+                $readingTypeRaw = $this->getValueFromRecord($record, $headerMap, self::HEADER_ALIASES['reading_type']);
+                $readingType = $this->normalizeReadingType($readingTypeRaw);
+
                 if (!$dryRun) {
                     $insertStmt->execute([
                         'meter_id' => $meterId,
@@ -390,7 +403,7 @@ class CsvIngestionService
                         'reading_time' => '00:00:00',
                         'period_number' => null,
                         'reading_value' => $value,
-                        'reading_type' => 'actual',
+                        'reading_type' => $readingType,
                         'batch_id' => $batchId,
                     ]);
                 }
@@ -1185,5 +1198,35 @@ class CsvIngestionService
             // Silently skip throttling if there's an error
             return;
         }
+    }
+
+    /**
+     * Normalize reading type from CSV value to database enum
+     * Accepts: A, E, actual, estimated
+     * Returns: 'actual' or 'estimated' (defaults to 'actual')
+     */
+    private function normalizeReadingType(?string $value): string
+    {
+        if ($value === null) {
+            return 'actual';
+        }
+
+        $normalized = strtolower(trim($value));
+
+        // Check for single letter codes
+        if ($normalized === 'a') {
+            return 'actual';
+        }
+        if ($normalized === 'e') {
+            return 'estimated';
+        }
+
+        // Check for full words
+        if (in_array($normalized, ['actual', 'estimated', 'manual'], true)) {
+            return $normalized;
+        }
+
+        // Default to 'actual' for unrecognized values
+        return 'actual';
     }
 }

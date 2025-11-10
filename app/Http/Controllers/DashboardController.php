@@ -42,6 +42,20 @@ class DashboardController
         $trend = [];
         $recentActivity = [];
         $carbonIntensity = null;
+        $dataQuality = [
+            'current_month' => [
+                'total_kwh' => 0.0,
+                'actual_kwh' => 0.0,
+                'estimated_kwh' => 0.0,
+                'actual_pct' => 0,
+            ],
+            'previous_month' => [
+                'total_kwh' => 0.0,
+                'actual_kwh' => 0.0,
+                'estimated_kwh' => 0.0,
+                'actual_pct' => 0,
+            ],
+        ];
 
         if ($this->pdo) {
             try {
@@ -183,6 +197,64 @@ class DashboardController
             } catch (\Throwable $e) {
                 $recentActivity = [];
             }
+
+            // Data quality stats: Actual vs Estimated
+            try {
+                $today = new DateTimeImmutable('today');
+                $currentMonthStart = $today->modify('first day of this month');
+                $previousMonthStart = $currentMonthStart->modify('-1 month');
+                $previousMonthEnd = $currentMonthStart->modify('-1 day');
+
+                // Current month
+                $currentMonthStmt = $this->pdo->prepare('
+                    SELECT 
+                        reading_type,
+                        SUM(reading_value) as total_kwh
+                    FROM meter_readings
+                    WHERE reading_date >= :start
+                    GROUP BY reading_type
+                ');
+                $currentMonthStmt->execute(['start' => $currentMonthStart->format('Y-m-d')]);
+                $currentMonthData = $currentMonthStmt->fetchAll(\PDO::FETCH_KEY_PAIR) ?: [];
+                
+                $dataQuality['current_month']['actual_kwh'] = (float) ($currentMonthData['actual'] ?? 0);
+                $dataQuality['current_month']['estimated_kwh'] = (float) ($currentMonthData['estimated'] ?? 0);
+                $dataQuality['current_month']['total_kwh'] = $dataQuality['current_month']['actual_kwh'] + $dataQuality['current_month']['estimated_kwh'];
+                
+                if ($dataQuality['current_month']['total_kwh'] > 0) {
+                    $dataQuality['current_month']['actual_pct'] = round(
+                        ($dataQuality['current_month']['actual_kwh'] / $dataQuality['current_month']['total_kwh']) * 100
+                    );
+                }
+
+                // Previous month
+                $previousMonthStmt = $this->pdo->prepare('
+                    SELECT 
+                        reading_type,
+                        SUM(reading_value) as total_kwh
+                    FROM meter_readings
+                    WHERE reading_date BETWEEN :start AND :end
+                    GROUP BY reading_type
+                ');
+                $previousMonthStmt->execute([
+                    'start' => $previousMonthStart->format('Y-m-d'),
+                    'end' => $previousMonthEnd->format('Y-m-d'),
+                ]);
+                $previousMonthData = $previousMonthStmt->fetchAll(\PDO::FETCH_KEY_PAIR) ?: [];
+                
+                $dataQuality['previous_month']['actual_kwh'] = (float) ($previousMonthData['actual'] ?? 0);
+                $dataQuality['previous_month']['estimated_kwh'] = (float) ($previousMonthData['estimated'] ?? 0);
+                $dataQuality['previous_month']['total_kwh'] = $dataQuality['previous_month']['actual_kwh'] + $dataQuality['previous_month']['estimated_kwh'];
+                
+                if ($dataQuality['previous_month']['total_kwh'] > 0) {
+                    $dataQuality['previous_month']['actual_pct'] = round(
+                        ($dataQuality['previous_month']['actual_kwh'] / $dataQuality['previous_month']['total_kwh']) * 100
+                    );
+                }
+            } catch (\Throwable $e) {
+                // Ignore data quality errors
+                error_log("Data quality stats failed: " . $e->getMessage());
+            }
         }
 
         return $this->view->render($response, 'dashboard.twig', [
@@ -191,6 +263,7 @@ class DashboardController
             'trend' => $trend,
             'recent_activity' => $recentActivity,
             'carbon_intensity' => $carbonIntensity,
+            'data_quality' => $dataQuality,
         ]);
     }
 }
