@@ -1,0 +1,213 @@
+{# eclectyc-energy/app/views/admin/users_access.twig #}
+{# User hierarchical access management #}
+{# Last updated: 2025-11-10 #}
+
+{% extends "base.twig" %}
+
+{% block content %}
+<div class="page-header">
+    <h2>🔐 Manage User Access</h2>
+    <p class="page-subtitle">Configure hierarchical access for {{ user.name }}</p>
+</div>
+
+{% if flash %}
+<div class="alert alert-{{ flash.type }}">
+    {{ flash.message }}
+</div>
+{% endif %}
+
+<div class="user-info-card">
+    <div class="user-info-row">
+        <div class="user-info-item">
+            <strong>User:</strong> {{ user.name }}
+        </div>
+        <div class="user-info-item">
+            <strong>Email:</strong> {{ user.email }}
+        </div>
+        <div class="user-info-item">
+            <strong>Role:</strong> 
+            <span class="role-badge role-{{ user.role }}">{{ user.role|capitalize }}</span>
+        </div>
+    </div>
+</div>
+
+{% if user.role == 'admin' %}
+<div class="alert alert-info">
+    <strong>ℹ️ Admin Access:</strong> This user has administrative privileges and automatically has access to all companies, regions, and sites.
+</div>
+{% else %}
+
+<div class="access-explanation">
+    <h3>Hierarchical Access Control</h3>
+    <p>Grant access at any level of the hierarchy. Access cascades down:</p>
+    <ul>
+        <li><strong>Company Access:</strong> User can see all regions and sites under that company</li>
+        <li><strong>Region Access:</strong> User can see all sites in that region</li>
+        <li><strong>Site Access:</strong> User can see only that specific site</li>
+    </ul>
+</div>
+
+<form method="POST" action="/admin/users/{{ user.id }}/access" class="access-form">
+    
+    <!-- Company Access Section -->
+    <div class="access-section">
+        <h3 class="access-section-title">
+            <span class="access-icon">🏢</span> Company Access
+        </h3>
+        <p class="access-section-description">
+            Grant access to all sites and regions under selected companies
+        </p>
+        
+        {% if companies|length > 0 %}
+        <div class="checkbox-grid">
+            {% for company in companies %}
+            <div class="checkbox-item">
+                <input 
+                    type="checkbox" 
+                    name="company_ids[]" 
+                    value="{{ company.id }}" 
+                    id="company_{{ company.id }}"
+                    {% if company.id in user_access.companies|map(c => c.id) %}checked{% endif %}
+                >
+                <label for="company_{{ company.id }}">{{ company.name }}</label>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="no-data-message">No companies available</p>
+        {% endif %}
+    </div>
+
+    <!-- Region Access Section -->
+    <div class="access-section">
+        <h3 class="access-section-title">
+            <span class="access-icon">🗺️</span> Region Access
+        </h3>
+        <p class="access-section-description">
+            Grant access to all sites within selected regions
+        </p>
+        
+        {% if regions|length > 0 %}
+        <div class="checkbox-grid">
+            {% for region in regions %}
+            <div class="checkbox-item">
+                <input 
+                    type="checkbox" 
+                    name="region_ids[]" 
+                    value="{{ region.id }}" 
+                    id="region_{{ region.id }}"
+                    {% if region.id in user_access.regions|map(r => r.id) %}checked{% endif %}
+                >
+                <label for="region_{{ region.id }}">
+                    {{ region.name }}
+                    {% if region.code %}({{ region.code }}){% endif %}
+                </label>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="no-data-message">No regions available</p>
+        {% endif %}
+    </div>
+
+    <!-- Site Access Section -->
+    <div class="access-section">
+        <h3 class="access-section-title">
+            <span class="access-icon">📍</span> Site Access
+        </h3>
+        <p class="access-section-description">
+            Grant access to specific individual sites
+        </p>
+        
+        {% if sites|length > 0 %}
+        <div class="site-search">
+            <input 
+                type="text" 
+                id="site-search" 
+                placeholder="Search sites..." 
+                class="search-input"
+                onkeyup="filterSites()"
+            >
+        </div>
+        
+        <div class="checkbox-grid" id="sites-grid">
+            {% for site in sites %}
+            <div class="checkbox-item site-item" data-site-name="{{ site.name|lower }}" data-company-name="{{ site.company_name|lower }}">
+                <input 
+                    type="checkbox" 
+                    name="site_ids[]" 
+                    value="{{ site.id }}" 
+                    id="site_{{ site.id }}"
+                    {% if site.id in user_access.sites|map(s => s.id) %}checked{% endif %}
+                >
+                <label for="site_{{ site.id }}">
+                    <div class="site-label-content">
+                        <div class="site-name">{{ site.name }}</div>
+                        <div class="site-meta">
+                            {% if site.company_name %}{{ site.company_name }}{% endif %}
+                            {% if site.region_name %} / {{ site.region_name }}{% endif %}
+                        </div>
+                    </div>
+                </label>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="no-data-message">No sites available</p>
+        {% endif %}
+    </div>
+
+    <!-- Current Access Summary -->
+    <div class="access-summary">
+        <h3>Current Access Summary</h3>
+        <div class="summary-stats">
+            <div class="summary-stat">
+                <div class="summary-stat-value">{{ user_access.company_count }}</div>
+                <div class="summary-stat-label">Companies</div>
+            </div>
+            <div class="summary-stat">
+                <div class="summary-stat-value">{{ user_access.region_count }}</div>
+                <div class="summary-stat-label">Regions</div>
+            </div>
+            <div class="summary-stat">
+                <div class="summary-stat-value">{{ user_access.site_count }}</div>
+                <div class="summary-stat-label">Sites</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Form Actions -->
+    <div class="form-actions">
+        <button type="submit" class="btn btn-primary">
+            <span>💾</span> Save Access Configuration
+        </button>
+        <a href="/admin/users" class="btn btn-secondary">
+            <span>❌</span> Cancel
+        </a>
+    </div>
+</form>
+
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Filter sites based on search input
+function filterSites() {
+    const searchValue = document.getElementById('site-search').value.toLowerCase();
+    const siteItems = document.querySelectorAll('.site-item');
+    
+    siteItems.forEach(item => {
+        const siteName = item.getAttribute('data-site-name');
+        const companyName = item.getAttribute('data-company-name');
+        
+        if (siteName.includes(searchValue) || companyName.includes(searchValue)) {
+            item.style.display = 'block';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+}
+</script>
+{% endblock %}
