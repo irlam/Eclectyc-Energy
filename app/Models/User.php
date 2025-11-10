@@ -239,6 +239,37 @@ class User extends BaseModel
     }
 
     /**
+     * Get all accessible company IDs for this user based on hierarchical access
+     *
+     * @return array
+     */
+    public function getAccessibleCompanyIds(): array
+    {
+        if (!isset($this->attributes['id'])) {
+            return [];
+        }
+
+        // Admin users have access to all companies
+        if ($this->attributes['role'] === 'admin') {
+            $db = \App\Config\Database::getConnection();
+            if (!$db) {
+                return [];
+            }
+            $stmt = $db->query('SELECT id FROM companies');
+            return $stmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
+        }
+
+        $db = \App\Config\Database::getConnection();
+        if (!$db) {
+            return [];
+        }
+
+        // Delegate to AccessControlService for consistency
+        $accessControlService = new \App\Services\AccessControlService($db);
+        return $accessControlService->getAccessibleCompanyIds($this->attributes['id']);
+    }
+
+    /**
      * Get all accessible site IDs for this user based on hierarchical access
      *
      * @return array

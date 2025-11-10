@@ -26,11 +26,37 @@ class TariffsController
 
     public function index(Request $request, Response $response): Response
     {
+        $user = $_SESSION['user'] ?? null;
+        $userId = $user['id'] ?? null;
+        $accessibleCompanyIds = [];
+        
+        if ($userId) {
+            $userModel = \App\Models\User::find($userId);
+            if ($userModel) {
+                $accessibleCompanyIds = $userModel->getAccessibleCompanyIds();
+            }
+        }
+        
         $tariffs = [];
 
         if ($this->pdo) {
             try {
-                $stmt = $this->pdo->query('
+                // Build WHERE clause for company filtering
+                $companyFilter = '';
+                $params = [];
+                
+                // Admin users see all tariffs
+                // Other users see only public tariffs (company_id IS NULL) or tariffs for their accessible companies
+                if (!empty($accessibleCompanyIds)) {
+                    $placeholders = implode(',', array_fill(0, count($accessibleCompanyIds), '?'));
+                    $companyFilter = " WHERE (t.company_id IS NULL OR t.company_id IN ($placeholders))";
+                    $params = $accessibleCompanyIds;
+                } elseif (($user['role'] ?? '') !== 'admin') {
+                    // Non-admin with no company access sees only public tariffs
+                    $companyFilter = " WHERE t.company_id IS NULL";
+                }
+                
+                $stmt = $this->pdo->prepare('
                     SELECT
                         t.id,
                         t.name,
@@ -46,11 +72,16 @@ class TariffsController
                         t.weekend_rate,
                         t.is_active,
                         t.created_at,
-                        COALESCE(sup.name, "Unknown") AS supplier_name
+                        t.company_id,
+                        COALESCE(sup.name, "Unknown") AS supplier_name,
+                        c.name AS company_name
                     FROM tariffs t
                     LEFT JOIN suppliers sup ON t.supplier_id = sup.id
+                    LEFT JOIN companies c ON t.company_id = c.id
+                    ' . $companyFilter . '
                     ORDER BY t.valid_from DESC, t.name ASC
                 ');
+                $stmt->execute($params);
                 $tariffs = $stmt->fetchAll() ?: [];
 
                 foreach ($tariffs as &$tariff) {
@@ -62,6 +93,7 @@ class TariffsController
                     $tariff['is_active'] = (bool) $tariff['is_active'];
                 }
             } catch (\Throwable $e) {
+                error_log("Error fetching tariffs: " . $e->getMessage());
                 $tariffs = [];
             }
         }
