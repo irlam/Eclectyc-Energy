@@ -26,6 +26,18 @@ class MetersController
 
     public function index(Request $request, Response $response): Response
     {
+        // Get current user and their accessible sites
+        $user = $_SESSION['user'] ?? null;
+        $userId = $user['id'] ?? null;
+        $accessibleSiteIds = [];
+        
+        if ($userId) {
+            $userModel = \App\Models\User::find($userId);
+            if ($userModel) {
+                $accessibleSiteIds = $userModel->getAccessibleSiteIds();
+            }
+        }
+        
         $meters = [];
         $totals = [
             'count' => 0,
@@ -41,14 +53,28 @@ class MetersController
 
         if ($this->pdo) {
             try {
+                // Build WHERE clause for site filtering
+                $siteFilter = '';
+                if (!empty($accessibleSiteIds)) {
+                    $placeholders = implode(',', array_fill(0, count($accessibleSiteIds), '?'));
+                    $siteFilter = " WHERE m.site_id IN ($placeholders)";
+                }
+                
                 // Get total counts first
-                $countStmt = $this->pdo->query('
+                $countStmt = $this->pdo->prepare('
                     SELECT 
                         COUNT(*) as total,
-                        SUM(CASE WHEN is_active = 1 THEN 1 ELSE 0 END) as active,
-                        SUM(CASE WHEN is_half_hourly = 1 THEN 1 ELSE 0 END) as hh
-                    FROM meters
-                ');
+                        SUM(CASE WHEN m.is_active = 1 THEN 1 ELSE 0 END) as active,
+                        SUM(CASE WHEN m.is_half_hourly = 1 THEN 1 ELSE 0 END) as hh
+                    FROM meters m' . $siteFilter
+                );
+                
+                if (!empty($accessibleSiteIds)) {
+                    $countStmt->execute($accessibleSiteIds);
+                } else {
+                    $countStmt->execute();
+                }
+                
                 $counts = $countStmt->fetch();
                 $totals = [
                     'count' => (int) $counts['total'],
@@ -71,10 +97,20 @@ class MetersController
                         sup.name AS supplier_name
                     FROM meters m
                     LEFT JOIN sites s ON s.id = m.site_id
-                    LEFT JOIN suppliers sup ON sup.id = m.supplier_id
+                    LEFT JOIN suppliers sup ON sup.id = m.supplier_id' .
+                    $siteFilter . '
                     ORDER BY m.created_at DESC, m.id DESC
                     LIMIT :limit OFFSET :offset
                 ');
+                
+                // Bind site IDs if filtering
+                if (!empty($accessibleSiteIds)) {
+                    $paramIndex = 1;
+                    foreach ($accessibleSiteIds as $siteId) {
+                        $stmt->bindValue($paramIndex++, $siteId, PDO::PARAM_INT);
+                    }
+                }
+                
                 $stmt->bindValue(':limit', $perPage, PDO::PARAM_INT);
                 $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
                 $stmt->execute();

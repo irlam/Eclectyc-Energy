@@ -211,6 +211,8 @@ $app->group('/admin', function ($group) {
     $group->get('/users/{id}/edit', [UsersController::class, 'edit'])->setName('admin.users.edit');
     $group->post('/users/{id}', [UsersController::class, 'update'])->setName('admin.users.update');
     $group->post('/users/{id}/delete', [UsersController::class, 'delete'])->setName('admin.users.delete');
+    $group->get('/users/{id}/access', [UsersController::class, 'manageAccess'])->setName('admin.users.access');
+    $group->post('/users/{id}/access', [UsersController::class, 'updateAccess'])->setName('admin.users.access.update');
 })->add(function ($request, $handler) use ($container) {
     $middleware = new AuthMiddleware($container->get(AuthService::class), ['admin']);
     return $middleware->process($request, $handler);

@@ -410,4 +410,121 @@ class UsersController
 
         return $data;
     }
+
+    /**
+     * Show user access management page
+     */
+    public function manageAccess(Request $request, Response $response, array $args): Response
+    {
+        if (!$this->pdo) {
+            $this->setFlash('error', 'Database connection unavailable.');
+            return $this->redirect($response, '/admin/users');
+        }
+
+        $userId = (int)$args['id'];
+        $user = User::find($userId);
+
+        if (!$user) {
+            $this->setFlash('error', 'User not found.');
+            return $this->redirect($response, '/admin/users');
+        }
+
+        // Get all companies
+        $stmt = $this->pdo->query('SELECT id, name FROM companies ORDER BY name');
+        $companies = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Get all regions
+        $stmt = $this->pdo->query('SELECT id, name, code FROM regions ORDER BY name');
+        $regions = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Get all sites with company info
+        $stmt = $this->pdo->query('
+            SELECT s.id, s.name, c.name as company_name, r.name as region_name
+            FROM sites s
+            LEFT JOIN companies c ON c.id = s.company_id
+            LEFT JOIN regions r ON r.id = s.region_id
+            ORDER BY c.name, s.name
+        ');
+        $sites = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Get user's current access
+        $accessControlService = new \App\Services\AccessControlService($this->pdo);
+        $userAccess = $accessControlService->getUserAccessSummary($userId);
+
+        $flash = $_SESSION['user_flash'] ?? null;
+        unset($_SESSION['user_flash']);
+
+        return $this->view->render($response, 'admin/users_access.twig', [
+            'page_title' => 'Manage User Access',
+            'user' => $user,
+            'companies' => $companies,
+            'regions' => $regions,
+            'sites' => $sites,
+            'user_access' => $userAccess,
+            'flash' => $flash,
+        ]);
+    }
+
+    /**
+     * Update user hierarchical access
+     */
+    public function updateAccess(Request $request, Response $response, array $args): Response
+    {
+        if (!$this->pdo) {
+            $this->setFlash('error', 'Database connection unavailable.');
+            return $this->redirect($response, '/admin/users');
+        }
+
+        $userId = (int)$args['id'];
+        $user = User::find($userId);
+
+        if (!$user) {
+            $this->setFlash('error', 'User not found.');
+            return $this->redirect($response, '/admin/users');
+        }
+
+        $data = $request->getParsedBody() ?? [];
+        $companyIds = $data['company_ids'] ?? [];
+        $regionIds = $data['region_ids'] ?? [];
+        $siteIds = $data['site_ids'] ?? [];
+
+        // Get current admin user ID
+        $currentUserId = $_SESSION['user']['id'] ?? null;
+
+        $accessControlService = new \App\Services\AccessControlService($this->pdo);
+
+        try {
+            $this->pdo->beginTransaction();
+
+            // Clear existing access
+            $this->pdo->prepare('DELETE FROM user_company_access WHERE user_id = ?')->execute([$userId]);
+            $this->pdo->prepare('DELETE FROM user_region_access WHERE user_id = ?')->execute([$userId]);
+            $this->pdo->prepare('DELETE FROM user_site_access WHERE user_id = ?')->execute([$userId]);
+
+            // Grant new company access
+            foreach ($companyIds as $companyId) {
+                $accessControlService->grantCompanyAccess($userId, (int)$companyId, $currentUserId);
+            }
+
+            // Grant new region access
+            foreach ($regionIds as $regionId) {
+                $accessControlService->grantRegionAccess($userId, (int)$regionId, $currentUserId);
+            }
+
+            // Grant new site access
+            foreach ($siteIds as $siteId) {
+                $accessControlService->grantSiteAccess($userId, (int)$siteId, $currentUserId);
+            }
+
+            $this->pdo->commit();
+
+            $this->setFlash('success', 'User access updated successfully.');
+        } catch (\Exception $e) {
+            $this->pdo->rollBack();
+            error_log('Failed to update user access: ' . $e->getMessage());
+            $this->setFlash('error', 'Failed to update user access.');
+        }
+
+        return $this->redirect($response, '/admin/users/' . $userId . '/access');
+    }
 }

@@ -33,12 +33,31 @@ class SitesController
      */
     public function index(Request $request, Response $response): Response
     {
+        // Get current user and their accessible sites
+        $user = $_SESSION['user'] ?? null;
+        $userId = $user['id'] ?? null;
+        $accessibleSiteIds = [];
+        
+        if ($userId) {
+            $userModel = \App\Models\User::find($userId);
+            if ($userModel) {
+                $accessibleSiteIds = $userModel->getAccessibleSiteIds();
+            }
+        }
+        
         $sites = [];
         $totalMeters = 0;
 
         if ($this->pdo) {
             try {
-                $stmt = $this->pdo->query('
+                // Build WHERE clause for site filtering
+                $siteFilter = '';
+                if (!empty($accessibleSiteIds)) {
+                    $placeholders = implode(',', array_fill(0, count($accessibleSiteIds), '?'));
+                    $siteFilter = " WHERE s.id IN ($placeholders)";
+                }
+                
+                $stmt = $this->pdo->prepare('
                     SELECT
                         s.id,
                         s.name,
@@ -52,10 +71,18 @@ class SitesController
                     FROM sites s
                     LEFT JOIN companies c ON s.company_id = c.id
                     LEFT JOIN regions r ON s.region_id = r.id
-                    LEFT JOIN meters m ON m.site_id = s.id
+                    LEFT JOIN meters m ON m.site_id = s.id' . 
+                    $siteFilter . '
                     GROUP BY s.id, s.name, s.site_type, s.postcode, s.is_active, s.created_at, c.name, r.name
                     ORDER BY s.name ASC
                 ');
+                
+                if (!empty($accessibleSiteIds)) {
+                    $stmt->execute($accessibleSiteIds);
+                } else {
+                    $stmt->execute();
+                }
+                
                 $sites = $stmt->fetchAll() ?: [];
 
                 foreach ($sites as &$site) {

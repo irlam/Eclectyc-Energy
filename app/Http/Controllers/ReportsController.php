@@ -26,6 +26,18 @@ class ReportsController
 
     public function consumption(Request $request, Response $response): Response
     {
+        // Get current user and their accessible sites
+        $user = $_SESSION['user'] ?? null;
+        $userId = $user['id'] ?? null;
+        $accessibleSiteIds = [];
+        
+        if ($userId) {
+            $userModel = \App\Models\User::find($userId);
+            if ($userModel) {
+                $accessibleSiteIds = $userModel->getAccessibleSiteIds();
+            }
+        }
+        
         $period = $this->resolvePeriod($request, 7);
         $showPerMetric = isset($request->getQueryParams()['per_metric']) && $request->getQueryParams()['per_metric'] === '1';
         
@@ -37,7 +49,23 @@ class ReportsController
 
         if ($this->pdo) {
             try {
-                // Modified query to show ALL sites, including those with no data
+                // Build WHERE clause for site filtering
+                $siteFilter = '';
+                $params = [
+                    'start' => $period['start']->format('Y-m-d'),
+                    'end' => $period['end']->format('Y-m-d'),
+                ];
+                
+                if (!empty($accessibleSiteIds)) {
+                    $placeholders = implode(',', array_fill(0, count($accessibleSiteIds), '?'));
+                    $siteFilter = " AND s.id IN ($placeholders)";
+                    // Add site IDs to params array
+                    foreach ($accessibleSiteIds as $siteId) {
+                        $params[] = $siteId;
+                    }
+                }
+                
+                // Modified query to show only accessible sites
                 // Now also includes metric variable information
                 $stmt = $this->pdo->prepare('
                     SELECT
@@ -55,14 +83,11 @@ class ReportsController
                     FROM sites s
                     LEFT JOIN meters m ON s.id = m.site_id AND m.is_active = 1
                     LEFT JOIN daily_aggregations da ON m.id = da.meter_id
-                    WHERE s.is_active = 1
+                    WHERE s.is_active = 1' . $siteFilter . '
                     GROUP BY s.id, s.name
                     ORDER BY ' . ($showPerMetric ? 'total_per_metric DESC, ' : '') . 'total_consumption DESC, s.name ASC
                 ');
-                $stmt->execute([
-                    'start' => $period['start']->format('Y-m-d'),
-                    'end' => $period['end']->format('Y-m-d'),
-                ]);
+                $stmt->execute($params);
 
                 $rows = $stmt->fetchAll() ?: [];
 
