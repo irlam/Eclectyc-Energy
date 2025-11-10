@@ -1,0 +1,129 @@
+{% extends "base.twig" %}
+
+{% block title %}Create Scheduled Report{% endblock %}
+
+{% block content %}
+<section class="card">
+    <div class="card-header">
+        <h2>Create Scheduled Report</h2>
+        <p class="mb-2">Configure a new automated report.</p>
+    </div>
+
+    <form method="post" action="/admin/scheduled-reports">
+        <div class="form-group">
+            <label for="name">Report Name *</label>
+            <input type="text" id="name" name="name" class="form-control" required>
+        </div>
+
+        <div class="form-group">
+            <label for="description">Description</label>
+            <textarea id="description" name="description" class="form-control" rows="3"></textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="report_type">Report Type *</label>
+            <select id="report_type" name="report_type" class="form-control" required>
+                <option value="consumption">Consumption Report</option>
+                <option value="cost">Cost Report</option>
+                <option value="data_quality">Data Quality Report</option>
+                <option value="tariff_switching">Tariff Switching Report</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="report_format">Report Format *</label>
+            <select id="report_format" name="report_format" class="form-control" required>
+                <option value="csv">CSV</option>
+                <option value="html">HTML</option>
+                <option value="pdf">PDF (future)</option>
+                <option value="excel">Excel (future)</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="frequency">Frequency *</label>
+            <select id="frequency" name="frequency" class="form-control" required onchange="updateFrequencyFields()">
+                <option value="manual">Manual only</option>
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+            </select>
+        </div>
+
+        <div class="form-group" id="day_of_week_group" style="display: none;">
+            <label for="day_of_week">Day of Week</label>
+            <select id="day_of_week" name="day_of_week" class="form-control">
+                <option value="0">Sunday</option>
+                <option value="1" selected>Monday</option>
+                <option value="2">Tuesday</option>
+                <option value="3">Wednesday</option>
+                <option value="4">Thursday</option>
+                <option value="5">Friday</option>
+                <option value="6">Saturday</option>
+            </select>
+        </div>
+
+        <div class="form-group" id="day_of_month_group" style="display: none;">
+            <label for="day_of_month">Day of Month</label>
+            <input type="number" id="day_of_month" name="day_of_month" class="form-control" min="1" max="31" value="1">
+        </div>
+
+        <div class="form-group" id="hour_of_day_group" style="display: none;">
+            <label for="hour_of_day">Hour of Day (0-23)</label>
+            <input type="number" id="hour_of_day" name="hour_of_day" class="form-control" min="0" max="23" value="8">
+            <small class="form-text">Time to send the report (24-hour format)</small>
+        </div>
+
+        <div class="form-group">
+            <label for="start_date">Start Date (for period-based reports)</label>
+            <input type="date" id="start_date" name="start_date" class="form-control">
+        </div>
+
+        <div class="form-group">
+            <label for="end_date">End Date (for period-based reports)</label>
+            <input type="date" id="end_date" name="end_date" class="form-control">
+        </div>
+
+        <div class="form-group">
+            <label for="recipients">Email Recipients *</label>
+            <input type="text" id="recipients" name="recipients" class="form-control" placeholder="email1@example.com, email2@example.com" required>
+            <small class="form-text">Comma-separated email addresses</small>
+        </div>
+
+        <div class="form-group">
+            <label>
+                <input type="checkbox" name="is_active" value="1" checked>
+                Active
+            </label>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Create Report</button>
+            <a href="/admin/scheduled-reports" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</section>
+
+<script>
+function updateFrequencyFields() {
+    const frequency = document.getElementById('frequency').value;
+    const dayOfWeekGroup = document.getElementById('day_of_week_group');
+    const dayOfMonthGroup = document.getElementById('day_of_month_group');
+    const hourOfDayGroup = document.getElementById('hour_of_day_group');
+
+    dayOfWeekGroup.style.display = 'none';
+    dayOfMonthGroup.style.display = 'none';
+    hourOfDayGroup.style.display = 'none';
+
+    if (frequency === 'weekly') {
+        dayOfWeekGroup.style.display = 'block';
+        hourOfDayGroup.style.display = 'block';
+    } else if (frequency === 'monthly') {
+        dayOfMonthGroup.style.display = 'block';
+        hourOfDayGroup.style.display = 'block';
+    } else if (frequency === 'daily') {
+        hourOfDayGroup.style.display = 'block';
+    }
+}
+</script>
+{% endblock %}

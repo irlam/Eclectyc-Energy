@@ -1,0 +1,109 @@
+{% extends "base.twig" %}
+
+{% block title %}Edit Alarm{% endblock %}
+
+{% block content %}
+<section class="card">
+    <div class="card-header">
+        <h2>Edit Alarm</h2>
+        <p class="mb-2">Update alarm configuration.</p>
+    </div>
+
+    {% if alarm %}
+        <form method="post" action="/admin/alarms/{{ alarm.id }}">
+            <div class="form-group">
+                <label for="name">Alarm Name *</label>
+                <input type="text" id="name" name="name" class="form-control" value="{{ alarm.name }}" required>
+            </div>
+
+            <div class="form-group">
+                <label for="description">Description</label>
+                <textarea id="description" name="description" class="form-control" rows="3">{{ alarm.description }}</textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="site_id">Site *</label>
+                <select id="site_id" name="site_id" class="form-control" required>
+                    <option value="">-- Select Site --</option>
+                    {% for site in sites %}
+                        <option value="{{ site.id }}" {% if site.id == alarm.site_id %}selected{% endif %}>{{ site.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="meter_id">Meter (optional)</label>
+                <select id="meter_id" name="meter_id" class="form-control">
+                    <option value="">-- Site-wide alarm --</option>
+                    {% for meter in meters %}
+                        <option value="{{ meter.id }}" {% if meter.id == alarm.meter_id %}selected{% endif %}>{{ meter.site_name }} - {{ meter.mpan }}</option>
+                    {% endfor %}
+                </select>
+                <small class="form-text">Leave blank to monitor the entire site</small>
+            </div>
+
+            <div class="form-group">
+                <label for="alarm_type">Alarm Type *</label>
+                <select id="alarm_type" name="alarm_type" class="form-control" required>
+                    <option value="consumption" {% if alarm.alarm_type == 'consumption' %}selected{% endif %}>Consumption (kWh)</option>
+                    <option value="cost" {% if alarm.alarm_type == 'cost' %}selected{% endif %}>Cost (£)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="period_type">Period *</label>
+                <select id="period_type" name="period_type" class="form-control" required>
+                    <option value="daily" {% if alarm.period_type == 'daily' %}selected{% endif %}>Daily</option>
+                    <option value="weekly" {% if alarm.period_type == 'weekly' %}selected{% endif %}>Weekly</option>
+                    <option value="monthly" {% if alarm.period_type == 'monthly' %}selected{% endif %}>Monthly</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="comparison_operator">Condition *</label>
+                <select id="comparison_operator" name="comparison_operator" class="form-control" required>
+                    <option value="greater_than" {% if alarm.comparison_operator == 'greater_than' %}selected{% endif %}>Greater than</option>
+                    <option value="less_than" {% if alarm.comparison_operator == 'less_than' %}selected{% endif %}>Less than</option>
+                    <option value="equals" {% if alarm.comparison_operator == 'equals' %}selected{% endif %}>Equals</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="threshold_value">Threshold Value *</label>
+                <input type="number" id="threshold_value" name="threshold_value" class="form-control" step="0.01" value="{{ alarm.threshold_value }}" required>
+            </div>
+
+            <div class="form-group">
+                <label for="notification_method">Notification Method *</label>
+                <select id="notification_method" name="notification_method" class="form-control" required>
+                    <option value="email" {% if alarm.notification_method == 'email' %}selected{% endif %}>Email only</option>
+                    <option value="dashboard" {% if alarm.notification_method == 'dashboard' %}selected{% endif %}>Dashboard only</option>
+                    <option value="both" {% if alarm.notification_method == 'both' %}selected{% endif %}>Email and Dashboard</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="recipients">Additional Email Recipients</label>
+                <input type="text" id="recipients" name="recipients" class="form-control" value="{% for r in recipients %}{{ r.email }}{% if not loop.last %}, {% endif %}{% endfor %}" placeholder="email1@example.com, email2@example.com">
+                <small class="form-text">Comma-separated email addresses (optional)</small>
+            </div>
+
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" name="is_active" value="1" {% if alarm.is_active %}checked{% endif %}>
+                    Active
+                </label>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Update Alarm</button>
+                <a href="/admin/alarms" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    {% else %}
+        <div class="alert alert-error">
+            Alarm not found.
+        </div>
+    {% endif %}
+</section>
+{% endblock %}

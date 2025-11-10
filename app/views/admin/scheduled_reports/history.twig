@@ -1,0 +1,126 @@
+{% extends "base.twig" %}
+
+{% block title %}Report Execution History - {{ report.name }}{% endblock %}
+
+{% block content %}
+<section class="card">
+    <div class="card-header">
+        <h2>Report Execution History: {{ report.name }}</h2>
+        <p class="mb-2">View execution history for this scheduled report.</p>
+    </div>
+
+    {% if report %}
+        <div class="card-body">
+            <dl class="info-grid">
+                <dt>Report Name:</dt>
+                <dd>{{ report.name }}</dd>
+
+                <dt>Type:</dt>
+                <dd>{{ report.report_type|replace({'_': ' '})|title }}</dd>
+
+                <dt>Format:</dt>
+                <dd>{{ report.report_format|upper }}</dd>
+
+                <dt>Frequency:</dt>
+                <dd>{{ report.frequency|title }}</dd>
+
+                <dt>Last Run:</dt>
+                <dd>
+                    {% if report.last_run_at %}
+                        {{ report.last_run_at|date("d/m/Y H:i") }}
+                    {% else %}
+                        <span class="text-muted">Never</span>
+                    {% endif %}
+                </dd>
+
+                <dt>Next Run:</dt>
+                <dd>
+                    {% if report.next_run_at %}
+                        {{ report.next_run_at|date("d/m/Y H:i") }}
+                    {% else %}
+                        <span class="text-muted">N/A (Manual)</span>
+                    {% endif %}
+                </dd>
+            </dl>
+        </div>
+
+        {% if executions is not empty %}
+            <div style="overflow-x: auto;">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Execution Date</th>
+                            <th>Status</th>
+                            <th>Recipients</th>
+                            <th>Emails Sent</th>
+                            <th>File</th>
+                            <th>Error</th>
+                            <th>Completed</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for execution in executions %}
+                            <tr>
+                                <td>{{ execution.execution_date|date("d/m/Y H:i") }}</td>
+                                <td>
+                                    {% if execution.status == 'completed' %}
+                                        <span class="status status-success">Completed</span>
+                                    {% elseif execution.status == 'failed' %}
+                                        <span class="status status-danger">Failed</span>
+                                    {% elseif execution.status == 'processing' %}
+                                        <span class="status status-warning">Processing</span>
+                                    {% else %}
+                                        <span class="status status-muted">{{ execution.status|title }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ execution.recipients_count }}</td>
+                                <td>{{ execution.emails_sent }}</td>
+                                <td>
+                                    {% if execution.file_path %}
+                                        <small>{{ execution.file_path|basename }}</small>
+                                        {% if execution.file_size %}
+                                            <br><small>({{ (execution.file_size / 1024)|number_format(1) }} KB)</small>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="text-muted">N/A</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if execution.error_message %}
+                                        <small class="text-danger">{{ execution.error_message|truncate(100) }}</small>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if execution.completed_at %}
+                                        {{ execution.completed_at|date("d/m/Y H:i") }}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                This report has not been executed yet.
+            </div>
+        {% endif %}
+
+        <div class="form-actions">
+            <a href="/admin/scheduled-reports" class="btn btn-secondary">Back to Reports</a>
+            <a href="/admin/scheduled-reports/{{ report.id }}/edit" class="btn btn-primary">Edit Report</a>
+            <form method="post" action="/admin/scheduled-reports/{{ report.id }}/run" style="display: inline;">
+                <button type="submit" class="btn btn-success">Run Now</button>
+            </form>
+        </div>
+    {% else %}
+        <div class="alert alert-error">
+            Report not found.
+        </div>
+    {% endif %}
+</section>
+{% endblock %}
