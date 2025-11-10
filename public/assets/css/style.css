@@ -1928,6 +1928,10 @@ input[type="file"]::-webkit-file-upload-button {
     animation: slideDown 0.3s ease;
 }
 
+.health-sites-list.hidden {
+    display: none;
+}
+
 @keyframes slideDown {
     from {
         opacity: 0;

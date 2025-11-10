@@ -26,6 +26,64 @@ class DashboardController
         $this->pdo = $pdo;
     }
 
+    /**
+     * Build WHERE clause and params for site filtering
+     * 
+     * @param array $siteIds Accessible site IDs
+     * @param string $tableAlias Table alias (e.g., 'm' for meters)
+     * @param string $columnName Column name for site_id (default: 'site_id')
+     * @return array ['where' => string, 'params' => array]
+     */
+    private function buildSiteFilter(array $siteIds, string $tableAlias = '', string $columnName = 'site_id'): array
+    {
+        if (empty($siteIds)) {
+            return ['where' => '', 'params' => []];
+        }
+
+        $column = $tableAlias ? "$tableAlias.$columnName" : $columnName;
+        $placeholders = implode(',', array_fill(0, count($siteIds), '?'));
+        
+        return [
+            'where' => " WHERE $column IN ($placeholders)",
+            'params' => $siteIds
+        ];
+    }
+
+    /**
+     * Build query for reading type data with site filtering
+     * 
+     * @param array $siteIds Accessible site IDs
+     * @param string $dateCondition Date condition (e.g., '>= ?' or 'BETWEEN ? AND ?')
+     * @return array ['query' => string, 'params' => array]
+     */
+    private function buildReadingTypeQuery(array $siteIds, string $dateCondition): array
+    {
+        if (!empty($siteIds)) {
+            $placeholders = implode(',', array_fill(0, count($siteIds), '?'));
+            $query = '
+                SELECT 
+                    reading_type,
+                    SUM(reading_value) as total_kwh
+                FROM meter_readings mr
+                INNER JOIN meters m ON m.id = mr.meter_id
+                WHERE m.site_id IN (' . $placeholders . ')
+                AND mr.reading_date ' . $dateCondition . '
+                GROUP BY reading_type
+            ';
+            return ['query' => $query, 'needs_site_params' => true];
+        } else {
+            $query = '
+                SELECT 
+                    reading_type,
+                    SUM(reading_value) as total_kwh
+                FROM meter_readings
+                WHERE reading_date ' . $dateCondition . '
+                GROUP BY reading_type
+            ';
+            return ['query' => $query, 'needs_site_params' => false];
+        }
+    }
+
     public function index(Request $request, Response $response): Response
     {
         // Get current user from session
@@ -362,22 +420,16 @@ class DashboardController
                 $healthReport['sites_total'] = $sitesWithData + $sitesWithoutData;
                 $healthReport['sites_list'] = $sitesList;
 
-                // Current month
-                $currentMonthStmt = $this->pdo->prepare('
-                    SELECT 
-                        reading_type,
-                        SUM(reading_value) as total_kwh
-                    FROM meter_readings mr
-                    ' . (!empty($accessibleSiteIds) ? 
-                        'INNER JOIN meters m ON m.id = mr.meter_id
-                         WHERE m.site_id IN (' . implode(',', array_fill(0, count($accessibleSiteIds), '?')) . ')
-                         AND mr.reading_date >= ?' : 
-                        'WHERE reading_date >= ?') . '
-                    GROUP BY reading_type
-                ');
-                $params = !empty($accessibleSiteIds) ? 
-                    array_merge($accessibleSiteIds, [$currentMonthStart->format('Y-m-d')]) : 
-                    [$currentMonthStart->format('Y-m-d')];
+                // Current month - using helper method for cleaner query building
+                $currentMonthQuery = $this->buildReadingTypeQuery($accessibleSiteIds, '>= ?');
+                $currentMonthStmt = $this->pdo->prepare($currentMonthQuery['query']);
+                
+                $params = [];
+                if ($currentMonthQuery['needs_site_params']) {
+                    $params = array_merge($accessibleSiteIds, [$currentMonthStart->format('Y-m-d')]);
+                } else {
+                    $params = [$currentMonthStart->format('Y-m-d')];
+                }
                 $currentMonthStmt->execute($params);
                 $currentMonthData = $currentMonthStmt->fetchAll(\PDO::FETCH_KEY_PAIR) ?: [];
                 
@@ -391,22 +443,16 @@ class DashboardController
                     );
                 }
 
-                // Previous month
-                $previousMonthStmt = $this->pdo->prepare('
-                    SELECT 
-                        reading_type,
-                        SUM(reading_value) as total_kwh
-                    FROM meter_readings mr
-                    ' . (!empty($accessibleSiteIds) ? 
-                        'INNER JOIN meters m ON m.id = mr.meter_id
-                         WHERE m.site_id IN (' . implode(',', array_fill(0, count($accessibleSiteIds), '?')) . ')
-                         AND mr.reading_date BETWEEN ? AND ?' : 
-                        'WHERE reading_date BETWEEN ? AND ?') . '
-                    GROUP BY reading_type
-                ');
-                $params = !empty($accessibleSiteIds) ? 
-                    array_merge($accessibleSiteIds, [$previousMonthStart->format('Y-m-d'), $previousMonthEnd->format('Y-m-d')]) : 
-                    [$previousMonthStart->format('Y-m-d'), $previousMonthEnd->format('Y-m-d')];
+                // Previous month - using helper method for cleaner query building
+                $previousMonthQuery = $this->buildReadingTypeQuery($accessibleSiteIds, 'BETWEEN ? AND ?');
+                $previousMonthStmt = $this->pdo->prepare($previousMonthQuery['query']);
+                
+                $params = [];
+                if ($previousMonthQuery['needs_site_params']) {
+                    $params = array_merge($accessibleSiteIds, [$previousMonthStart->format('Y-m-d'), $previousMonthEnd->format('Y-m-d')]);
+                } else {
+                    $params = [$previousMonthStart->format('Y-m-d'), $previousMonthEnd->format('Y-m-d')];
+                }
                 $previousMonthStmt->execute($params);
                 $previousMonthData = $previousMonthStmt->fetchAll(\PDO::FETCH_KEY_PAIR) ?: [];
                 

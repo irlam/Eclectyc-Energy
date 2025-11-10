@@ -35,8 +35,8 @@ INSERT IGNORE INTO sites (id, company_id, region_id, name, address, postcode, si
 
 -- Insert sample sites for other companies
 INSERT IGNORE INTO sites (id, company_id, region_id, name, address, postcode, site_type) VALUES
-(8, 2, 1, 'Mervs House', '789 Residential Ave, Bolton BL2 1AA', 'BL2 1AA', 'residential'),
-(9, 2, 4, 'Irlams House', '321 London Road, London SW1A 1AA', 'SW1A 1AA', 'residential'),
+(8, 2, 1, 'Merv''s House', '789 Residential Ave, Bolton BL2 1AA', 'BL2 1AA', 'residential'),
+(9, 2, 4, 'Irlam''s House', '321 London Road, London SW1A 1AA', 'SW1A 1AA', 'residential'),
 (10, 3, 3, 'Solar Farm Alpha', 'Green Fields, Birmingham B1 1AA', 'B1 1AA', 'industrial');
 
 -- Create test users with different access levels

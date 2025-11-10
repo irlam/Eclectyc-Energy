@@ -100,20 +100,20 @@ class MetersController
                     LEFT JOIN suppliers sup ON sup.id = m.supplier_id' .
                     $siteFilter . '
                     ORDER BY m.created_at DESC, m.id DESC
-                    LIMIT :limit OFFSET :offset
+                    LIMIT ? OFFSET ?
                 ');
                 
-                // Bind site IDs if filtering
+                // Build params array with all positional parameters
+                $params = [];
                 if (!empty($accessibleSiteIds)) {
-                    $paramIndex = 1;
                     foreach ($accessibleSiteIds as $siteId) {
-                        $stmt->bindValue($paramIndex++, $siteId, PDO::PARAM_INT);
+                        $params[] = (int)$siteId;
                     }
                 }
+                $params[] = (int)$perPage;
+                $params[] = (int)$offset;
                 
-                $stmt->bindValue(':limit', $perPage, PDO::PARAM_INT);
-                $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
-                $stmt->execute();
+                $stmt->execute($params);
                 $meters = $stmt->fetchAll() ?: [];
 
                 foreach ($meters as &$meter) {
