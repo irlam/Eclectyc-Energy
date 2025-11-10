@@ -34,9 +34,9 @@ php scripts/seed.php
 ## 📊 What Gets Installed
 
 ### Users (3)
-- **admin@eclectyc.energy** - System Admin (Password: `admin123`)
-- **manager@eclectyc.energy** - Operations Manager (Password: `admin123`)
-- **viewer@eclectyc.energy** - Read Only Analyst (Password: `admin123`)
+- **admin@eclectyc.energy** - System Admin (Password: `SecurePass123!`)
+- **manager@eclectyc.energy** - Operations Manager (Password: `SecurePass123!`)
+- **viewer@eclectyc.energy** - Read Only Analyst (Password: `SecurePass123!`)
 
 ⚠️ **IMPORTANT:** Change the admin password immediately after seeding!
 
