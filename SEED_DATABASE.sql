@@ -10,12 +10,12 @@
 -- Review the data before running in a production environment
 
 -- =====================================================
--- USERS (Default password for all: admin123)
+-- USERS (Default password for all: SecurePass123!)
 -- =====================================================
 INSERT INTO users (email, password_hash, name, role) VALUES
-('admin@eclectyc.energy', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'System Admin', 'admin'),
-('manager@eclectyc.energy', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Operations Manager', 'manager'),
-('viewer@eclectyc.energy', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'Read Only Analyst', 'viewer')
+('admin@eclectyc.energy', '$2y$10$85ojbkB4NnkRp6kRjA2Uh.8ZXeWsDY5HU3T.Mtqgj6/2SXGwGyL8q', 'System Admin', 'admin'),
+('manager@eclectyc.energy', '$2y$10$85ojbkB4NnkRp6kRjA2Uh.8ZXeWsDY5HU3T.Mtqgj6/2SXGwGyL8q', 'Operations Manager', 'manager'),
+('viewer@eclectyc.energy', '$2y$10$85ojbkB4NnkRp6kRjA2Uh.8ZXeWsDY5HU3T.Mtqgj6/2SXGwGyL8q', 'Read Only Analyst', 'viewer')
 ON DUPLICATE KEY UPDATE name = VALUES(name);
 
 -- =====================================================
@@ -337,7 +337,7 @@ INSERT INTO audit_logs (user_id, action, entity_type, entity_id, created_at) VAL
 -- Sample data has been inserted successfully!
 -- 
 -- Summary:
--- - 3 Users (admin, manager, viewer) - Password: admin123
+-- - 3 Users (admin, manager, viewer) - Password: SecurePass123!
 -- - 10 Energy suppliers (British Gas, EDF, E.ON Next, Scottish Power, Octopus, OVO, Utility Warehouse, SSE, Utilita, Shell)
 -- - 12 UK regions  
 -- - 1 Company (Eclectyc Energy Ltd)
