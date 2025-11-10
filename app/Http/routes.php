@@ -5,10 +5,12 @@
  * Last updated: 06/11/2024 14:45:00
  */
 
+use App\Http\Controllers\Admin\AlarmsController;
 use App\Http\Controllers\Admin\DocsController;
 use App\Http\Controllers\Admin\ExportsController;
 use App\Http\Controllers\Admin\ImportController;
 use App\Http\Controllers\Admin\MetersController as AdminMetersController;
+use App\Http\Controllers\Admin\ScheduledReportsController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\SitesController;
 use App\Http\Controllers\Admin\TariffsController;
@@ -213,6 +215,25 @@ $app->group('/admin', function ($group) {
     $group->post('/users/{id}/delete', [UsersController::class, 'delete'])->setName('admin.users.delete');
     $group->get('/users/{id}/access', [UsersController::class, 'manageAccess'])->setName('admin.users.access');
     $group->post('/users/{id}/access', [UsersController::class, 'updateAccess'])->setName('admin.users.access.update');
+    
+    // Alarms routes
+    $group->get('/alarms', [AlarmsController::class, 'index'])->setName('admin.alarms');
+    $group->get('/alarms/create', [AlarmsController::class, 'create'])->setName('admin.alarms.create');
+    $group->post('/alarms', [AlarmsController::class, 'store'])->setName('admin.alarms.store');
+    $group->get('/alarms/{id}/edit', [AlarmsController::class, 'edit'])->setName('admin.alarms.edit');
+    $group->post('/alarms/{id}', [AlarmsController::class, 'update'])->setName('admin.alarms.update');
+    $group->post('/alarms/{id}/delete', [AlarmsController::class, 'delete'])->setName('admin.alarms.delete');
+    $group->get('/alarms/{id}/history', [AlarmsController::class, 'history'])->setName('admin.alarms.history');
+    
+    // Scheduled Reports routes
+    $group->get('/scheduled-reports', [ScheduledReportsController::class, 'index'])->setName('admin.scheduled_reports');
+    $group->get('/scheduled-reports/create', [ScheduledReportsController::class, 'create'])->setName('admin.scheduled_reports.create');
+    $group->post('/scheduled-reports', [ScheduledReportsController::class, 'store'])->setName('admin.scheduled_reports.store');
+    $group->get('/scheduled-reports/{id}/edit', [ScheduledReportsController::class, 'edit'])->setName('admin.scheduled_reports.edit');
+    $group->post('/scheduled-reports/{id}', [ScheduledReportsController::class, 'update'])->setName('admin.scheduled_reports.update');
+    $group->post('/scheduled-reports/{id}/delete', [ScheduledReportsController::class, 'delete'])->setName('admin.scheduled_reports.delete');
+    $group->post('/scheduled-reports/{id}/run', [ScheduledReportsController::class, 'run'])->setName('admin.scheduled_reports.run');
+    $group->get('/scheduled-reports/{id}/history', [ScheduledReportsController::class, 'history'])->setName('admin.scheduled_reports.history');
 })->add(function ($request, $handler) use ($container) {
     $middleware = new AuthMiddleware($container->get(AuthService::class), ['admin']);
     return $middleware->process($request, $handler);

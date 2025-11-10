@@ -1,0 +1,136 @@
+{% extends "base.twig" %}
+
+{% block title %}Edit Scheduled Report{% endblock %}
+
+{% block content %}
+<section class="card">
+    <div class="card-header">
+        <h2>Edit Scheduled Report</h2>
+        <p class="mb-2">Update report configuration.</p>
+    </div>
+
+    {% if report %}
+        <form method="post" action="/admin/scheduled-reports/{{ report.id }}">
+            <div class="form-group">
+                <label for="name">Report Name *</label>
+                <input type="text" id="name" name="name" class="form-control" value="{{ report.name }}" required>
+            </div>
+
+            <div class="form-group">
+                <label for="description">Description</label>
+                <textarea id="description" name="description" class="form-control" rows="3">{{ report.description }}</textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="report_type">Report Type *</label>
+                <select id="report_type" name="report_type" class="form-control" required>
+                    <option value="consumption" {% if report.report_type == 'consumption' %}selected{% endif %}>Consumption Report</option>
+                    <option value="cost" {% if report.report_type == 'cost' %}selected{% endif %}>Cost Report</option>
+                    <option value="data_quality" {% if report.report_type == 'data_quality' %}selected{% endif %}>Data Quality Report</option>
+                    <option value="tariff_switching" {% if report.report_type == 'tariff_switching' %}selected{% endif %}>Tariff Switching Report</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="report_format">Report Format *</label>
+                <select id="report_format" name="report_format" class="form-control" required>
+                    <option value="csv" {% if report.report_format == 'csv' %}selected{% endif %}>CSV</option>
+                    <option value="html" {% if report.report_format == 'html' %}selected{% endif %}>HTML</option>
+                    <option value="pdf" {% if report.report_format == 'pdf' %}selected{% endif %}>PDF (future)</option>
+                    <option value="excel" {% if report.report_format == 'excel' %}selected{% endif %}>Excel (future)</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="frequency">Frequency *</label>
+                <select id="frequency" name="frequency" class="form-control" required onchange="updateFrequencyFields()">
+                    <option value="manual" {% if report.frequency == 'manual' %}selected{% endif %}>Manual only</option>
+                    <option value="daily" {% if report.frequency == 'daily' %}selected{% endif %}>Daily</option>
+                    <option value="weekly" {% if report.frequency == 'weekly' %}selected{% endif %}>Weekly</option>
+                    <option value="monthly" {% if report.frequency == 'monthly' %}selected{% endif %}>Monthly</option>
+                </select>
+            </div>
+
+            <div class="form-group" id="day_of_week_group" style="display: {% if report.frequency == 'weekly' %}block{% else %}none{% endif %};">
+                <label for="day_of_week">Day of Week</label>
+                <select id="day_of_week" name="day_of_week" class="form-control">
+                    <option value="0" {% if report.day_of_week == 0 %}selected{% endif %}>Sunday</option>
+                    <option value="1" {% if report.day_of_week == 1 %}selected{% endif %}>Monday</option>
+                    <option value="2" {% if report.day_of_week == 2 %}selected{% endif %}>Tuesday</option>
+                    <option value="3" {% if report.day_of_week == 3 %}selected{% endif %}>Wednesday</option>
+                    <option value="4" {% if report.day_of_week == 4 %}selected{% endif %}>Thursday</option>
+                    <option value="5" {% if report.day_of_week == 5 %}selected{% endif %}>Friday</option>
+                    <option value="6" {% if report.day_of_week == 6 %}selected{% endif %}>Saturday</option>
+                </select>
+            </div>
+
+            <div class="form-group" id="day_of_month_group" style="display: {% if report.frequency == 'monthly' %}block{% else %}none{% endif %};">
+                <label for="day_of_month">Day of Month</label>
+                <input type="number" id="day_of_month" name="day_of_month" class="form-control" min="1" max="31" value="{{ report.day_of_month ?? 1 }}">
+            </div>
+
+            <div class="form-group" id="hour_of_day_group" style="display: {% if report.frequency != 'manual' %}block{% else %}none{% endif %};">
+                <label for="hour_of_day">Hour of Day (0-23)</label>
+                <input type="number" id="hour_of_day" name="hour_of_day" class="form-control" min="0" max="23" value="{{ report.hour_of_day ?? 8 }}">
+                <small class="form-text">Time to send the report (24-hour format)</small>
+            </div>
+
+            {% set filters = report.filters ? report.filters|json_decode : {} %}
+            <div class="form-group">
+                <label for="start_date">Start Date (for period-based reports)</label>
+                <input type="date" id="start_date" name="start_date" class="form-control" value="{{ filters.start_date ?? '' }}">
+            </div>
+
+            <div class="form-group">
+                <label for="end_date">End Date (for period-based reports)</label>
+                <input type="date" id="end_date" name="end_date" class="form-control" value="{{ filters.end_date ?? '' }}">
+            </div>
+
+            <div class="form-group">
+                <label for="recipients">Email Recipients *</label>
+                <input type="text" id="recipients" name="recipients" class="form-control" value="{% for r in recipients %}{{ r.email }}{% if not loop.last %}, {% endif %}{% endfor %}" placeholder="email1@example.com, email2@example.com" required>
+                <small class="form-text">Comma-separated email addresses</small>
+            </div>
+
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" name="is_active" value="1" {% if report.is_active %}checked{% endif %}>
+                    Active
+                </label>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Update Report</button>
+                <a href="/admin/scheduled-reports" class="btn btn-secondary">Cancel</a>
+            </div>
+        </form>
+    {% else %}
+        <div class="alert alert-error">
+            Report not found.
+        </div>
+    {% endif %}
+</section>
+
+<script>
+function updateFrequencyFields() {
+    const frequency = document.getElementById('frequency').value;
+    const dayOfWeekGroup = document.getElementById('day_of_week_group');
+    const dayOfMonthGroup = document.getElementById('day_of_month_group');
+    const hourOfDayGroup = document.getElementById('hour_of_day_group');
+
+    dayOfWeekGroup.style.display = 'none';
+    dayOfMonthGroup.style.display = 'none';
+    hourOfDayGroup.style.display = 'none';
+
+    if (frequency === 'weekly') {
+        dayOfWeekGroup.style.display = 'block';
+        hourOfDayGroup.style.display = 'block';
+    } else if (frequency === 'monthly') {
+        dayOfMonthGroup.style.display = 'block';
+        hourOfDayGroup.style.display = 'block';
+    } else if (frequency === 'daily') {
+        hourOfDayGroup.style.display = 'block';
+    }
+}
+</script>
+{% endblock %}

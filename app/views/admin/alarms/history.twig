@@ -1,0 +1,106 @@
+{% extends "base.twig" %}
+
+{% block title %}Alarm History - {{ alarm.name }}{% endblock %}
+
+{% block content %}
+<section class="card">
+    <div class="card-header">
+        <h2>Alarm History: {{ alarm.name }}</h2>
+        <p class="mb-2">View trigger history for this alarm.</p>
+    </div>
+
+    {% if alarm %}
+        <div class="card-body">
+            <dl class="info-grid">
+                <dt>Alarm Name:</dt>
+                <dd>{{ alarm.name }}</dd>
+
+                <dt>Type:</dt>
+                <dd>{{ alarm.alarm_type|title }}</dd>
+
+                <dt>Period:</dt>
+                <dd>{{ alarm.period_type|title }}</dd>
+
+                <dt>Threshold:</dt>
+                <dd>
+                    {% if alarm.comparison_operator == 'greater_than' %}
+                        Greater than
+                    {% elseif alarm.comparison_operator == 'less_than' %}
+                        Less than
+                    {% else %}
+                        Equals
+                    {% endif %}
+                    {{ alarm.threshold_value|number_format(2) }}
+                    {{ alarm.alarm_type == 'consumption' ? 'kWh' : '£' }}
+                </dd>
+
+                <dt>Last Triggered:</dt>
+                <dd>
+                    {% if alarm.last_triggered_at %}
+                        {{ alarm.last_triggered_at|date("d/m/Y H:i") }}
+                    {% else %}
+                        <span class="text-muted">Never</span>
+                    {% endif %}
+                </dd>
+            </dl>
+        </div>
+
+        {% if triggers is not empty %}
+            <div style="overflow-x: auto;">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Actual Value</th>
+                            <th>Threshold</th>
+                            <th>Message</th>
+                            <th>Notification Sent</th>
+                            <th>Triggered At</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for trigger in triggers %}
+                            <tr>
+                                <td>{{ trigger.trigger_date|date("d/m/Y") }}</td>
+                                <td>
+                                    {{ trigger.actual_value|number_format(2) }}
+                                    {{ alarm.alarm_type == 'consumption' ? 'kWh' : '£' }}
+                                </td>
+                                <td>
+                                    {{ trigger.threshold_value|number_format(2) }}
+                                    {{ alarm.alarm_type == 'consumption' ? 'kWh' : '£' }}
+                                </td>
+                                <td>{{ trigger.message }}</td>
+                                <td>
+                                    {% if trigger.notification_sent %}
+                                        <span class="status status-success">Yes</span>
+                                        {% if trigger.notification_sent_at %}
+                                            <br><small>{{ trigger.notification_sent_at|date("d/m/Y H:i") }}</small>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="status status-muted">No</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ trigger.created_at|date("d/m/Y H:i:s") }}</td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            <div class="alert alert-info">
+                This alarm has not been triggered yet.
+            </div>
+        {% endif %}
+
+        <div class="form-actions">
+            <a href="/admin/alarms" class="btn btn-secondary">Back to Alarms</a>
+            <a href="/admin/alarms/{{ alarm.id }}/edit" class="btn btn-primary">Edit Alarm</a>
+        </div>
+    {% else %}
+        <div class="alert alert-error">
+            Alarm not found.
+        </div>
+    {% endif %}
+</section>
+{% endblock %}

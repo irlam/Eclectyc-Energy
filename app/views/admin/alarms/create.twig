@@ -1,0 +1,103 @@
+{% extends "base.twig" %}
+
+{% block title %}Create Alarm{% endblock %}
+
+{% block content %}
+<section class="card">
+    <div class="card-header">
+        <h2>Create Alarm</h2>
+        <p class="mb-2">Configure a new alarm to monitor consumption or cost thresholds.</p>
+    </div>
+
+    <form method="post" action="/admin/alarms">
+        <div class="form-group">
+            <label for="name">Alarm Name *</label>
+            <input type="text" id="name" name="name" class="form-control" required>
+        </div>
+
+        <div class="form-group">
+            <label for="description">Description</label>
+            <textarea id="description" name="description" class="form-control" rows="3"></textarea>
+        </div>
+
+        <div class="form-group">
+            <label for="site_id">Site *</label>
+            <select id="site_id" name="site_id" class="form-control" required>
+                <option value="">-- Select Site --</option>
+                {% for site in sites %}
+                    <option value="{{ site.id }}">{{ site.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="meter_id">Meter (optional)</label>
+            <select id="meter_id" name="meter_id" class="form-control">
+                <option value="">-- Site-wide alarm --</option>
+                {% for meter in meters %}
+                    <option value="{{ meter.id }}">{{ meter.site_name }} - {{ meter.mpan }}</option>
+                {% endfor %}
+            </select>
+            <small class="form-text">Leave blank to monitor the entire site</small>
+        </div>
+
+        <div class="form-group">
+            <label for="alarm_type">Alarm Type *</label>
+            <select id="alarm_type" name="alarm_type" class="form-control" required>
+                <option value="consumption">Consumption (kWh)</option>
+                <option value="cost">Cost (£)</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="period_type">Period *</label>
+            <select id="period_type" name="period_type" class="form-control" required>
+                <option value="daily">Daily</option>
+                <option value="weekly">Weekly</option>
+                <option value="monthly">Monthly</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="comparison_operator">Condition *</label>
+            <select id="comparison_operator" name="comparison_operator" class="form-control" required>
+                <option value="greater_than">Greater than</option>
+                <option value="less_than">Less than</option>
+                <option value="equals">Equals</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="threshold_value">Threshold Value *</label>
+            <input type="number" id="threshold_value" name="threshold_value" class="form-control" step="0.01" required>
+        </div>
+
+        <div class="form-group">
+            <label for="notification_method">Notification Method *</label>
+            <select id="notification_method" name="notification_method" class="form-control" required>
+                <option value="email">Email only</option>
+                <option value="dashboard">Dashboard only</option>
+                <option value="both" selected>Email and Dashboard</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="recipients">Additional Email Recipients</label>
+            <input type="text" id="recipients" name="recipients" class="form-control" placeholder="email1@example.com, email2@example.com">
+            <small class="form-text">Comma-separated email addresses (optional)</small>
+        </div>
+
+        <div class="form-group">
+            <label>
+                <input type="checkbox" name="is_active" value="1" checked>
+                Active
+            </label>
+        </div>
+
+        <div class="form-actions">
+            <button type="submit" class="btn btn-primary">Create Alarm</button>
+            <a href="/admin/alarms" class="btn btn-secondary">Cancel</a>
+        </div>
+    </form>
+</section>
+{% endblock %}

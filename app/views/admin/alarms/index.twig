@@ -1,0 +1,107 @@
+{% extends "base.twig" %}
+
+{% block title %}Alarms{% endblock %}
+
+{% block content %}
+<section class="card">
+    <div class="card-header" style="display: flex; justify-content: space-between; align-items: start;">
+        <div>
+            <h2>Alarm Management</h2>
+            <p class="mb-2">Configure and monitor alarms for consumption and cost thresholds.</p>
+        </div>
+        <a class="btn btn-primary" href="/admin/alarms/create">+ Create Alarm</a>
+    </div>
+
+    {% if flash %}
+        <div class="alert alert-{{ flash.type }}">
+            {{ flash.message }}
+        </div>
+    {% endif %}
+
+    {% if alarms is not empty %}
+        <div style="overflow-x: auto;">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Site / Meter</th>
+                        <th>Type</th>
+                        <th>Period</th>
+                        <th>Threshold</th>
+                        <th>Operator</th>
+                        <th>Notification</th>
+                        <th>Status</th>
+                        <th>Last Triggered</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for alarm in alarms %}
+                        <tr>
+                            <td>
+                                <strong>{{ alarm.name }}</strong>
+                                {% if alarm.description %}
+                                    <br><small>{{ alarm.description|truncate(50) }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {{ alarm.site_name }}
+                                {% if alarm.mpan %}
+                                    <br><small>{{ alarm.mpan }}</small>
+                                {% else %}
+                                    <br><small><em>Site-wide</em></small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge badge-{{ alarm.alarm_type == 'consumption' ? 'primary' : 'success' }}">
+                                    {{ alarm.alarm_type|title }}
+                                </span>
+                            </td>
+                            <td>{{ alarm.period_type|title }}</td>
+                            <td>
+                                {{ alarm.threshold_value|number_format(2) }}
+                                {{ alarm.alarm_type == 'consumption' ? 'kWh' : '£' }}
+                            </td>
+                            <td>
+                                {% if alarm.comparison_operator == 'greater_than' %}
+                                    >
+                                {% elseif alarm.comparison_operator == 'less_than' %}
+                                    <
+                                {% else %}
+                                    =
+                                {% endif %}
+                            </td>
+                            <td>{{ alarm.notification_method|replace({'_': ' '})|title }}</td>
+                            <td>
+                                {% if alarm.is_active %}
+                                    <span class="status status-success">Active</span>
+                                {% else %}
+                                    <span class="status status-muted">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if alarm.last_triggered_at %}
+                                    {{ alarm.last_triggered_at|date("d/m/Y H:i") }}
+                                {% else %}
+                                    <span class="text-muted">Never</span>
+                                {% endif %}
+                            </td>
+                            <td class="actions">
+                                <a href="/admin/alarms/{{ alarm.id }}/history" class="btn btn-sm">History</a>
+                                <a href="/admin/alarms/{{ alarm.id }}/edit" class="btn btn-sm btn-primary">Edit</a>
+                                <form method="post" action="/admin/alarms/{{ alarm.id }}/delete" style="display: inline;">
+                                    <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('Are you sure you want to delete this alarm?')">Delete</button>
+                                </form>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="alert alert-info">
+            <p>No alarms configured yet. <a href="/admin/alarms/create">Create your first alarm</a> to monitor consumption or costs.</p>
+        </div>
+    {% endif %}
+</section>
+{% endblock %}
