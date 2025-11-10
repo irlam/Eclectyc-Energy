@@ -149,6 +149,158 @@
     {% endif %}
 </div>
 
+<!-- New Dashboard Widgets -->
+<div class="new-widgets-section">
+    <!-- Yesterday's Consumption Widget -->
+    {% if yesterday_consumption %}
+    <div class="widget-card widget-yesterday">
+        <div class="widget-header">
+            <h3>📅 Yesterday's Energy Consumption</h3>
+            <span class="widget-date">{{ yesterday_consumption.date|date("l, F j, Y") }}</span>
+        </div>
+        <div class="widget-body">
+            <div class="widget-main-stat">
+                <div class="widget-value">
+                    {{ yesterday_consumption.total_kwh|number_format(1, '.', ',') }}
+                    <span class="widget-unit">kWh</span>
+                </div>
+                <div class="widget-meta">
+                    {% if yesterday_consumption.meter_count > 0 %}
+                        Across {{ yesterday_consumption.meter_count }} meter{{ yesterday_consumption.meter_count != 1 ? 's' : '' }}
+                    {% else %}
+                        No data available for yesterday
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Interactive Health Report Widget -->
+    <div class="widget-card widget-health">
+        <div class="widget-header">
+            <h3>🏥 Interactive Health Report</h3>
+            <span class="widget-subtitle">Site Data Coverage & Quality</span>
+        </div>
+        <div class="widget-body">
+            <!-- Sites with/without data -->
+            <div class="health-metric">
+                <h4>Sites Data Status (Last 7 Days)</h4>
+                <div class="health-stats-row">
+                    <div class="health-stat health-stat-success">
+                        <div class="health-stat-icon">✓</div>
+                        <div class="health-stat-content">
+                            <div class="health-stat-value">{{ health_report.sites_with_data }}</div>
+                            <div class="health-stat-label">Sites with Data</div>
+                        </div>
+                    </div>
+                    <div class="health-stat health-stat-warning">
+                        <div class="health-stat-icon">⚠</div>
+                        <div class="health-stat-content">
+                            <div class="health-stat-value">{{ health_report.sites_without_data }}</div>
+                            <div class="health-stat-label">Sites without Data</div>
+                        </div>
+                    </div>
+                    <div class="health-stat health-stat-info">
+                        <div class="health-stat-icon">Σ</div>
+                        <div class="health-stat-content">
+                            <div class="health-stat-value">{{ health_report.sites_total }}</div>
+                            <div class="health-stat-label">Total Sites</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Progress bar for sites -->
+                {% if health_report.sites_total > 0 %}
+                <div class="health-progress-container">
+                    {% set sitesWithDataPct = (health_report.sites_with_data / health_report.sites_total * 100)|round %}
+                    <div class="health-progress-bar">
+                        <div class="health-progress-fill" style="width: {{ sitesWithDataPct }}%"></div>
+                    </div>
+                    <div class="health-progress-label">{{ sitesWithDataPct }}% of sites reporting data</div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Estimated vs Actual data -->
+            <div class="health-metric">
+                <h4>Reading Type Distribution</h4>
+                <div class="health-stats-row">
+                    <div class="health-stat health-stat-actual">
+                        <div class="health-stat-icon">📊</div>
+                        <div class="health-stat-content">
+                            <div class="health-stat-value">{{ health_report.actual_readings_pct }}%</div>
+                            <div class="health-stat-label">Actual Readings</div>
+                        </div>
+                    </div>
+                    <div class="health-stat health-stat-estimated">
+                        <div class="health-stat-icon">📈</div>
+                        <div class="health-stat-content">
+                            <div class="health-stat-value">{{ health_report.estimated_readings_pct }}%</div>
+                            <div class="health-stat-label">Estimated Readings</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Progress bar for reading types -->
+                <div class="health-progress-container">
+                    <div class="health-progress-bar">
+                        <div class="health-progress-fill health-progress-actual" 
+                             style="width: {{ health_report.actual_readings_pct }}%"></div>
+                        <div class="health-progress-fill health-progress-estimated" 
+                             style="width: {{ health_report.estimated_readings_pct }}%"></div>
+                    </div>
+                    <div class="health-progress-legend">
+                        <span class="health-legend-item">
+                            <span class="health-legend-dot health-legend-actual"></span> Actual
+                        </span>
+                        <span class="health-legend-item">
+                            <span class="health-legend-dot health-legend-estimated"></span> Estimated
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sites list toggle -->
+            {% if health_report.sites_list|length > 0 %}
+            <div class="health-sites-toggle">
+                <button class="health-toggle-btn" onclick="toggleSitesList()">
+                    <span id="toggle-icon">▶</span> View Sites Details ({{ health_report.sites_list|length }})
+                </button>
+                <div id="sites-list" class="health-sites-list" style="display: none;">
+                    <table class="health-sites-table">
+                        <thead>
+                            <tr>
+                                <th>Site Name</th>
+                                <th>Company</th>
+                                <th>Meters</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for site in health_report.sites_list %}
+                            <tr class="{{ site.has_recent_data ? 'site-has-data' : 'site-no-data' }}">
+                                <td>{{ site.name }}</td>
+                                <td>{{ site.company_name ?? 'N/A' }}</td>
+                                <td>{{ site.meter_count }}</td>
+                                <td>
+                                    {% if site.has_recent_data %}
+                                        <span class="status-badge status-active">✓ Active</span>
+                                    {% else %}
+                                        <span class="status-badge status-inactive">⚠ No recent data</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
 <!-- Data Quality Widgets -->
 <div class="data-quality-section">
     <h3 class="section-title">📊 Data Quality - Actual vs Estimated</h3>
@@ -366,6 +518,20 @@
 
 {% block scripts %}
 <script>
+// Toggle sites list visibility
+function toggleSitesList() {
+    const sitesList = document.getElementById('sites-list');
+    const toggleIcon = document.getElementById('toggle-icon');
+    
+    if (sitesList.style.display === 'none') {
+        sitesList.style.display = 'block';
+        toggleIcon.textContent = '▼';
+    } else {
+        sitesList.style.display = 'none';
+        toggleIcon.textContent = '▶';
+    }
+}
+
 // Dashboard-specific JavaScript
 document.addEventListener('DOMContentLoaded', function() {
     console.log('Dashboard loaded with trend data:', {{ trend|json_encode|raw }});

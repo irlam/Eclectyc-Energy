@@ -28,6 +28,10 @@ class DashboardController
 
     public function index(Request $request, Response $response): Response
     {
+        // Get current user from session
+        $user = $_SESSION['user'] ?? null;
+        $userId = $user['id'] ?? null;
+        
         $stats = [
             'total_sites' => 0,
             'total_meters' => 0,
@@ -42,6 +46,15 @@ class DashboardController
         $trend = [];
         $recentActivity = [];
         $carbonIntensity = null;
+        $yesterdayConsumption = null;
+        $healthReport = [
+            'sites_with_data' => 0,
+            'sites_without_data' => 0,
+            'sites_total' => 0,
+            'actual_readings_pct' => 0,
+            'estimated_readings_pct' => 0,
+            'sites_list' => [],
+        ];
         $dataQuality = [
             'current_month' => [
                 'total_kwh' => 0.0,
@@ -58,6 +71,24 @@ class DashboardController
         ];
 
         if ($this->pdo) {
+            // Get accessible site IDs for the user (respecting hierarchical access)
+            $accessibleSiteIds = [];
+            if ($userId) {
+                $userModel = \App\Models\User::find($userId);
+                if ($userModel) {
+                    $accessibleSiteIds = $userModel->getAccessibleSiteIds();
+                }
+            }
+            
+            // Build WHERE clause for site filtering
+            $siteFilter = '';
+            $siteFilterParams = [];
+            if (!empty($accessibleSiteIds)) {
+                $placeholders = implode(',', array_fill(0, count($accessibleSiteIds), '?'));
+                $siteFilter = " WHERE s.id IN ($placeholders)";
+                $siteFilterParams = $accessibleSiteIds;
+            }
+            
             try {
                 // Initialize carbon intensity service
                 $externalDataService = new ExternalDataService($this->pdo);
@@ -69,16 +100,54 @@ class DashboardController
             }
 
             try {
-                $stmt = $this->pdo->query('SELECT COUNT(*) as count FROM sites');
+                // Count sites user has access to
+                if (!empty($accessibleSiteIds)) {
+                    $placeholders = implode(',', array_fill(0, count($accessibleSiteIds), '?'));
+                    $stmt = $this->pdo->prepare("SELECT COUNT(*) as count FROM sites WHERE id IN ($placeholders)");
+                    $stmt->execute($accessibleSiteIds);
+                } else {
+                    $stmt = $this->pdo->query('SELECT COUNT(*) as count FROM sites');
+                }
                 $stats['total_sites'] = (int) ($stmt->fetch()['count'] ?? 0);
 
-                $stmt = $this->pdo->query('SELECT COUNT(*) as count FROM meters');
+                // Count meters for accessible sites
+                if (!empty($accessibleSiteIds)) {
+                    $placeholders = implode(',', array_fill(0, count($accessibleSiteIds), '?'));
+                    $stmt = $this->pdo->prepare("SELECT COUNT(*) as count FROM meters WHERE site_id IN ($placeholders)");
+                    $stmt->execute($accessibleSiteIds);
+                } else {
+                    $stmt = $this->pdo->query('SELECT COUNT(*) as count FROM meters');
+                }
                 $stats['total_meters'] = (int) ($stmt->fetch()['count'] ?? 0);
 
-                $stmt = $this->pdo->query('SELECT COUNT(*) as count FROM meter_readings');
+                // Count readings for accessible sites
+                if (!empty($accessibleSiteIds)) {
+                    $placeholders = implode(',', array_fill(0, count($accessibleSiteIds), '?'));
+                    $stmt = $this->pdo->prepare("
+                        SELECT COUNT(*) as count 
+                        FROM meter_readings mr
+                        INNER JOIN meters m ON m.id = mr.meter_id
+                        WHERE m.site_id IN ($placeholders)
+                    ");
+                    $stmt->execute($accessibleSiteIds);
+                } else {
+                    $stmt = $this->pdo->query('SELECT COUNT(*) as count FROM meter_readings');
+                }
                 $stats['total_readings'] = (int) ($stmt->fetch()['count'] ?? 0);
 
-                $stmt = $this->pdo->query('SELECT MAX(created_at) as last FROM meter_readings');
+                // Get last import for accessible sites
+                if (!empty($accessibleSiteIds)) {
+                    $placeholders = implode(',', array_fill(0, count($accessibleSiteIds), '?'));
+                    $stmt = $this->pdo->prepare("
+                        SELECT MAX(mr.created_at) as last 
+                        FROM meter_readings mr
+                        INNER JOIN meters m ON m.id = mr.meter_id
+                        WHERE m.site_id IN ($placeholders)
+                    ");
+                    $stmt->execute($accessibleSiteIds);
+                } else {
+                    $stmt = $this->pdo->query('SELECT MAX(created_at) as last FROM meter_readings');
+                }
                 $last = $stmt->fetch()['last'] ?? null;
                 if ($last) {
                     $stats['last_import'] = date('d/m/Y H:i:s', strtotime($last));
@@ -198,23 +267,118 @@ class DashboardController
                 $recentActivity = [];
             }
 
-            // Data quality stats: Actual vs Estimated
+                // Data quality stats: Actual vs Estimated
             try {
                 $today = new DateTimeImmutable('today');
+                $yesterday = $today->modify('-1 day');
                 $currentMonthStart = $today->modify('first day of this month');
                 $previousMonthStart = $currentMonthStart->modify('-1 month');
                 $previousMonthEnd = $currentMonthStart->modify('-1 day');
+
+                // Yesterday's consumption widget
+                if (!empty($accessibleSiteIds)) {
+                    $placeholders = implode(',', array_fill(0, count($accessibleSiteIds), '?'));
+                    $stmt = $this->pdo->prepare("
+                        SELECT 
+                            SUM(da.total_consumption) as total,
+                            COUNT(DISTINCT da.meter_id) as meter_count
+                        FROM daily_aggregations da
+                        INNER JOIN meters m ON m.id = da.meter_id
+                        WHERE da.date = ? AND m.site_id IN ($placeholders)
+                    ");
+                    $params = array_merge([$yesterday->format('Y-m-d')], $accessibleSiteIds);
+                    $stmt->execute($params);
+                } else {
+                    $stmt = $this->pdo->prepare('
+                        SELECT 
+                            SUM(total_consumption) as total,
+                            COUNT(DISTINCT meter_id) as meter_count
+                        FROM daily_aggregations
+                        WHERE date = ?
+                    ');
+                    $stmt->execute([$yesterday->format('Y-m-d')]);
+                }
+                $yesterdayData = $stmt->fetch();
+                $yesterdayConsumption = [
+                    'date' => $yesterday->format('Y-m-d'),
+                    'total_kwh' => (float)($yesterdayData['total'] ?? 0),
+                    'meter_count' => (int)($yesterdayData['meter_count'] ?? 0),
+                ];
+
+                // Health Report widget - Sites with/without data
+                if (!empty($accessibleSiteIds)) {
+                    $placeholders = implode(',', array_fill(0, count($accessibleSiteIds), '?'));
+                    
+                    // Get all accessible sites with their data status
+                    $stmt = $this->pdo->prepare("
+                        SELECT 
+                            s.id,
+                            s.name,
+                            c.name as company_name,
+                            COUNT(DISTINCT m.id) as meter_count,
+                            COUNT(DISTINCT da.id) as has_data
+                        FROM sites s
+                        LEFT JOIN companies c ON c.id = s.company_id
+                        LEFT JOIN meters m ON m.site_id = s.id
+                        LEFT JOIN daily_aggregations da ON da.meter_id = m.id 
+                            AND da.date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+                        WHERE s.id IN ($placeholders)
+                        GROUP BY s.id, s.name, c.name
+                        ORDER BY c.name, s.name
+                    ");
+                    $stmt->execute($accessibleSiteIds);
+                } else {
+                    $stmt = $this->pdo->query("
+                        SELECT 
+                            s.id,
+                            s.name,
+                            c.name as company_name,
+                            COUNT(DISTINCT m.id) as meter_count,
+                            COUNT(DISTINCT da.id) as has_data
+                        FROM sites s
+                        LEFT JOIN companies c ON c.id = s.company_id
+                        LEFT JOIN meters m ON m.site_id = s.id
+                        LEFT JOIN daily_aggregations da ON da.meter_id = m.id 
+                            AND da.date >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+                        GROUP BY s.id, s.name, c.name
+                        ORDER BY c.name, s.name
+                    ");
+                }
+                $sitesList = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+                
+                $sitesWithData = 0;
+                $sitesWithoutData = 0;
+                foreach ($sitesList as &$site) {
+                    $site['has_recent_data'] = (int)$site['has_data'] > 0;
+                    if ($site['has_recent_data']) {
+                        $sitesWithData++;
+                    } else {
+                        $sitesWithoutData++;
+                    }
+                }
+                
+                $healthReport['sites_with_data'] = $sitesWithData;
+                $healthReport['sites_without_data'] = $sitesWithoutData;
+                $healthReport['sites_total'] = $sitesWithData + $sitesWithoutData;
+                $healthReport['sites_list'] = $sitesList;
 
                 // Current month
                 $currentMonthStmt = $this->pdo->prepare('
                     SELECT 
                         reading_type,
                         SUM(reading_value) as total_kwh
-                    FROM meter_readings
-                    WHERE reading_date >= :start
+                    FROM meter_readings mr
+                    ' . (!empty($accessibleSiteIds) ? 
+                        'INNER JOIN meters m ON m.id = mr.meter_id
+                         WHERE m.site_id IN (' . implode(',', array_fill(0, count($accessibleSiteIds), '?')) . ')
+                         AND mr.reading_date >= ?' : 
+                        'WHERE reading_date >= ?') . '
                     GROUP BY reading_type
                 ');
-                $currentMonthStmt->execute(['start' => $currentMonthStart->format('Y-m-d')]);
+                $params = !empty($accessibleSiteIds) ? 
+                    array_merge($accessibleSiteIds, [$currentMonthStart->format('Y-m-d')]) : 
+                    [$currentMonthStart->format('Y-m-d')];
+                $currentMonthStmt->execute($params);
                 $currentMonthData = $currentMonthStmt->fetchAll(\PDO::FETCH_KEY_PAIR) ?: [];
                 
                 $dataQuality['current_month']['actual_kwh'] = (float) ($currentMonthData['actual'] ?? 0);
@@ -232,14 +396,18 @@ class DashboardController
                     SELECT 
                         reading_type,
                         SUM(reading_value) as total_kwh
-                    FROM meter_readings
-                    WHERE reading_date BETWEEN :start AND :end
+                    FROM meter_readings mr
+                    ' . (!empty($accessibleSiteIds) ? 
+                        'INNER JOIN meters m ON m.id = mr.meter_id
+                         WHERE m.site_id IN (' . implode(',', array_fill(0, count($accessibleSiteIds), '?')) . ')
+                         AND mr.reading_date BETWEEN ? AND ?' : 
+                        'WHERE reading_date BETWEEN ? AND ?') . '
                     GROUP BY reading_type
                 ');
-                $previousMonthStmt->execute([
-                    'start' => $previousMonthStart->format('Y-m-d'),
-                    'end' => $previousMonthEnd->format('Y-m-d'),
-                ]);
+                $params = !empty($accessibleSiteIds) ? 
+                    array_merge($accessibleSiteIds, [$previousMonthStart->format('Y-m-d'), $previousMonthEnd->format('Y-m-d')]) : 
+                    [$previousMonthStart->format('Y-m-d'), $previousMonthEnd->format('Y-m-d')];
+                $previousMonthStmt->execute($params);
                 $previousMonthData = $previousMonthStmt->fetchAll(\PDO::FETCH_KEY_PAIR) ?: [];
                 
                 $dataQuality['previous_month']['actual_kwh'] = (float) ($previousMonthData['actual'] ?? 0);
@@ -250,6 +418,16 @@ class DashboardController
                     $dataQuality['previous_month']['actual_pct'] = round(
                         ($dataQuality['previous_month']['actual_kwh'] / $dataQuality['previous_month']['total_kwh']) * 100
                     );
+                }
+                
+                // Calculate overall reading type percentages for health report
+                $totalActual = $dataQuality['current_month']['actual_kwh'] + $dataQuality['previous_month']['actual_kwh'];
+                $totalEstimated = $dataQuality['current_month']['estimated_kwh'] + $dataQuality['previous_month']['estimated_kwh'];
+                $totalAll = $totalActual + $totalEstimated;
+                
+                if ($totalAll > 0) {
+                    $healthReport['actual_readings_pct'] = round(($totalActual / $totalAll) * 100);
+                    $healthReport['estimated_readings_pct'] = round(($totalEstimated / $totalAll) * 100);
                 }
             } catch (\Throwable $e) {
                 // Ignore data quality errors
@@ -264,6 +442,8 @@ class DashboardController
             'recent_activity' => $recentActivity,
             'carbon_intensity' => $carbonIntensity,
             'data_quality' => $dataQuality,
+            'yesterday_consumption' => $yesterdayConsumption,
+            'health_report' => $healthReport,
         ]);
     }
 }

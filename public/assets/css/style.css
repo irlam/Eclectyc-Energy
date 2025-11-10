@@ -1653,3 +1653,349 @@ input[type="file"]::-webkit-file-upload-button {
     font-weight: 600;
     color: #f8fafc;
 }
+
+/* =============================================================================
+   New Dashboard Widgets - Yesterday's Consumption & Health Report
+   ============================================================================= */
+
+.new-widgets-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 2rem;
+    margin: 2rem 0;
+}
+
+@media (max-width: 968px) {
+    .new-widgets-section {
+        grid-template-columns: 1fr;
+    }
+}
+
+.widget-card {
+    background: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    padding: 1.5rem;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.widget-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+}
+
+.widget-header {
+    margin-bottom: 1.5rem;
+    border-bottom: 2px solid #f0f0f0;
+    padding-bottom: 1rem;
+}
+
+.widget-header h3 {
+    margin: 0 0 0.5rem 0;
+    color: #2c3e50;
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.widget-date,
+.widget-subtitle {
+    display: block;
+    color: #7f8c8d;
+    font-size: 0.875rem;
+}
+
+.widget-body {
+    padding: 1rem 0;
+}
+
+/* Yesterday's Consumption Widget */
+.widget-yesterday .widget-main-stat {
+    text-align: center;
+    padding: 2rem 0;
+}
+
+.widget-value {
+    font-size: 3rem;
+    font-weight: 700;
+    color: #3498db;
+    line-height: 1;
+}
+
+.widget-unit {
+    font-size: 1.5rem;
+    color: #7f8c8d;
+    font-weight: 400;
+}
+
+.widget-meta {
+    margin-top: 1rem;
+    color: #95a5a6;
+    font-size: 0.95rem;
+}
+
+/* Health Report Widget */
+.health-metric {
+    margin-bottom: 2rem;
+}
+
+.health-metric h4 {
+    margin: 0 0 1rem 0;
+    color: #34495e;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.health-stats-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.health-stat {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    border-radius: 8px;
+    background: #f8f9fa;
+}
+
+.health-stat-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+.health-stat-success {
+    border-left: 4px solid #27ae60;
+}
+
+.health-stat-success .health-stat-icon {
+    background: #d4edda;
+    color: #27ae60;
+}
+
+.health-stat-warning {
+    border-left: 4px solid #f39c12;
+}
+
+.health-stat-warning .health-stat-icon {
+    background: #fff3cd;
+    color: #f39c12;
+}
+
+.health-stat-info {
+    border-left: 4px solid #3498db;
+}
+
+.health-stat-info .health-stat-icon {
+    background: #d6eaf8;
+    color: #3498db;
+}
+
+.health-stat-actual {
+    border-left: 4px solid #16a085;
+}
+
+.health-stat-actual .health-stat-icon {
+    background: #d1f2eb;
+    color: #16a085;
+}
+
+.health-stat-estimated {
+    border-left: 4px solid #e67e22;
+}
+
+.health-stat-estimated .health-stat-icon {
+    background: #fdebd0;
+    color: #e67e22;
+}
+
+.health-stat-content {
+    flex: 1;
+}
+
+.health-stat-value {
+    display: block;
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: #2c3e50;
+    line-height: 1;
+}
+
+.health-stat-label {
+    display: block;
+    margin-top: 0.25rem;
+    color: #7f8c8d;
+    font-size: 0.875rem;
+}
+
+/* Health Progress Bars */
+.health-progress-container {
+    margin-top: 1rem;
+}
+
+.health-progress-bar {
+    height: 24px;
+    background: #ecf0f1;
+    border-radius: 12px;
+    overflow: hidden;
+    display: flex;
+}
+
+.health-progress-fill {
+    height: 100%;
+    background: #27ae60;
+    transition: width 0.3s ease;
+}
+
+.health-progress-actual {
+    background: #16a085;
+}
+
+.health-progress-estimated {
+    background: #e67e22;
+}
+
+.health-progress-label {
+    margin-top: 0.5rem;
+    text-align: center;
+    color: #7f8c8d;
+    font-size: 0.875rem;
+}
+
+.health-progress-legend {
+    display: flex;
+    gap: 1.5rem;
+    justify-content: center;
+    margin-top: 0.75rem;
+}
+
+.health-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    color: #7f8c8d;
+}
+
+.health-legend-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+
+.health-legend-actual {
+    background: #16a085;
+}
+
+.health-legend-estimated {
+    background: #e67e22;
+}
+
+/* Sites List Toggle */
+.health-sites-toggle {
+    margin-top: 1.5rem;
+    border-top: 1px solid #ecf0f1;
+    padding-top: 1.5rem;
+}
+
+.health-toggle-btn {
+    background: #3498db;
+    color: white;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-weight: 600;
+    transition: background 0.2s;
+    width: 100%;
+}
+
+.health-toggle-btn:hover {
+    background: #2980b9;
+}
+
+.health-sites-list {
+    margin-top: 1rem;
+    animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.health-sites-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.health-sites-table thead {
+    background: #34495e;
+    color: white;
+}
+
+.health-sites-table th,
+.health-sites-table td {
+    padding: 0.75rem 1rem;
+    text-align: left;
+    border-bottom: 1px solid #ecf0f1;
+}
+
+.health-sites-table th {
+    font-weight: 600;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.health-sites-table tbody tr:hover {
+    background: #f8f9fa;
+}
+
+.health-sites-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.site-has-data {
+    background: #f0fdf4;
+}
+
+.site-no-data {
+    background: #fffbeb;
+}
+
+.status-badge {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.status-active {
+    background: #d4edda;
+    color: #27ae60;
+}
+
+.status-inactive {
+    background: #fff3cd;
+    color: #f39c12;
+}

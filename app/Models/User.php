@@ -237,4 +237,73 @@ class User extends BaseModel
 
         return $stmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
     }
+
+    /**
+     * Get all accessible site IDs for this user based on hierarchical access
+     *
+     * @return array
+     */
+    public function getAccessibleSiteIds(): array
+    {
+        if (!isset($this->attributes['id'])) {
+            return [];
+        }
+
+        $db = \App\Config\Database::getConnection();
+        if (!$db) {
+            return [];
+        }
+
+        // Admin has access to all sites
+        if ($this->attributes['role'] === 'admin') {
+            $stmt = $db->query('SELECT id FROM sites');
+            return $stmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
+        }
+
+        // Combine all site access from different levels
+        $stmt = $db->prepare('
+            SELECT DISTINCT s.id
+            FROM sites s
+            WHERE s.id IN (
+                -- Direct site access
+                SELECT site_id FROM user_site_access WHERE user_id = :user_id
+            )
+            OR s.region_id IN (
+                -- Region access
+                SELECT region_id FROM user_region_access WHERE user_id = :user_id2
+            )
+            OR s.company_id IN (
+                -- Company access
+                SELECT company_id FROM user_company_access WHERE user_id = :user_id3
+            )
+        ');
+        $stmt->execute([
+            'user_id' => $this->attributes['id'],
+            'user_id2' => $this->attributes['id'],
+            'user_id3' => $this->attributes['id'],
+        ]);
+        return $stmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
+    }
+
+    /**
+     * Check if user can access a specific site
+     *
+     * @param int $siteId
+     * @return bool
+     */
+    public function canAccessSite(int $siteId): bool
+    {
+        if (!isset($this->attributes['id'])) {
+            return false;
+        }
+
+        // Admin users have access to everything
+        if ($this->attributes['role'] === 'admin') {
+            return true;
+        }
+
+        $accessibleSites = $this->getAccessibleSiteIds();
+        return in_array($siteId, $accessibleSites, true);
+    }
 }
+
