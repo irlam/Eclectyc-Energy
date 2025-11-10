@@ -148,22 +148,24 @@ class AccessControlService
             return $stmt->fetchAll(PDO::FETCH_COLUMN);
         }
 
-        // Combine all site access from different levels
+        // Combine all site access from different levels using UNION for better performance
         $stmt = $this->pdo->prepare('
             SELECT DISTINCT s.id
             FROM sites s
-            WHERE s.id IN (
+            INNER JOIN (
                 -- Direct site access
                 SELECT site_id FROM user_site_access WHERE user_id = :user_id
-            )
-            OR s.region_id IN (
+                UNION ALL
                 -- Region access
-                SELECT region_id FROM user_region_access WHERE user_id = :user_id2
-            )
-            OR s.company_id IN (
+                SELECT s2.id FROM sites s2
+                INNER JOIN user_region_access ura ON s2.region_id = ura.region_id
+                WHERE ura.user_id = :user_id2
+                UNION ALL
                 -- Company access
-                SELECT company_id FROM user_company_access WHERE user_id = :user_id3
-            )
+                SELECT s3.id FROM sites s3
+                INNER JOIN user_company_access uca ON s3.company_id = uca.company_id
+                WHERE uca.user_id = :user_id3
+            ) access ON s.id = access.site_id
         ');
         $stmt->execute([
             'user_id' => $userId,

@@ -254,35 +254,9 @@ class User extends BaseModel
             return [];
         }
 
-        // Admin has access to all sites
-        if ($this->attributes['role'] === 'admin') {
-            $stmt = $db->query('SELECT id FROM sites');
-            return $stmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
-        }
-
-        // Combine all site access from different levels
-        $stmt = $db->prepare('
-            SELECT DISTINCT s.id
-            FROM sites s
-            WHERE s.id IN (
-                -- Direct site access
-                SELECT site_id FROM user_site_access WHERE user_id = :user_id
-            )
-            OR s.region_id IN (
-                -- Region access
-                SELECT region_id FROM user_region_access WHERE user_id = :user_id2
-            )
-            OR s.company_id IN (
-                -- Company access
-                SELECT company_id FROM user_company_access WHERE user_id = :user_id3
-            )
-        ');
-        $stmt->execute([
-            'user_id' => $this->attributes['id'],
-            'user_id2' => $this->attributes['id'],
-            'user_id3' => $this->attributes['id'],
-        ]);
-        return $stmt->fetchAll(PDO::FETCH_COLUMN) ?: [];
+        // Delegate to AccessControlService for consistency
+        $accessControlService = new \App\Services\AccessControlService($db);
+        return $accessControlService->getAccessibleSiteIds($this->attributes['id']);
     }
 
     /**

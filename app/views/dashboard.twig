@@ -267,7 +267,7 @@
                 <button class="health-toggle-btn" onclick="toggleSitesList()">
                     <span id="toggle-icon">▶</span> View Sites Details ({{ health_report.sites_list|length }})
                 </button>
-                <div id="sites-list" class="health-sites-list" style="display: none;">
+                <div id="sites-list" class="health-sites-list hidden">
                     <table class="health-sites-table">
                         <thead>
                             <tr>
@@ -523,13 +523,8 @@ function toggleSitesList() {
     const sitesList = document.getElementById('sites-list');
     const toggleIcon = document.getElementById('toggle-icon');
     
-    if (sitesList.style.display === 'none') {
-        sitesList.style.display = 'block';
-        toggleIcon.textContent = '▼';
-    } else {
-        sitesList.style.display = 'none';
-        toggleIcon.textContent = '▶';
-    }
+    const isHidden = sitesList.classList.toggle('hidden');
+    toggleIcon.textContent = isHidden ? '▶' : '▼';
 }
 
 // Dashboard-specific JavaScript
