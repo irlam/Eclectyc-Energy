@@ -223,6 +223,7 @@ $app->group('/reports', function ($group) {
     $group->get('/consumption', [ReportsController::class, 'consumption'])->setName('reports.consumption');
     $group->get('/costs', [ReportsController::class, 'costs'])->setName('reports.costs');
     $group->get('/data-quality', [ReportsController::class, 'dataQuality'])->setName('reports.data_quality');
+    $group->get('/hh-consumption', [ReportsController::class, 'hhConsumption'])->setName('reports.hh_consumption');
 })->add(function ($request, $handler) use ($container) {
     $middleware = new AuthMiddleware($container->get(AuthService::class), ['admin', 'manager']);
     return $middleware->process($request, $handler);
