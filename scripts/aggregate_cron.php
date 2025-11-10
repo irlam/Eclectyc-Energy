@@ -41,19 +41,29 @@ function runAggregations(array $ranges, DateTimeImmutable $targetDate, bool $ver
     $exitCode = 0;
     $dailyAggregator = null;
     $periodAggregator = null;
+    
+    $overallStartTime = new DateTime();
 
     foreach ($ranges as $range) {
+        $rangeStartTime = new DateTime();
+        $rangeStatus = 'completed';
+        $rangeExitCode = 0;
+        $rangeLogData = [];
+        
         try {
             switch ($range) {
                 case 'daily':
                     $dailyAggregator ??= new DailyAggregator($pdo);
                     $dailySummary = $dailyAggregator->aggregate($targetDate);
-                    aggregationLogAudit($pdo, 'daily', $dailySummary->toArray());
+                    $rangeLogData = $dailySummary->toArray();
+                    aggregationLogAudit($pdo, 'daily', $rangeLogData);
                     if ($verbose) {
                         aggregationOutputDailySummary($dailySummary);
                     }
                     if ($dailySummary->getErrors() > 0) {
                         $exitCode = 1;
+                        $rangeExitCode = 1;
+                        $rangeStatus = 'failed';
                     }
                     break;
 
@@ -61,12 +71,15 @@ function runAggregations(array $ranges, DateTimeImmutable $targetDate, bool $ver
                     $periodAggregator ??= new PeriodAggregator($pdo);
                     [$start, $end] = aggregationResolveWeeklyRange($targetDate);
                     $weeklySummary = $periodAggregator->aggregate('weekly', $start, $end);
-                    aggregationLogAudit($pdo, 'weekly', $weeklySummary->toArray());
+                    $rangeLogData = $weeklySummary->toArray();
+                    aggregationLogAudit($pdo, 'weekly', $rangeLogData);
                     if ($verbose) {
                         aggregationOutputPeriodSummary($weeklySummary);
                     }
                     if ($weeklySummary->getErrors() > 0) {
                         $exitCode = 1;
+                        $rangeExitCode = 1;
+                        $rangeStatus = 'failed';
                     }
                     break;
 
@@ -74,12 +87,15 @@ function runAggregations(array $ranges, DateTimeImmutable $targetDate, bool $ver
                     $periodAggregator ??= $periodAggregator ?? new PeriodAggregator($pdo);
                     [$start, $end] = aggregationResolveMonthlyRange($targetDate);
                     $monthlySummary = $periodAggregator->aggregate('monthly', $start, $end);
-                    aggregationLogAudit($pdo, 'monthly', $monthlySummary->toArray());
+                    $rangeLogData = $monthlySummary->toArray();
+                    aggregationLogAudit($pdo, 'monthly', $rangeLogData);
                     if ($verbose) {
                         aggregationOutputPeriodSummary($monthlySummary);
                     }
                     if ($monthlySummary->getErrors() > 0) {
                         $exitCode = 1;
+                        $rangeExitCode = 1;
+                        $rangeStatus = 'failed';
                     }
                     break;
 
@@ -87,21 +103,40 @@ function runAggregations(array $ranges, DateTimeImmutable $targetDate, bool $ver
                     $periodAggregator ??= $periodAggregator ?? new PeriodAggregator($pdo);
                     [$start, $end] = aggregationResolveAnnualRange($targetDate);
                     $annualSummary = $periodAggregator->aggregate('annual', $start, $end);
-                    aggregationLogAudit($pdo, 'annual', $annualSummary->toArray());
+                    $rangeLogData = $annualSummary->toArray();
+                    aggregationLogAudit($pdo, 'annual', $rangeLogData);
                     if ($verbose) {
                         aggregationOutputPeriodSummary($annualSummary);
                     }
                     if ($annualSummary->getErrors() > 0) {
                         $exitCode = 1;
+                        $rangeExitCode = 1;
+                        $rangeStatus = 'failed';
                     }
                     break;
             }
         } catch (Throwable $exception) {
+            $rangeStatus = 'failed';
+            $rangeExitCode = 1;
+            $rangeLogData['error_message'] = $exception->getMessage();
             if ($verbose) {
                 fwrite(STDERR, sprintf("Error running %s aggregation: %s\n", $range, $exception->getMessage()));
             }
             $exitCode = 1;
         }
+        
+        // Log to cron_logs table
+        $rangeEndTime = new DateTime();
+        aggregationLogCronExecution(
+            $pdo,
+            "aggregate_{$range}",
+            $range,
+            $rangeStartTime,
+            $rangeEndTime,
+            $rangeStatus,
+            $rangeExitCode,
+            $rangeLogData
+        );
     }
 
     return $exitCode;
@@ -220,6 +255,60 @@ function aggregationLogAudit(PDO $pdo, string $range, array $payload): void
         ]);
     } catch (PDOException $exception) {
         fwrite(STDERR, 'Failed to log aggregation audit: ' . $exception->getMessage() . "\n");
+    }
+}
+
+/**
+ * Log to cron_logs table for better visibility
+ */
+function aggregationLogCronExecution(PDO $pdo, string $jobName, string $jobType, DateTime $startTime, ?DateTime $endTime, string $status, int $exitCode, array $logData = []): void
+{
+    try {
+        // Check if table exists
+        $tableCheck = $pdo->query("SHOW TABLES LIKE 'cron_logs'")->fetch();
+        if (!$tableCheck) {
+            return; // Table doesn't exist yet, skip logging
+        }
+        
+        $durationSeconds = null;
+        if ($endTime !== null) {
+            $durationSeconds = $endTime->getTimestamp() - $startTime->getTimestamp();
+        }
+        
+        $recordsProcessed = $logData['records_processed'] ?? $logData['total_meters'] ?? 0;
+        $recordsFailed = $logData['records_failed'] ?? 0;
+        $errorsCount = $logData['errors'] ?? $logData['error_count'] ?? 0;
+        $warningsCount = $logData['warnings'] ?? $logData['warning_count'] ?? 0;
+        $errorMessage = $logData['error_message'] ?? null;
+        
+        $logDataJson = json_encode($logData, JSON_THROW_ON_ERROR | JSON_UNESCAPED_SLASHES);
+        
+        $stmt = $pdo->prepare('
+            INSERT INTO cron_logs 
+            (job_name, job_type, start_time, end_time, duration_seconds, status, exit_code, 
+             records_processed, records_failed, errors_count, warnings_count, error_message, log_data)
+            VALUES 
+            (:job_name, :job_type, :start_time, :end_time, :duration_seconds, :status, :exit_code,
+             :records_processed, :records_failed, :errors_count, :warnings_count, :error_message, :log_data)
+        ');
+        
+        $stmt->execute([
+            'job_name' => $jobName,
+            'job_type' => $jobType,
+            'start_time' => $startTime->format('Y-m-d H:i:s'),
+            'end_time' => $endTime ? $endTime->format('Y-m-d H:i:s') : null,
+            'duration_seconds' => $durationSeconds,
+            'status' => $status,
+            'exit_code' => $exitCode,
+            'records_processed' => $recordsProcessed,
+            'records_failed' => $recordsFailed,
+            'errors_count' => $errorsCount,
+            'warnings_count' => $warningsCount,
+            'error_message' => $errorMessage,
+            'log_data' => $logDataJson,
+        ]);
+    } catch (Exception $exception) {
+        fwrite(STDERR, 'Failed to log cron execution: ' . $exception->getMessage() . "\n");
     }
 }
 

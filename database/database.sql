@@ -148,6 +148,30 @@ CREATE TABLE `comparison_snapshots` (
 -- --------------------------------------------------------
 
 --
+-- Table structure for table `cron_logs`
+--
+
+CREATE TABLE `cron_logs` (
+  `id` bigint UNSIGNED NOT NULL,
+  `job_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Name/type of cron job',
+  `job_type` enum('daily','weekly','monthly','annual','import','export','cleanup','other') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'other',
+  `start_time` datetime NOT NULL,
+  `end_time` datetime DEFAULT NULL,
+  `duration_seconds` int DEFAULT NULL,
+  `status` enum('running','completed','failed','timeout') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'running',
+  `exit_code` int DEFAULT NULL,
+  `records_processed` int DEFAULT '0',
+  `records_failed` int DEFAULT '0',
+  `errors_count` int DEFAULT '0',
+  `warnings_count` int DEFAULT '0',
+  `error_message` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `log_data` json DEFAULT NULL COMMENT 'Additional structured log data',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Tracks cron job execution history for monitoring and debugging';
+
+-- --------------------------------------------------------
+
+--
 -- Table structure for table `daily_aggregations`
 --
 
@@ -1173,6 +1197,17 @@ ALTER TABLE `comparison_snapshots`
   ADD KEY `idx_type` (`snapshot_type`);
 
 --
+-- Indexes for table `cron_logs`
+--
+ALTER TABLE `cron_logs`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_job_name` (`job_name`),
+  ADD KEY `idx_job_type` (`job_type`),
+  ADD KEY `idx_status` (`status`),
+  ADD KEY `idx_start_time` (`start_time`),
+  ADD KEY `idx_created` (`created_at`);
+
+--
 -- Indexes for table `daily_aggregations`
 --
 ALTER TABLE `daily_aggregations`
@@ -1451,6 +1486,12 @@ ALTER TABLE `companies`
 -- AUTO_INCREMENT for table `comparison_snapshots`
 --
 ALTER TABLE `comparison_snapshots`
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
+
+--
+-- AUTO_INCREMENT for table `cron_logs`
+--
+ALTER TABLE `cron_logs`
   MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
