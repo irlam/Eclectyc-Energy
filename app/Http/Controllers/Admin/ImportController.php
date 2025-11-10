@@ -288,15 +288,26 @@ class ImportController
             $filePath = $storageDir . '/' . $uniqueFilename;
             $uploadedFile->moveTo($filePath);
             
-            // Create the import job with optional site and tariff
+            // Create the import job with optional site and tariff in metadata
+            $metadata = [];
+            if ($defaultSiteId !== null) {
+                $metadata['default_site_id'] = $defaultSiteId;
+            }
+            if ($defaultTariffId !== null) {
+                $metadata['default_tariff_id'] = $defaultTariffId;
+            }
+            
             $batchId = $jobService->createJob(
                 $filename,
                 $filePath,
                 $format,
                 $this->currentUserId(),
                 $dryRun,
-                $defaultSiteId,
-                $defaultTariffId
+                null,  // notes
+                'normal',  // priority
+                null,  // tags
+                !empty($metadata) ? $metadata : null,  // metadata
+                3  // maxRetries
             );
             
             $this->setFlash('success', 'Import job queued successfully. You can close this page and check the status later.', [
