@@ -124,6 +124,24 @@ php scripts/seed.php
 
 This loads sample readings for 30 Oct–06 Nov 2025 alongside precomputed daily, weekly, monthly, and annual aggregation rows so dashboards have data immediately.
 
+### 9. Set Up Import Worker (Required for Async Imports)
+
+**⚠️ IMPORTANT:** The import system requires a background worker to process queued jobs. Without this, import jobs will remain stuck in "QUEUED" status.
+
+Add this cron job via Plesk Scheduled Tasks or crontab:
+
+```cron
+* * * * * cd /path/to/eclectyc-energy && /usr/bin/php scripts/process_import_jobs.php --once >> logs/import_worker_cron.log 2>&1
+```
+
+To verify the worker is set up correctly:
+
+```bash
+php scripts/check_import_setup.php
+```
+
+See the [Cron Job Setup section](#cron-job-setup-plesk) below for detailed instructions, or [Troubleshooting Guide](docs/TROUBLESHOOTING_IMPORTS.md) if you experience issues.
+
 ### Default Accounts & Roles
 
 Running the seeder creates three demo operators, all with the temporary password `admin123`:
@@ -426,6 +444,8 @@ Configure `SFTP_HOST`, `SFTP_PORT`, `SFTP_USERNAME`, and either `SFTP_PASSWORD` 
 **Note:** The orchestrated aggregation script (`aggregate_orchestrated.php`) provides enhanced monitoring, telemetry, and failure alerts. Use it instead of `aggregate_cron.php` for production deployments.
 
 **Alternative Deployment:** For VPS/dedicated servers, consider using Supervisor or Systemd for the import worker instead of cron. See `docs/operationalizing_async_systems.md` for detailed instructions.
+
+**Troubleshooting:** If imports are stuck in QUEUED status or not processing, see the [Import Troubleshooting Guide](docs/TROUBLESHOOTING_IMPORTS.md) for diagnosis and solutions.
 
 ## Security Considerations
 
