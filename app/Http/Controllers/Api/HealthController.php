@@ -107,10 +107,19 @@ class HealthController
             $db = $this->container->get('db');
 
             if (!$db) {
+                // Provide more detailed error message
+                $dbConfig = [
+                    'host' => $_ENV['DB_HOST'] ?? 'not set',
+                    'database' => $_ENV['DB_DATABASE'] ?? $_ENV['DB_NAME'] ?? 'not set',
+                    'username' => $_ENV['DB_USERNAME'] ?? $_ENV['DB_USER'] ?? 'not set',
+                ];
+                
                 return [
                     'healthy' => false,
                     'status' => 'critical',
-                    'message' => 'Database connection not configured'
+                    'message' => 'Database connection failed - check credentials and server availability',
+                    'config' => $dbConfig,
+                    'hint' => 'Verify .env file exists and contains correct DB_HOST, DB_DATABASE, DB_USERNAME, DB_PASSWORD'
                 ];
             }
 
