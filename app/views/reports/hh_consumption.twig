@@ -1,0 +1,550 @@
+{% extends "base.twig" %}
+
+{% block title %}Half-Hourly Consumption Visualization{% endblock %}
+
+{% block content %}
+{% include 'reports/_subnav.twig' %}
+
+<section class="card hh-consumption-card">
+    <div class="card-header hh-consumption-card__header">
+        <div>
+            <h2>Half-Hourly Consumption Visualization</h2>
+            <p class="mb-2">
+                Actual vs Estimated readings for {{ date|date("l, d F Y") }}
+            </p>
+        </div>
+        <button onclick="window.location.reload()" class="btn btn-secondary" style="white-space: nowrap;">
+            ↻ Refresh
+        </button>
+    </div>
+
+    <!-- Date and Meter Selector -->
+    <form method="GET" class="hh-filters">
+        <div class="form-group">
+            <label for="date">Date</label>
+            <input type="date" id="date" name="date" value="{{ date|date('Y-m-d') }}" required>
+        </div>
+        <div class="form-group">
+            <label for="meter">Meter (Optional)</label>
+            <select id="meter" name="meter" class="form-control">
+                <option value="">All Meters</option>
+                {% for meter in report.meters %}
+                    <option value="{{ meter.id }}" {% if meter.id == report.selectedMeter %}selected{% endif %}>
+                        {{ meter.mpan }} - {{ meter.site_name ?? 'Unknown Site' }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group" style="display: flex; align-items: flex-end;">
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Update Report</button>
+        </div>
+        <div class="form-group" style="display: flex; align-items: flex-end; gap: 0.5rem;">
+            <button type="button" onclick="setDateOffset(-1)" class="btn btn-secondary" style="flex: 1; font-size: 0.85rem;">← Previous Day</button>
+            <button type="button" onclick="setDateOffset(0)" class="btn btn-secondary" style="flex: 1; font-size: 0.85rem;">Today</button>
+            <button type="button" onclick="setDateOffset(1)" class="btn btn-secondary" style="flex: 1; font-size: 0.85rem;">Next Day →</button>
+        </div>
+    </form>
+
+    {% if report.error is defined %}
+        <div class="alert alert-danger">{{ report.error }}</div>
+    {% endif %}
+
+    {% if report.hh_data is not empty %}
+        <!-- Summary Stats -->
+        <div class="hh-summary">
+            <div class="hh-summary-card">
+                <span class="hh-summary-label">Total Energy</span>
+                <strong class="hh-summary-value">{{ (report.totalActual + report.totalEstimated)|number_format(1, '.', ',') }} kWh</strong>
+            </div>
+            <div class="hh-summary-card" style="background: rgba(16, 185, 129, 0.15); border-color: rgba(16, 185, 129, 0.3);">
+                <span class="hh-summary-label">Actual Readings</span>
+                <strong class="hh-summary-value" style="color: #10b981;">{{ report.totalActual|number_format(1, '.', ',') }} kWh</strong>
+                <span class="hh-summary-sublabel">{{ report.actualPct }}%</span>
+            </div>
+            <div class="hh-summary-card" style="background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.3);">
+                <span class="hh-summary-label">Estimated Readings</span>
+                <strong class="hh-summary-value" style="color: #ef4444;">{{ report.totalEstimated|number_format(1, '.', ',') }} kWh</strong>
+                <span class="hh-summary-sublabel">{{ 100 - report.actualPct }}%</span>
+            </div>
+        </div>
+
+        <!-- Overall Progress Bar -->
+        <div class="hh-overall">
+            <h3>Overall Data Quality</h3>
+            <div class="hh-bar-large">
+                <div class="hh-bar-actual-large" style="width: {{ report.actualPct }}%">
+                    <span class="hh-bar-label">{{ report.actualPct }}% Actual</span>
+                </div>
+                <div class="hh-bar-estimated-large" style="width: {{ 100 - report.actualPct }}%">
+                    <span class="hh-bar-label">{{ 100 - report.actualPct }}% Estimated</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chart Legend -->
+        <div class="hh-legend">
+            <div class="hh-legend-item">
+                <span class="hh-legend-dot" style="background: #10b981;"></span>
+                <span>Actual Reading</span>
+            </div>
+            <div class="hh-legend-item">
+                <span class="hh-legend-dot" style="background: #ef4444;"></span>
+                <span>Estimated Reading</span>
+            </div>
+            <div class="hh-legend-item">
+                <span class="hh-legend-dot" style="background: linear-gradient(135deg, #10b981 0%, #10b981 50%, #ef4444 50%, #ef4444 100%);"></span>
+                <span>Mixed (Both Actual & Estimated)</span>
+            </div>
+            <div class="hh-legend-item">
+                <span class="hh-legend-dot" style="background: #475569;"></span>
+                <span>No Data</span>
+            </div>
+        </div>
+
+        <!-- Interactive Chart -->
+        <div class="hh-chart-container">
+            <h3>Half-Hourly Consumption Pattern</h3>
+            <canvas id="hhChart" width="800" height="400"></canvas>
+        </div>
+
+        <!-- Detailed Table -->
+        <div class="hh-table-toggle">
+            <button class="hh-toggle-btn" onclick="toggleHHTable()">
+                <span id="table-toggle-icon">▶</span> Show Detailed Data (48 periods)
+            </button>
+        </div>
+        
+        <div id="hh-table-container" class="hh-table-wrapper hidden">
+            <table class="table hh-table">
+                <thead>
+                    <tr>
+                        <th>Period</th>
+                        <th>Time</th>
+                        <th class="text-right">Actual (kWh)</th>
+                        <th class="text-right">Estimated (kWh)</th>
+                        <th class="text-right">Total (kWh)</th>
+                        <th>Type</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for period in report.hh_data %}
+                        <tr class="hh-row-{{ period.reading_type }}">
+                            <td>{{ period.period }}</td>
+                            <td>{{ period.time }}</td>
+                            <td class="text-right" style="color: #10b981;">{{ period.actual|number_format(3, '.', ',') }}</td>
+                            <td class="text-right" style="color: #ef4444;">{{ period.estimated|number_format(3, '.', ',') }}</td>
+                            <td class="text-right"><strong>{{ period.total|number_format(3, '.', ',') }}</strong></td>
+                            <td>
+                                {% if period.reading_type == 'actual' %}
+                                    <span class="hh-badge hh-badge-actual">Actual</span>
+                                {% elseif period.reading_type == 'estimated' %}
+                                    <span class="hh-badge hh-badge-estimated">Estimated</span>
+                                {% elseif period.reading_type == 'mixed' %}
+                                    <span class="hh-badge hh-badge-mixed">Mixed</span>
+                                {% else %}
+                                    <span class="hh-badge hh-badge-none">No Data</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="hh-no-data">
+            <strong>No half-hourly readings found for the selected date.</strong>
+            <p style="margin-top: 0.5rem;">Import HH data to see consumption patterns.</p>
+            <div style="margin-top: 1rem;">
+                <a href="/admin/imports" class="btn btn-primary">Import Data</a>
+            </div>
+        </div>
+    {% endif %}
+
+    <style>
+    .hh-consumption-card {
+        background: linear-gradient(180deg, #0f172a 0%, #111827 45%, #0b1120 100%);
+        color: #e2e8f0;
+        border: none;
+        box-shadow: 0 25px 45px rgba(15, 23, 42, 0.45);
+    }
+
+    .hh-consumption-card__header {
+        border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+    }
+
+    .hh-filters {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.25rem;
+        margin-bottom: 1.5rem;
+        padding: 1rem 1.25rem;
+        background: rgba(30, 41, 59, 0.6);
+        border-radius: 12px;
+        box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.15);
+    }
+
+    .hh-summary {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin: 1.5rem 0;
+    }
+
+    .hh-summary-card {
+        padding: 1rem;
+        border-radius: 12px;
+        background: rgba(30, 41, 59, 0.6);
+        border: 1px solid rgba(148, 163, 184, 0.15);
+    }
+
+    .hh-summary-label {
+        display: block;
+        font-size: 0.85rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: #94a3b8;
+    }
+
+    .hh-summary-value {
+        display: block;
+        font-size: 1.65rem;
+        line-height: 1.2;
+        color: #f8fafc;
+        margin-top: 0.25rem;
+    }
+
+    .hh-summary-sublabel {
+        display: block;
+        font-size: 0.875rem;
+        color: #94a3b8;
+        margin-top: 0.25rem;
+    }
+
+    .hh-overall {
+        margin: 2rem 0;
+    }
+
+    .hh-overall h3 {
+        font-size: 1.125rem;
+        color: #f8fafc;
+        margin-bottom: 1rem;
+    }
+
+    .hh-bar-large {
+        display: flex;
+        height: 48px;
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    }
+
+    .hh-bar-actual-large {
+        background: linear-gradient(90deg, #10b981, #059669);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: width 0.5s ease;
+    }
+
+    .hh-bar-estimated-large {
+        background: linear-gradient(90deg, #ef4444, #dc2626);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: width 0.5s ease;
+    }
+
+    .hh-bar-label {
+        font-size: 0.875rem;
+        font-weight: 600;
+        color: white;
+        text-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    }
+
+    .hh-legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 1rem;
+        margin: 1.5rem 0;
+        padding: 1rem;
+        background: rgba(30, 41, 59, 0.6);
+        border-radius: 12px;
+    }
+
+    .hh-legend-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        font-size: 0.9rem;
+    }
+
+    .hh-legend-dot {
+        width: 16px;
+        height: 16px;
+        border-radius: 4px;
+        display: inline-block;
+    }
+
+    .hh-chart-container {
+        margin: 2rem 0;
+        padding: 1.5rem;
+        background: rgba(30, 41, 59, 0.6);
+        border-radius: 12px;
+        box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.15);
+    }
+
+    .hh-chart-container h3 {
+        font-size: 1.125rem;
+        color: #f8fafc;
+        margin-bottom: 1rem;
+    }
+
+    #hhChart {
+        max-width: 100%;
+        height: auto !important;
+    }
+
+    .hh-table-toggle {
+        margin: 1.5rem 0;
+    }
+
+    .hh-toggle-btn {
+        background: rgba(79, 70, 229, 0.2);
+        border: 1px solid rgba(79, 70, 229, 0.3);
+        color: #c7d2fe;
+        padding: 0.75rem 1.5rem;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 0.95rem;
+        font-weight: 500;
+        transition: all 0.2s;
+        width: 100%;
+    }
+
+    .hh-toggle-btn:hover {
+        background: rgba(79, 70, 229, 0.3);
+        border-color: rgba(79, 70, 229, 0.4);
+    }
+
+    .hh-table-wrapper {
+        border-radius: 14px;
+        overflow: hidden;
+        box-shadow: inset 0 0 0 1px rgba(51, 65, 85, 0.45);
+        background: rgba(15, 23, 42, 0.6);
+        margin-top: 1rem;
+    }
+
+    .hh-table-wrapper.hidden {
+        display: none;
+    }
+
+    .hh-table {
+        width: 100%;
+        border-collapse: separate;
+        border-spacing: 0;
+        color: #e2e8f0;
+        margin-top: 0;
+    }
+
+    .hh-table thead {
+        background: rgba(30, 41, 59, 0.85);
+    }
+
+    .hh-table th {
+        padding: 0.85rem 1.1rem;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        letter-spacing: 0.08em;
+        color: #94a3b8;
+        border-bottom: 1px solid rgba(71, 85, 105, 0.45);
+    }
+
+    .hh-table td {
+        padding: 0.6rem 1.1rem;
+        border-bottom: 1px solid rgba(51, 65, 85, 0.45);
+        vertical-align: middle;
+        font-size: 0.9rem;
+    }
+
+    .hh-table tbody tr:hover {
+        background: rgba(79, 70, 229, 0.14);
+    }
+
+    .hh-badge {
+        display: inline-block;
+        padding: 0.25rem 0.75rem;
+        border-radius: 6px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    .hh-badge-actual {
+        background: rgba(16, 185, 129, 0.2);
+        color: #10b981;
+    }
+
+    .hh-badge-estimated {
+        background: rgba(239, 68, 68, 0.2);
+        color: #ef4444;
+    }
+
+    .hh-badge-mixed {
+        background: rgba(245, 158, 11, 0.2);
+        color: #f59e0b;
+    }
+
+    .hh-badge-none {
+        background: rgba(71, 85, 105, 0.2);
+        color: #94a3b8;
+    }
+
+    .hh-no-data {
+        padding: 1.5rem;
+        border-radius: 12px;
+        background: rgba(244, 183, 64, 0.18);
+        border: 1px solid rgba(244, 183, 64, 0.45);
+        color: #FFE9C4;
+        text-align: center;
+    }
+
+    .hh-no-data strong {
+        color: #fef3c7;
+    }
+    </style>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+// HH consumption data from server
+const hhData = {{ report.hh_data|json_encode|raw }};
+
+// Prepare chart data
+const labels = hhData.map(p => p.time);
+const actualData = hhData.map(p => p.actual);
+const estimatedData = hhData.map(p => p.estimated);
+
+// Bar colors based on reading type
+const barColors = hhData.map(p => {
+    if (p.reading_type === 'actual') return '#10b981';
+    if (p.reading_type === 'estimated') return '#ef4444';
+    if (p.reading_type === 'mixed') return '#f59e0b';
+    return '#475569';
+});
+
+// Create chart
+const ctx = document.getElementById('hhChart').getContext('2d');
+const hhChart = new Chart(ctx, {
+    type: 'bar',
+    data: {
+        labels: labels,
+        datasets: [
+            {
+                label: 'Actual',
+                data: actualData,
+                backgroundColor: '#10b981',
+                borderColor: '#059669',
+                borderWidth: 1,
+                stack: 'stack0',
+            },
+            {
+                label: 'Estimated',
+                data: estimatedData,
+                backgroundColor: '#ef4444',
+                borderColor: '#dc2626',
+                borderWidth: 1,
+                stack: 'stack0',
+            }
+        ]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: true,
+                position: 'top',
+                labels: {
+                    color: '#e2e8f0',
+                    font: {
+                        size: 12
+                    }
+                }
+            },
+            tooltip: {
+                mode: 'index',
+                intersect: false,
+                callbacks: {
+                    label: function(context) {
+                        let label = context.dataset.label || '';
+                        if (label) {
+                            label += ': ';
+                        }
+                        if (context.parsed.y !== null) {
+                            label += context.parsed.y.toFixed(3) + ' kWh';
+                        }
+                        return label;
+                    }
+                }
+            }
+        },
+        scales: {
+            x: {
+                stacked: true,
+                grid: {
+                    color: 'rgba(148, 163, 184, 0.1)'
+                },
+                ticks: {
+                    color: '#94a3b8',
+                    font: {
+                        size: 10
+                    },
+                    maxRotation: 90,
+                    minRotation: 45
+                }
+            },
+            y: {
+                stacked: true,
+                beginAtZero: true,
+                grid: {
+                    color: 'rgba(148, 163, 184, 0.1)'
+                },
+                ticks: {
+                    color: '#94a3b8',
+                    callback: function(value) {
+                        return value.toFixed(1) + ' kWh';
+                    }
+                }
+            }
+        }
+    }
+});
+
+function toggleHHTable() {
+    const table = document.getElementById('hh-table-container');
+    const icon = document.getElementById('table-toggle-icon');
+    
+    if (table.classList.contains('hidden')) {
+        table.classList.remove('hidden');
+        icon.textContent = '▼';
+    } else {
+        table.classList.add('hidden');
+        icon.textContent = '▶';
+    }
+}
+
+function setDateOffset(offset) {
+    const dateInput = document.getElementById('date');
+    const currentDate = new Date(dateInput.value);
+    
+    if (offset === 0) {
+        // Set to today
+        currentDate.setTime(Date.now());
+    } else {
+        currentDate.setDate(currentDate.getDate() + offset);
+    }
+    
+    dateInput.value = currentDate.toISOString().split('T')[0];
+    document.querySelector('form').submit();
+}
+</script>
+{% endblock %}

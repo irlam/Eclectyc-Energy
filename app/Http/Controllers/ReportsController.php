@@ -279,6 +279,145 @@ class ReportsController
         ]);
     }
 
+    /**
+     * Show half-hourly consumption visualization with actual/estimated breakdown
+     */
+    public function hhConsumption(Request $request, Response $response): Response
+    {
+        $query = $request->getQueryParams();
+        
+        // Default to showing yesterday's data
+        $date = isset($query['date']) 
+            ? DateTimeImmutable::createFromFormat('Y-m-d', $query['date']) ?: new DateTimeImmutable('yesterday')
+            : new DateTimeImmutable('yesterday');
+        
+        // Get meter filter if provided
+        $meterId = isset($query['meter']) && is_numeric($query['meter']) ? (int)$query['meter'] : null;
+        
+        $reportData = [
+            'hh_data' => [],
+            'totalActual' => 0.0,
+            'totalEstimated' => 0.0,
+            'actualPct' => 0,
+            'meters' => [],
+            'selectedMeter' => $meterId,
+        ];
+
+        if ($this->pdo) {
+            try {
+                // Get list of meters for filter dropdown
+                $metersStmt = $this->pdo->query('
+                    SELECT m.id, m.mpan, s.name as site_name
+                    FROM meters m
+                    LEFT JOIN sites s ON s.id = m.site_id
+                    WHERE m.is_active = 1
+                    ORDER BY s.name, m.mpan
+                ');
+                $reportData['meters'] = $metersStmt->fetchAll() ?: [];
+                
+                // Build query for HH data
+                $params = ['date' => $date->format('Y-m-d')];
+                $meterFilter = '';
+                
+                if ($meterId) {
+                    $meterFilter = ' AND mr.meter_id = :meter_id';
+                    $params['meter_id'] = $meterId;
+                }
+                
+                // Get half-hourly readings with reading type
+                $stmt = $this->pdo->prepare('
+                    SELECT 
+                        mr.reading_date,
+                        mr.reading_time,
+                        mr.period_number,
+                        mr.reading_type,
+                        SUM(mr.reading_value) as total_kwh
+                    FROM meter_readings mr
+                    WHERE mr.reading_date = :date' . $meterFilter . '
+                    GROUP BY mr.reading_date, mr.reading_time, mr.period_number, mr.reading_type
+                    ORDER BY mr.period_number ASC, mr.reading_type ASC
+                ');
+                $stmt->execute($params);
+                
+                $rawData = $stmt->fetchAll() ?: [];
+                
+                // Organize data by HH period
+                $hhMap = [];
+                for ($i = 1; $i <= 48; $i++) {
+                    $hhMap[$i] = [
+                        'period' => $i,
+                        'time' => $this->formatHHTime($i),
+                        'actual' => 0.0,
+                        'estimated' => 0.0,
+                        'total' => 0.0,
+                        'reading_type' => 'none', // 'actual', 'estimated', 'mixed', or 'none'
+                    ];
+                }
+                
+                foreach ($rawData as $row) {
+                    $period = (int) $row['period_number'];
+                    $value = (float) $row['total_kwh'];
+                    $type = $row['reading_type'];
+                    
+                    if ($period >= 1 && $period <= 48) {
+                        if ($type === 'actual') {
+                            $hhMap[$period]['actual'] += $value;
+                        } else {
+                            $hhMap[$period]['estimated'] += $value;
+                        }
+                        $hhMap[$period]['total'] += $value;
+                    }
+                }
+                
+                // Determine reading type for each period and calculate totals
+                $totalActual = 0.0;
+                $totalEstimated = 0.0;
+                
+                foreach ($hhMap as &$period) {
+                    if ($period['actual'] > 0 && $period['estimated'] > 0) {
+                        $period['reading_type'] = 'mixed';
+                    } elseif ($period['actual'] > 0) {
+                        $period['reading_type'] = 'actual';
+                    } elseif ($period['estimated'] > 0) {
+                        $period['reading_type'] = 'estimated';
+                    }
+                    
+                    $totalActual += $period['actual'];
+                    $totalEstimated += $period['estimated'];
+                }
+                
+                $reportData['hh_data'] = array_values($hhMap);
+                $reportData['totalActual'] = $totalActual;
+                $reportData['totalEstimated'] = $totalEstimated;
+                $total = $totalActual + $totalEstimated;
+                
+                if ($total > 0) {
+                    $reportData['actualPct'] = round(($totalActual / $total) * 100);
+                }
+            } catch (\Throwable $e) {
+                $reportData['error'] = 'Unable to load HH consumption data: ' . $e->getMessage();
+            }
+        } else {
+            $reportData['error'] = 'Database connection not available.';
+        }
+
+        return $this->view->render($response, 'reports/hh_consumption.twig', [
+            'page_title' => 'Half-Hourly Consumption Visualization',
+            'date' => $date,
+            'report' => $reportData,
+        ]);
+    }
+    
+    /**
+     * Convert HH period number to time string
+     */
+    private function formatHHTime(int $period): string
+    {
+        $hour = (int)floor(($period - 1) / 2);
+        $minute = (($period - 1) % 2) * 30;
+        return sprintf('%02d:%02d', $hour, $minute);
+    }
+
     private function resolvePeriod(Request $request, int $days): array
     {
         $query = $request->getQueryParams();

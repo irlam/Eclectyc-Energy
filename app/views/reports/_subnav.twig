@@ -1,0 +1,57 @@
+{# Sub-navigation for reports section #}
+<div class="subnav">
+    <div class="subnav-container">
+        <a href="/reports/consumption" class="subnav-item {% if page_title == 'Energy Consumption Report' %}subnav-item-active{% endif %}">
+            📊 Consumption
+        </a>
+        <a href="/reports/costs" class="subnav-item {% if page_title == 'Cost Analysis Report' %}subnav-item-active{% endif %}">
+            💰 Costs
+        </a>
+        <a href="/reports/data-quality" class="subnav-item {% if page_title == 'Data Quality Report' %}subnav-item-active{% endif %}">
+            ✓ Data Quality
+        </a>
+        <a href="/reports/hh-consumption" class="subnav-item {% if page_title == 'Half-Hourly Consumption Visualization' %}subnav-item-active{% endif %}">
+            ⚡ HH Visualization
+        </a>
+    </div>
+</div>
+
+<style>
+.subnav {
+    background: rgba(30, 41, 59, 0.6);
+    border-bottom: 1px solid rgba(148, 163, 184, 0.15);
+    margin-bottom: 2rem;
+    padding: 0.75rem 0;
+}
+
+.subnav-container {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.subnav-item {
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    background: rgba(51, 65, 85, 0.3);
+    color: #94a3b8;
+    text-decoration: none;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+    border: 1px solid transparent;
+}
+
+.subnav-item:hover {
+    background: rgba(79, 70, 229, 0.2);
+    color: #c7d2fe;
+    border-color: rgba(79, 70, 229, 0.3);
+}
+
+.subnav-item-active {
+    background: rgba(79, 70, 229, 0.3);
+    color: #e0e7ff;
+    border-color: rgba(79, 70, 229, 0.4);
+    font-weight: 600;
+}
+</style>
