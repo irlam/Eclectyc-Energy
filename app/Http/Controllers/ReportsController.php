@@ -409,6 +409,152 @@ class ReportsController
     }
     
     /**
+     * Daily Usage Comparison - Last 7 days HH aggregated view
+     * Shows consumption patterns across days with HH period breakdown
+     */
+    public function dailyUsageComparison(Request $request, Response $response): Response
+    {
+        // Get current user and their accessible sites
+        $user = $_SESSION['user'] ?? null;
+        $userId = $user['id'] ?? null;
+        $accessibleSiteIds = [];
+        
+        if ($userId) {
+            $userModel = \App\Models\User::find($userId);
+            if ($userModel) {
+                $accessibleSiteIds = $userModel->getAccessibleSiteIds();
+            }
+        }
+        
+        $query = $request->getQueryParams();
+        $showPerMetric = isset($query['per_metric']) && $query['per_metric'] === '1';
+        
+        // Default to last 7 days
+        $end = new DateTimeImmutable('yesterday');
+        $start = $end->sub(new DateInterval('P6D')); // 7 days total including end date
+        
+        $reportData = [
+            'days' => [],
+            'hasMetricData' => false,
+            'totalConsumption' => 0.0,
+            'totalPerMetric' => 0.0,
+        ];
+
+        if ($this->pdo) {
+            try {
+                // Build WHERE clause for site filtering
+                $params = [
+                    'start' => $start->format('Y-m-d'),
+                    'end' => $end->format('Y-m-d'),
+                ];
+                
+                $siteFilter = '';
+                if (!empty($accessibleSiteIds)) {
+                    $placeholders = implode(',', array_fill(0, count($accessibleSiteIds), '?'));
+                    $siteFilter = " AND m.site_id IN ($placeholders)";
+                    foreach ($accessibleSiteIds as $siteId) {
+                        $params[] = $siteId;
+                    }
+                }
+                
+                // Fetch HH data for the last 7 days, grouped by date and period
+                $stmt = $this->pdo->prepare('
+                    SELECT 
+                        mr.reading_date,
+                        mr.period_number,
+                        SUM(mr.reading_value) as total_kwh,
+                        SUM(CASE 
+                            WHEN m.metric_variable_value > 0 
+                            THEN mr.reading_value / m.metric_variable_value 
+                            ELSE 0 
+                        END) as total_per_metric,
+                        COUNT(DISTINCT CASE 
+                            WHEN m.metric_variable_value > 0 
+                            THEN m.id 
+                        END) as meters_with_metric
+                    FROM meter_readings mr
+                    INNER JOIN meters m ON m.id = mr.meter_id
+                    WHERE mr.reading_date BETWEEN :start AND :end
+                        AND m.is_active = 1' . $siteFilter . '
+                        AND mr.period_number IS NOT NULL
+                        AND mr.period_number BETWEEN 1 AND 48
+                    GROUP BY mr.reading_date, mr.period_number
+                    ORDER BY mr.reading_date ASC, mr.period_number ASC
+                ');
+                $stmt->execute($params);
+                $rawData = $stmt->fetchAll() ?: [];
+                
+                // Initialize data structure for all 7 days and 48 HH periods
+                $dateMap = [];
+                $currentDate = clone $start;
+                while ($currentDate <= $end) {
+                    $dateKey = $currentDate->format('Y-m-d');
+                    $dateMap[$dateKey] = [
+                        'date' => $dateKey,
+                        'day_name' => $currentDate->format('l'), // Monday, Tuesday, etc.
+                        'day_short' => $currentDate->format('D'), // Mon, Tue, etc.
+                        'periods' => [],
+                    ];
+                    
+                    // Initialize all 48 HH periods
+                    for ($period = 1; $period <= 48; $period++) {
+                        $dateMap[$dateKey]['periods'][$period] = [
+                            'period' => $period,
+                            'time' => $this->formatHHTime($period),
+                            'kwh' => 0.0,
+                            'per_metric' => 0.0,
+                        ];
+                    }
+                    
+                    $currentDate = $currentDate->add(new DateInterval('P1D'));
+                }
+                
+                // Populate with actual data
+                $totalConsumption = 0.0;
+                $totalPerMetric = 0.0;
+                $hasMetricData = false;
+                
+                foreach ($rawData as $row) {
+                    $date = $row['reading_date'];
+                    $period = (int) $row['period_number'];
+                    $kwh = (float) $row['total_kwh'];
+                    $perMetric = (float) $row['total_per_metric'];
+                    
+                    if (isset($dateMap[$date]['periods'][$period])) {
+                        $dateMap[$date]['periods'][$period]['kwh'] = $kwh;
+                        $dateMap[$date]['periods'][$period]['per_metric'] = $perMetric;
+                        
+                        $totalConsumption += $kwh;
+                        $totalPerMetric += $perMetric;
+                        
+                        if ((int) $row['meters_with_metric'] > 0) {
+                            $hasMetricData = true;
+                        }
+                    }
+                }
+                
+                $reportData['days'] = array_values($dateMap);
+                $reportData['hasMetricData'] = $hasMetricData;
+                $reportData['totalConsumption'] = $totalConsumption;
+                $reportData['totalPerMetric'] = $totalPerMetric;
+            } catch (\Throwable $e) {
+                $reportData['error'] = 'Unable to load daily usage comparison data: ' . $e->getMessage();
+                error_log('Daily usage comparison error: ' . $e->getMessage());
+            }
+        } else {
+            $reportData['error'] = 'Database connection not available.';
+        }
+
+        return $this->view->render($response, 'reports/daily_usage_comparison.twig', [
+            'page_title' => 'Daily Usage Comparison',
+            'start' => $start,
+            'end' => $end,
+            'report' => $reportData,
+            'showPerMetric' => $showPerMetric,
+        ]);
+    }
+    
+    /**
      * Convert HH period number to time string
      */
     private function formatHHTime(int $period): string

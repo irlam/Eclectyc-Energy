@@ -224,6 +224,7 @@ $app->group('/reports', function ($group) {
     $group->get('/costs', [ReportsController::class, 'costs'])->setName('reports.costs');
     $group->get('/data-quality', [ReportsController::class, 'dataQuality'])->setName('reports.data_quality');
     $group->get('/hh-consumption', [ReportsController::class, 'hhConsumption'])->setName('reports.hh_consumption');
+    $group->get('/daily-usage-comparison', [ReportsController::class, 'dailyUsageComparison'])->setName('reports.daily_usage_comparison');
 })->add(function ($request, $handler) use ($container) {
     $middleware = new AuthMiddleware($container->get(AuthService::class), ['admin', 'manager']);
     return $middleware->process($request, $handler);

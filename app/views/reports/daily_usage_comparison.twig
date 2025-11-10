@@ -1,0 +1,366 @@
+{% extends "base.twig" %}
+
+{% block title %}Daily Usage Comparison{% endblock %}
+
+{% block content %}
+{% include 'reports/_subnav.twig' %}
+
+<section class="card daily-usage-card">
+    <div class="card-header daily-usage-card__header">
+        <div>
+            <h2>Daily Usage Comparison</h2>
+            <p class="mb-2">
+                Last 7 days HH consumption analysis ({{ start|date("d/m/Y") }} - {{ end|date("d/m/Y") }})
+            </p>
+        </div>
+        <button onclick="window.location.reload()" class="btn btn-secondary" style="white-space: nowrap;">
+            ↻ Refresh
+        </button>
+    </div>
+
+    <!-- Per-Metric Toggle -->
+    <form method="GET" class="daily-usage-filters">
+        <div class="form-group" style="display: flex; align-items: center; margin-bottom: 0;">
+            <label class="daily-usage-checkbox">
+                <input type="checkbox" name="per_metric" value="1" {% if showPerMetric %}checked{% endif %} onchange="this.form.submit()">
+                <span style="margin-left: 0.5rem;">Show per-metric analysis</span>
+            </label>
+        </div>
+    </form>
+
+    {% if report.error is defined %}
+        <div class="alert alert-danger">{{ report.error }}</div>
+    {% endif %}
+
+    {% if showPerMetric and not report.hasMetricData %}
+        <div class="alert alert-warning">
+            <strong>⚠️ No metric variables configured</strong>
+            <p style="margin-top: 0.5rem;">
+                Per-metric analysis requires meters to have metric variables configured. 
+                <a href="/admin/meters" style="color: #fef3c7; text-decoration: underline;">Configure metric variables</a> to enable this feature.
+            </p>
+        </div>
+    {% endif %}
+
+    {% if report.days is not empty %}
+        <div class="daily-usage-stats">
+            <div class="daily-usage-stat">
+                <span>Total consumption</span>
+                <strong>{{ report.totalConsumption|number_format(1, '.', ',') }} kWh</strong>
+            </div>
+            {% if showPerMetric and report.hasMetricData %}
+            <div class="daily-usage-stat" style="background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3);">
+                <span>Total per metric</span>
+                <strong>{{ report.totalPerMetric|number_format(3, '.', ',') }}</strong>
+            </div>
+            {% endif %}
+            <div class="daily-usage-stat">
+                <span>Days analyzed</span>
+                <strong>{{ report.days|length }}</strong>
+            </div>
+            <div class="daily-usage-stat">
+                <span>Average per day</span>
+                <strong>{{ (report.totalConsumption / report.days|length)|number_format(1, '.', ',') }} kWh</strong>
+            </div>
+        </div>
+
+        <!-- Chart Container -->
+        <div class="daily-usage-chart-wrapper">
+            <canvas id="dailyUsageChart"></canvas>
+        </div>
+
+        <!-- Legend -->
+        <div class="daily-usage-legend">
+            <h3 style="margin-bottom: 0.75rem; font-size: 1rem;">Daily Breakdown</h3>
+            <div class="daily-usage-legend-items">
+                {% for day in report.days %}
+                <div class="daily-usage-legend-item">
+                    <span class="daily-usage-legend-color" style="background: {{ ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#8b5cf6', '#ec4899'][loop.index0 % 7] }};"></span>
+                    <span class="daily-usage-legend-label">{{ day.day_name }} ({{ day.date|date("d/m") }})</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+    {% else %}
+        <div class="daily-usage-no-data">
+            <strong>No meter readings found for the last 7 days.</strong>
+            <p style="margin-top: 0.5rem;">This could mean:</p>
+            <ul style="margin: 0.5rem 0;">
+                <li>No half-hourly data has been imported yet</li>
+                <li>All meters are inactive or have no readings</li>
+                <li>Data is still being processed</li>
+            </ul>
+            <div style="margin-top: 1rem;">
+                <a href="/admin/imports" class="btn btn-primary">Import Data</a>
+                <a href="/admin/meters" class="btn btn-secondary" style="margin-left: 0.5rem;">Manage Meters</a>
+            </div>
+        </div>
+    {% endif %}
+
+    <style>
+    .daily-usage-card {
+        background: linear-gradient(180deg, #0f172a 0%, #111827 45%, #0b1120 100%);
+        color: #e2e8f0;
+        border: none;
+        box-shadow: 0 25px 45px rgba(15, 23, 42, 0.45);
+    }
+
+    .daily-usage-card__header {
+        border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+    }
+
+    .daily-usage-filters {
+        padding: 1rem 1.25rem;
+        background: rgba(30, 41, 59, 0.6);
+        border-radius: 12px;
+        box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.15);
+        margin-bottom: 1.5rem;
+    }
+
+    .daily-usage-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+        gap: 1rem;
+        margin: 1.5rem 0;
+    }
+
+    .daily-usage-stat {
+        padding: 1rem;
+        border-radius: 12px;
+        background: rgba(30, 41, 59, 0.6);
+        box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.15);
+    }
+
+    .daily-usage-stat span {
+        display: block;
+        font-size: 0.85rem;
+        letter-spacing: 0.05em;
+        text-transform: uppercase;
+        color: #94a3b8;
+    }
+
+    .daily-usage-stat strong {
+        font-size: 1.65rem;
+        line-height: 1.2;
+        color: #f8fafc;
+    }
+
+    .daily-usage-chart-wrapper {
+        background: rgba(15, 23, 42, 0.6);
+        border-radius: 14px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: inset 0 0 0 1px rgba(51, 65, 85, 0.45);
+    }
+
+    .daily-usage-legend {
+        background: rgba(30, 41, 59, 0.6);
+        border-radius: 12px;
+        padding: 1rem 1.25rem;
+        box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.15);
+    }
+
+    .daily-usage-legend-items {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+        gap: 0.75rem;
+    }
+
+    .daily-usage-legend-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .daily-usage-legend-color {
+        width: 16px;
+        height: 16px;
+        border-radius: 3px;
+        display: block;
+    }
+
+    .daily-usage-legend-label {
+        font-size: 0.9rem;
+        color: #cbd5e1;
+    }
+
+    .daily-usage-no-data {
+        padding: 1.5rem;
+        border-radius: 12px;
+        background: rgba(244, 183, 64, 0.18);
+        border: 1px solid rgba(244, 183, 64, 0.45);
+        color: #FFE9C4;
+    }
+
+    .daily-usage-no-data strong {
+        color: #fef3c7;
+    }
+
+    .daily-usage-checkbox {
+        display: flex;
+        align-items: center;
+        color: #e2e8f0;
+        cursor: pointer;
+    }
+
+    .daily-usage-checkbox input[type="checkbox"] {
+        cursor: pointer;
+    }
+    </style>
+</section>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+// Daily usage comparison chart data
+const dailyUsageData = {{ report.days|json_encode|raw }};
+const showPerMetric = {{ showPerMetric ? 'true' : 'false' }};
+
+// Prepare datasets for Chart.js
+const colors = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#8b5cf6', '#ec4899'];
+const datasets = dailyUsageData.map((day, index) => {
+    const data = [];
+    for (let period = 1; period <= 48; period++) {
+        const periodData = day.periods[period];
+        if (periodData) {
+            data.push(showPerMetric ? periodData.per_metric : periodData.kwh);
+        } else {
+            data.push(0);
+        }
+    }
+    
+    return {
+        label: day.day_name + ' (' + day.date.substring(5) + ')',
+        data: data,
+        borderColor: colors[index % colors.length],
+        backgroundColor: colors[index % colors.length] + '20',
+        tension: 0.3,
+        pointRadius: 0,
+        pointHoverRadius: 4,
+        borderWidth: 2,
+    };
+});
+
+// Generate HH period labels (00:00, 00:30, 01:00, etc.)
+const labels = [];
+for (let period = 1; period <= 48; period++) {
+    const hour = Math.floor((period - 1) / 2);
+    const minute = ((period - 1) % 2) * 30;
+    labels.push(hour.toString().padStart(2, '0') + ':' + minute.toString().padStart(2, '0'));
+}
+
+// Create the chart
+const ctx = document.getElementById('dailyUsageChart').getContext('2d');
+new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: labels,
+        datasets: datasets
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: true,
+        aspectRatio: 2.5,
+        interaction: {
+            mode: 'index',
+            intersect: false,
+        },
+        plugins: {
+            legend: {
+                display: false // We're using a custom legend below the chart
+            },
+            title: {
+                display: true,
+                text: 'Half-Hourly Consumption by Day' + (showPerMetric ? ' (Per Metric)' : ''),
+                color: '#f8fafc',
+                font: {
+                    size: 16,
+                    weight: 'bold'
+                }
+            },
+            tooltip: {
+                backgroundColor: 'rgba(15, 23, 42, 0.95)',
+                titleColor: '#f8fafc',
+                bodyColor: '#cbd5e1',
+                borderColor: 'rgba(148, 163, 184, 0.3)',
+                borderWidth: 1,
+                padding: 12,
+                displayColors: true,
+                callbacks: {
+                    label: function(context) {
+                        let label = context.dataset.label || '';
+                        if (label) {
+                            label += ': ';
+                        }
+                        if (context.parsed.y !== null) {
+                            if (showPerMetric) {
+                                label += context.parsed.y.toFixed(3);
+                            } else {
+                                label += context.parsed.y.toFixed(2) + ' kWh';
+                            }
+                        }
+                        return label;
+                    }
+                }
+            }
+        },
+        scales: {
+            x: {
+                grid: {
+                    color: 'rgba(148, 163, 184, 0.1)',
+                    drawBorder: false,
+                },
+                ticks: {
+                    color: '#94a3b8',
+                    maxRotation: 45,
+                    minRotation: 45,
+                    autoSkip: true,
+                    maxTicksLimit: 24,
+                    font: {
+                        size: 10
+                    }
+                },
+                title: {
+                    display: true,
+                    text: 'Half-Hourly Period',
+                    color: '#cbd5e1',
+                    font: {
+                        size: 12,
+                        weight: 'bold'
+                    }
+                }
+            },
+            y: {
+                beginAtZero: true,
+                grid: {
+                    color: 'rgba(148, 163, 184, 0.1)',
+                    drawBorder: false,
+                },
+                ticks: {
+                    color: '#94a3b8',
+                    font: {
+                        size: 11
+                    },
+                    callback: function(value) {
+                        if (showPerMetric) {
+                            return value.toFixed(2);
+                        } else {
+                            return value.toFixed(0) + ' kWh';
+                        }
+                    }
+                },
+                title: {
+                    display: true,
+                    text: showPerMetric ? 'Consumption (Per Metric)' : 'Consumption (kWh)',
+                    color: '#cbd5e1',
+                    font: {
+                        size: 12,
+                        weight: 'bold'
+                    }
+                }
+            }
+        }
+    }
+});
+</script>
+{% endblock %}
