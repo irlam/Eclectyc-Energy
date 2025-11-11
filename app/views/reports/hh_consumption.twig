@@ -104,7 +104,9 @@
         <!-- Interactive Chart -->
         <div class="hh-chart-container">
             <h3>Half-Hourly Consumption Pattern</h3>
-            <canvas id="hhChart" width="800" height="400"></canvas>
+            <div class="hh-chart-wrapper">
+                <canvas id="hhChart"></canvas>
+            </div>
         </div>
 
         <!-- Detailed Table -->
@@ -291,6 +293,8 @@
         background: rgba(30, 41, 59, 0.6);
         border-radius: 12px;
         box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.15);
+        position: relative;
+        height: 450px;
     }
 
     .hh-chart-container h3 {
@@ -299,9 +303,18 @@
         margin-bottom: 1rem;
     }
 
+    .hh-chart-wrapper {
+        position: relative;
+        height: calc(100% - 2.125rem);
+        width: 100%;
+    }
+
     #hhChart {
-        max-width: 100%;
-        height: auto !important;
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
     }
 
     .hh-table-toggle {
