@@ -57,12 +57,14 @@ class ReportsController
                 ];
                 
                 if (!empty($accessibleSiteIds)) {
-                    $placeholders = implode(',', array_fill(0, count($accessibleSiteIds), '?'));
-                    $siteFilter = " AND s.id IN ($placeholders)";
-                    // Add site IDs to params array
-                    foreach ($accessibleSiteIds as $siteId) {
-                        $params[] = $siteId;
+                    // Use named parameters to avoid mixing with positional parameters
+                    $placeholders = [];
+                    foreach ($accessibleSiteIds as $index => $siteId) {
+                        $paramName = 'site_' . $index;
+                        $placeholders[] = ':' . $paramName;
+                        $params[$paramName] = $siteId;
                     }
+                    $siteFilter = " AND s.id IN (" . implode(',', $placeholders) . ")";
                 }
                 
                 // Modified query to show only accessible sites
