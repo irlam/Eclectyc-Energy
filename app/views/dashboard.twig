@@ -147,37 +147,35 @@
         </div>
     </div>
     {% endif %}
-</div>
 
-<!-- New Dashboard Widgets -->
-<div class="new-widgets-section">
     <!-- Yesterday's Consumption Widget -->
     {% if yesterday_consumption %}
-    <div class="widget-card widget-yesterday">
-        <div class="widget-header">
+    <div class="energy-card energy-card-yesterday">
+        <div class="energy-header">
             <h3>📅 Yesterday's Energy Consumption</h3>
             <span class="widget-date">{{ yesterday_consumption.date|date("l, F j, Y") }}</span>
         </div>
-        <div class="widget-body">
-            <div class="widget-main-stat">
-                <div class="widget-value">
-                    {{ yesterday_consumption.total_kwh|number_format(1, '.', ',') }}
-                    <span class="widget-unit">kWh</span>
-                </div>
-                <div class="widget-meta">
-                    {% if yesterday_consumption.meter_count > 0 %}
-                        Across {{ yesterday_consumption.meter_count }} meter{{ yesterday_consumption.meter_count != 1 ? 's' : '' }}
-                    {% else %}
-                        No data available for yesterday
-                    {% endif %}
-                </div>
+        <div class="energy-value">
+            {{ yesterday_consumption.total_kwh|number_format(1, '.', ',') }}
+            <span class="energy-unit">kWh</span>
+        </div>
+        <div class="energy-footer">
+            <div class="widget-meta">
+                {% if yesterday_consumption.meter_count > 0 %}
+                    Across {{ yesterday_consumption.meter_count }} meter{{ yesterday_consumption.meter_count != 1 ? 's' : '' }}
+                {% else %}
+                    No data available for yesterday
+                {% endif %}
             </div>
         </div>
     </div>
     {% endif %}
+</div>
 
+<!-- New Dashboard Widgets -->
+<div class="new-widgets-section">
     <!-- Interactive Health Report Widget -->
-    <div class="widget-card widget-health">
+    <div class="widget-card widget-health widget-health-wide">
         <div class="widget-header">
             <h3>🏥 Interactive Health Report</h3>
             <span class="widget-subtitle">Site Data Coverage & Quality</span>

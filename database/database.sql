@@ -419,15 +419,16 @@ CREATE TABLE `import_jobs` (
   `notes` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `last_error` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `tags` json DEFAULT NULL,
-  `metadata` json DEFAULT NULL
+  `metadata` json DEFAULT NULL,
+  `summary` json DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `import_jobs`
 --
 
-INSERT INTO `import_jobs` (`id`, `batch_id`, `filename`, `file_path`, `import_type`, `status`, `priority`, `progress`, `total_rows`, `processed_rows`, `imported_rows`, `successful_rows`, `failed_rows`, `user_id`, `queued_at`, `started_at`, `completed_at`, `error_message`, `dry_run`, `retry_count`, `retry_at`, `max_retries`, `parent_job_id`, `default_site_id`, `default_tariff_id`, `notes`, `last_error`, `tags`, `metadata`) VALUES
-(0, '758ca034-a973-45f0-9387-54f381fcd3e1', 'Test_HH_Data.csv', '/var/www/vhosts/hosting215226.ae97b.netcup.net/eclectyc.energy/httpdocs/app/storage/imports/1762784042_Test_HH_Data.csv', 'hh', 'processing', 'normal', 0, NULL, 8425, 8425, 0, 0, 1, '2025-11-10 14:14:02', '2025-11-10 17:14:31', NULL, NULL, 0, 3, '2025-11-10 16:18:27', 3, NULL, NULL, NULL, NULL, NULL, NULL, '{\"default_site_id\": 8, \"default_tariff_id\": 12}');
+INSERT INTO `import_jobs` (`id`, `batch_id`, `filename`, `file_path`, `import_type`, `status`, `priority`, `progress`, `total_rows`, `processed_rows`, `imported_rows`, `successful_rows`, `failed_rows`, `user_id`, `queued_at`, `started_at`, `completed_at`, `error_message`, `dry_run`, `retry_count`, `retry_at`, `max_retries`, `parent_job_id`, `default_site_id`, `default_tariff_id`, `notes`, `last_error`, `tags`, `metadata`, `summary`) VALUES
+(0, '758ca034-a973-45f0-9387-54f381fcd3e1', 'Test_HH_Data.csv', '/var/www/vhosts/hosting215226.ae97b.netcup.net/eclectyc.energy/httpdocs/app/storage/imports/1762784042_Test_HH_Data.csv', 'hh', 'processing', 'normal', 0, NULL, 8425, 8425, 0, 0, 1, '2025-11-10 14:14:02', '2025-11-10 17:14:31', NULL, NULL, 0, 3, '2025-11-10 16:18:27', 3, NULL, NULL, NULL, NULL, NULL, NULL, '{\"default_site_id\": 8, \"default_tariff_id\": 12}', NULL);
 
 -- --------------------------------------------------------
 
