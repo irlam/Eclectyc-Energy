@@ -51,9 +51,19 @@ class ReportsController
             try {
                 // Build WHERE clause for site filtering
                 $siteFilter = '';
+                $startDate = $period['start']->format('Y-m-d');
+                $endDate = $period['end']->format('Y-m-d');
                 $params = [
-                    'start' => $period['start']->format('Y-m-d'),
-                    'end' => $period['end']->format('Y-m-d'),
+                    'start1' => $startDate,
+                    'end1' => $endDate,
+                    'start2' => $startDate,
+                    'end2' => $endDate,
+                    'start3' => $startDate,
+                    'end3' => $endDate,
+                    'start4' => $startDate,
+                    'end4' => $endDate,
+                    'start5' => $startDate,
+                    'end5' => $endDate,
                 ];
                 
                 if (!empty($accessibleSiteIds)) {
@@ -69,16 +79,18 @@ class ReportsController
                 
                 // Modified query to show only accessible sites
                 // Now also includes metric variable information
+                // Note: Using unique parameter names (start1/end1, start2/end2, etc.) because
+                // PDO with ATTR_EMULATE_PREPARES=false doesn't support reusing named parameters
                 $stmt = $this->pdo->prepare('
                     SELECT
                         s.id AS site_id,
                         s.name AS site_name,
-                        COUNT(DISTINCT CASE WHEN da.date BETWEEN :start AND :end THEN m.id END) AS meter_count,
-                        COALESCE(SUM(CASE WHEN da.date BETWEEN :start AND :end THEN da.total_consumption END), 0) AS total_consumption,
-                        MIN(CASE WHEN da.date BETWEEN :start AND :end THEN da.date END) AS first_reading,
-                        MAX(CASE WHEN da.date BETWEEN :start AND :end THEN da.date END) AS last_reading,
+                        COUNT(DISTINCT CASE WHEN da.date BETWEEN :start1 AND :end1 THEN m.id END) AS meter_count,
+                        COALESCE(SUM(CASE WHEN da.date BETWEEN :start2 AND :end2 THEN da.total_consumption END), 0) AS total_consumption,
+                        MIN(CASE WHEN da.date BETWEEN :start3 AND :end3 THEN da.date END) AS first_reading,
+                        MAX(CASE WHEN da.date BETWEEN :start4 AND :end4 THEN da.date END) AS last_reading,
                         GROUP_CONCAT(DISTINCT CASE WHEN m.metric_variable_name IS NOT NULL THEN m.metric_variable_name END) AS metric_names,
-                        SUM(CASE WHEN m.metric_variable_value > 0 AND da.date BETWEEN :start AND :end 
+                        SUM(CASE WHEN m.metric_variable_value > 0 AND da.date BETWEEN :start5 AND :end5 
                             THEN da.total_consumption / m.metric_variable_value 
                             ELSE 0 END) AS total_per_metric,
                         COUNT(DISTINCT CASE WHEN m.metric_variable_value > 0 THEN m.id END) AS meters_with_metric
