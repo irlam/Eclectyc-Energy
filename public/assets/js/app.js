@@ -172,17 +172,62 @@ function initializeHealthCheck() {
     const healthElement = document.getElementById('health-status');
     if (!healthElement) return;
     
-    // Make health status clickable
+    // Create a refresh button for manual health checks
+    const refreshButton = document.createElement('button');
+    refreshButton.className = 'health-refresh-btn';
+    refreshButton.innerHTML = '↻';
+    refreshButton.title = 'Refresh health status';
+    refreshButton.style.cssText = `
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        color: inherit;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        cursor: pointer;
+        font-size: 12px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        margin-left: 8px;
+        vertical-align: middle;
+        transition: all 0.2s ease;
+    `;
+    
+    // Insert refresh button after health element
+    healthElement.parentNode.insertBefore(refreshButton, healthElement.nextSibling);
+    
+    // Make health status clickable to navigate to details
     healthElement.style.cursor = 'pointer';
     healthElement.addEventListener('click', () => {
         window.location.href = '/tools/system-health';
     });
     
-    // Check health status every 30 seconds
-    checkHealth();
-    setInterval(checkHealth, 30000);
+    // Set initial status
+    healthElement.className = 'status';
+    healthElement.textContent = 'Click ↻ to check';
+    healthElement.title = 'Click refresh button to check system health';
+    
+    // Manual health check on button click
+    refreshButton.addEventListener('click', (e) => {
+        e.stopPropagation(); // Prevent triggering parent click
+        checkHealth();
+    });
+    
+    refreshButton.addEventListener('mouseenter', () => {
+        refreshButton.style.background = 'rgba(255, 255, 255, 0.2)';
+    });
+    
+    refreshButton.addEventListener('mouseleave', () => {
+        refreshButton.style.background = 'rgba(255, 255, 255, 0.1)';
+    });
     
     async function checkHealth() {
+        // Show loading state
+        refreshButton.style.animation = 'spin 1s linear infinite';
+        refreshButton.disabled = true;
+        healthElement.textContent = 'Checking...';
+        
         try {
             const response = await fetch('/api/health');
             const data = await response.json();
@@ -242,6 +287,10 @@ function initializeHealthCheck() {
             healthElement.className = 'status status-danger';
             healthElement.textContent = 'System Offline';
             healthElement.title = 'Unable to reach health check endpoint. Click to retry.';
+        } finally {
+            // Remove loading state
+            refreshButton.style.animation = '';
+            refreshButton.disabled = false;
         }
     }
 }

@@ -58,7 +58,6 @@ use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
 use PDO;
-use PDOException;
 use Psr\Container\ContainerInterface;
 use Slim\Factory\AppFactory;
 use Slim\Views\Twig;
@@ -166,7 +165,7 @@ $container->set(PDO::class, function () {
         // Set connection timeout to prevent hanging connections
         $pdo->setAttribute(PDO::ATTR_TIMEOUT, 30);
         return $pdo;
-    } catch (PDOException $e) {
+    } catch (\PDOException $e) {
         error_log('Database connection failed: ' . $e->getMessage());
         return null;
     }
