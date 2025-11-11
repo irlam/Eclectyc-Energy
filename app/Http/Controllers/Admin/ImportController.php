@@ -648,7 +648,7 @@ class ImportController
     }
 
     /**
-     * Delete a single import history entry
+     * Delete a single import history entry and all associated data
      */
     public function deleteHistory(Request $request, Response $response, array $args): Response
     {
@@ -665,28 +665,159 @@ class ImportController
         }
 
         try {
+            $this->pdo->beginTransaction();
+
+            // First, get the batch_id from the audit log entry
+            $stmt = $this->pdo->prepare('
+                SELECT new_values 
+                FROM audit_logs 
+                WHERE id = :id AND action = :action
+            ');
+            $stmt->execute([
+                'id' => $entryId,
+                'action' => 'import_csv',
+            ]);
+            $entry = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$entry) {
+                $this->pdo->rollBack();
+                $response->getBody()->write(json_encode(['success' => false, 'message' => 'Entry not found.']));
+                return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+            }
+
+            // Extract batch_id from the JSON payload
+            $payload = json_decode($entry['new_values'], true);
+            $batchId = $payload['batch_id'] ?? null;
+
+            $deletedReadings = 0;
+            $deletedMeters = 0;
+            $deletedDailyAggregations = 0;
+
+            if ($batchId) {
+                // Delete meter readings associated with this batch
+                $checkBatchColumn = $this->pdo->query("
+                    SELECT COUNT(*) as count 
+                    FROM information_schema.COLUMNS 
+                    WHERE TABLE_SCHEMA = DATABASE() 
+                    AND TABLE_NAME = 'meter_readings' 
+                    AND COLUMN_NAME = 'batch_id'
+                ")->fetch(PDO::FETCH_ASSOC);
+
+                if ($checkBatchColumn['count'] > 0) {
+                    $deleteReadingsStmt = $this->pdo->prepare('
+                        DELETE FROM meter_readings WHERE batch_id = :batch_id
+                    ');
+                    $deleteReadingsStmt->execute(['batch_id' => $batchId]);
+                    $deletedReadings = $deleteReadingsStmt->rowCount();
+                }
+
+                // Delete daily aggregations associated with this batch
+                $checkDailyAggBatchColumn = $this->pdo->query("
+                    SELECT COUNT(*) as count 
+                    FROM information_schema.COLUMNS 
+                    WHERE TABLE_SCHEMA = DATABASE() 
+                    AND TABLE_NAME = 'daily_aggregations' 
+                    AND COLUMN_NAME = 'batch_id'
+                ")->fetch(PDO::FETCH_ASSOC);
+
+                if ($checkDailyAggBatchColumn['count'] > 0) {
+                    $deleteDailyAggStmt = $this->pdo->prepare('
+                        DELETE FROM daily_aggregations WHERE batch_id = :batch_id
+                    ');
+                    $deleteDailyAggStmt->execute(['batch_id' => $batchId]);
+                    $deletedDailyAggregations = $deleteDailyAggStmt->rowCount();
+                }
+
+                // Delete meters that were auto-created by this import and have no other data
+                $checkMetersBatchColumn = $this->pdo->query("
+                    SELECT COUNT(*) as count 
+                    FROM information_schema.COLUMNS 
+                    WHERE TABLE_SCHEMA = DATABASE() 
+                    AND TABLE_NAME = 'meters' 
+                    AND COLUMN_NAME = 'batch_id'
+                ")->fetch(PDO::FETCH_ASSOC);
+
+                if ($checkMetersBatchColumn['count'] > 0) {
+                    // Only delete meters that have no other readings
+                    $deleteMetersStmt = $this->pdo->prepare('
+                        DELETE m FROM meters m
+                        WHERE m.batch_id = :batch_id
+                        AND NOT EXISTS (
+                            SELECT 1 FROM meter_readings mr 
+                            WHERE mr.meter_id = m.id 
+                            AND (mr.batch_id != :batch_id2 OR mr.batch_id IS NULL)
+                        )
+                    ');
+                    $deleteMetersStmt->execute([
+                        'batch_id' => $batchId,
+                        'batch_id2' => $batchId
+                    ]);
+                    $deletedMeters = $deleteMetersStmt->rowCount();
+                }
+
+                // Delete any associated import job entries
+                $deleteJobStmt = $this->pdo->prepare('
+                    DELETE FROM import_jobs WHERE batch_id = :batch_id
+                ');
+                $deleteJobStmt->execute(['batch_id' => $batchId]);
+            }
+
+            // Delete the audit log entry
             $stmt = $this->pdo->prepare('DELETE FROM audit_logs WHERE id = :id AND action = :action');
             $stmt->execute([
                 'id' => $entryId,
                 'action' => 'import_csv',
             ]);
 
-            if ($stmt->rowCount() > 0) {
-                $response->getBody()->write(json_encode(['success' => true, 'deleted' => 1]));
-                return $response->withHeader('Content-Type', 'application/json');
-            } else {
-                $response->getBody()->write(json_encode(['success' => false, 'message' => 'Entry not found.']));
-                return $response->withHeader('Content-Type', 'application/json')->withStatus(404);
+            $this->pdo->commit();
+
+            $details = [];
+            if ($deletedReadings > 0) {
+                $details[] = "{$deletedReadings} reading(s)";
             }
+            if ($deletedDailyAggregations > 0) {
+                $details[] = "{$deletedDailyAggregations} daily aggregation(s)";
+            }
+            if ($deletedMeters > 0) {
+                $details[] = "{$deletedMeters} meter(s)";
+            }
+
+            $message = 'Import deleted successfully';
+            if (!empty($details)) {
+                $message .= '. Removed: ' . implode(', ', $details);
+            }
+
+            $response->getBody()->write(json_encode([
+                'success' => true, 
+                'deleted' => 1,
+                'message' => $message,
+                'details' => [
+                    'readings' => $deletedReadings,
+                    'daily_aggregations' => $deletedDailyAggregations,
+                    'meters' => $deletedMeters,
+                ]
+            ]));
+            return $response->withHeader('Content-Type', 'application/json');
+
         } catch (\PDOException $e) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
             error_log('Failed to delete import history: ' . $e->getMessage());
             $response->getBody()->write(json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+        } catch (\Throwable $e) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            error_log('Failed to delete import history: ' . $e->getMessage());
+            $response->getBody()->write(json_encode(['success' => false, 'message' => 'An unexpected error occurred.']));
             return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
         }
     }
 
     /**
-     * Delete multiple import history entries
+     * Delete multiple import history entries and all associated data
      */
     public function deleteHistoryBulk(Request $request, Response $response): Response
     {
@@ -704,26 +835,170 @@ class ImportController
         }
 
         try {
+            $this->pdo->beginTransaction();
+
+            $totalDeletedReadings = 0;
+            $totalDeletedDailyAggregations = 0;
+            $totalDeletedMeters = 0;
+            $totalDeletedJobs = 0;
+
+            // Get all batch IDs from the audit logs
             $placeholders = implode(',', array_fill(0, count($ids), '?'));
-            $stmt = $this->pdo->prepare("DELETE FROM audit_logs WHERE id IN ($placeholders) AND action = ?");
+            $stmt = $this->pdo->prepare("
+                SELECT new_values 
+                FROM audit_logs 
+                WHERE id IN ($placeholders) AND action = ?
+            ");
             
             $params = array_map('intval', $ids);
             $params[] = 'import_csv';
-            
+            $stmt->execute($params);
+            $entries = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Extract all batch IDs
+            $batchIds = [];
+            foreach ($entries as $entry) {
+                $payload = json_decode($entry['new_values'], true);
+                if (isset($payload['batch_id'])) {
+                    $batchIds[] = $payload['batch_id'];
+                }
+            }
+
+            if (!empty($batchIds)) {
+                // Check if batch_id column exists in various tables
+                $checkReadingsBatchColumn = $this->pdo->query("
+                    SELECT COUNT(*) as count 
+                    FROM information_schema.COLUMNS 
+                    WHERE TABLE_SCHEMA = DATABASE() 
+                    AND TABLE_NAME = 'meter_readings' 
+                    AND COLUMN_NAME = 'batch_id'
+                ")->fetch(PDO::FETCH_ASSOC);
+
+                $checkDailyAggBatchColumn = $this->pdo->query("
+                    SELECT COUNT(*) as count 
+                    FROM information_schema.COLUMNS 
+                    WHERE TABLE_SCHEMA = DATABASE() 
+                    AND TABLE_NAME = 'daily_aggregations' 
+                    AND COLUMN_NAME = 'batch_id'
+                ")->fetch(PDO::FETCH_ASSOC);
+
+                $checkMetersBatchColumn = $this->pdo->query("
+                    SELECT COUNT(*) as count 
+                    FROM information_schema.COLUMNS 
+                    WHERE TABLE_SCHEMA = DATABASE() 
+                    AND TABLE_NAME = 'meters' 
+                    AND COLUMN_NAME = 'batch_id'
+                ")->fetch(PDO::FETCH_ASSOC);
+
+                // Delete meter readings for all batch IDs
+                if ($checkReadingsBatchColumn['count'] > 0) {
+                    $batchPlaceholders = implode(',', array_fill(0, count($batchIds), '?'));
+                    $deleteReadingsStmt = $this->pdo->prepare("
+                        DELETE FROM meter_readings WHERE batch_id IN ($batchPlaceholders)
+                    ");
+                    $deleteReadingsStmt->execute($batchIds);
+                    $totalDeletedReadings = $deleteReadingsStmt->rowCount();
+                }
+
+                // Delete daily aggregations for all batch IDs
+                if ($checkDailyAggBatchColumn['count'] > 0) {
+                    $batchPlaceholders = implode(',', array_fill(0, count($batchIds), '?'));
+                    $deleteDailyAggStmt = $this->pdo->prepare("
+                        DELETE FROM daily_aggregations WHERE batch_id IN ($batchPlaceholders)
+                    ");
+                    $deleteDailyAggStmt->execute($batchIds);
+                    $totalDeletedDailyAggregations = $deleteDailyAggStmt->rowCount();
+                }
+
+                // Delete meters that were auto-created and have no other data
+                if ($checkMetersBatchColumn['count'] > 0) {
+                    foreach ($batchIds as $batchId) {
+                        $deleteMetersStmt = $this->pdo->prepare('
+                            DELETE m FROM meters m
+                            WHERE m.batch_id = :batch_id
+                            AND NOT EXISTS (
+                                SELECT 1 FROM meter_readings mr 
+                                WHERE mr.meter_id = m.id 
+                                AND (mr.batch_id != :batch_id2 OR mr.batch_id IS NULL)
+                            )
+                        ');
+                        $deleteMetersStmt->execute([
+                            'batch_id' => $batchId,
+                            'batch_id2' => $batchId
+                        ]);
+                        $totalDeletedMeters += $deleteMetersStmt->rowCount();
+                    }
+                }
+
+                // Delete import jobs for all batch IDs
+                $batchPlaceholders = implode(',', array_fill(0, count($batchIds), '?'));
+                $deleteJobsStmt = $this->pdo->prepare("
+                    DELETE FROM import_jobs WHERE batch_id IN ($batchPlaceholders)
+                ");
+                $deleteJobsStmt->execute($batchIds);
+                $totalDeletedJobs = $deleteJobsStmt->rowCount();
+            }
+
+            // Delete the audit log entries
+            $stmt = $this->pdo->prepare("DELETE FROM audit_logs WHERE id IN ($placeholders) AND action = ?");
+            $params = array_map('intval', $ids);
+            $params[] = 'import_csv';
             $stmt->execute($params);
             $deleted = $stmt->rowCount();
 
-            $response->getBody()->write(json_encode(['success' => true, 'deleted' => $deleted]));
+            $this->pdo->commit();
+
+            $details = [];
+            if ($totalDeletedReadings > 0) {
+                $details[] = "{$totalDeletedReadings} reading(s)";
+            }
+            if ($totalDeletedDailyAggregations > 0) {
+                $details[] = "{$totalDeletedDailyAggregations} daily aggregation(s)";
+            }
+            if ($totalDeletedMeters > 0) {
+                $details[] = "{$totalDeletedMeters} meter(s)";
+            }
+            if ($totalDeletedJobs > 0) {
+                $details[] = "{$totalDeletedJobs} import job(s)";
+            }
+
+            $message = "{$deleted} import(s) deleted successfully";
+            if (!empty($details)) {
+                $message .= '. Removed: ' . implode(', ', $details);
+            }
+
+            $response->getBody()->write(json_encode([
+                'success' => true, 
+                'deleted' => $deleted,
+                'message' => $message,
+                'details' => [
+                    'readings' => $totalDeletedReadings,
+                    'daily_aggregations' => $totalDeletedDailyAggregations,
+                    'meters' => $totalDeletedMeters,
+                    'jobs' => $totalDeletedJobs,
+                ]
+            ]));
             return $response->withHeader('Content-Type', 'application/json');
+
         } catch (\PDOException $e) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
             error_log('Failed to delete import history: ' . $e->getMessage());
             $response->getBody()->write(json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+        } catch (\Throwable $e) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            error_log('Failed to delete import history: ' . $e->getMessage());
+            $response->getBody()->write(json_encode(['success' => false, 'message' => 'An unexpected error occurred.']));
             return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
         }
     }
 
     /**
-     * Delete all import history
+     * Delete all import history and associated data
      */
     public function deleteHistoryAll(Request $request, Response $response): Response
     {
@@ -733,15 +1008,158 @@ class ImportController
         }
 
         try {
+            $this->pdo->beginTransaction();
+
+            $totalDeletedReadings = 0;
+            $totalDeletedDailyAggregations = 0;
+            $totalDeletedMeters = 0;
+            $totalDeletedJobs = 0;
+
+            // Get all batch IDs from import history
+            $stmt = $this->pdo->prepare('
+                SELECT new_values 
+                FROM audit_logs 
+                WHERE action = :action
+            ');
+            $stmt->execute(['action' => 'import_csv']);
+            $entries = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            // Extract all batch IDs
+            $batchIds = [];
+            foreach ($entries as $entry) {
+                $payload = json_decode($entry['new_values'], true);
+                if (isset($payload['batch_id'])) {
+                    $batchIds[] = $payload['batch_id'];
+                }
+            }
+
+            if (!empty($batchIds)) {
+                // Check if batch_id column exists in various tables
+                $checkReadingsBatchColumn = $this->pdo->query("
+                    SELECT COUNT(*) as count 
+                    FROM information_schema.COLUMNS 
+                    WHERE TABLE_SCHEMA = DATABASE() 
+                    AND TABLE_NAME = 'meter_readings' 
+                    AND COLUMN_NAME = 'batch_id'
+                ")->fetch(PDO::FETCH_ASSOC);
+
+                $checkDailyAggBatchColumn = $this->pdo->query("
+                    SELECT COUNT(*) as count 
+                    FROM information_schema.COLUMNS 
+                    WHERE TABLE_SCHEMA = DATABASE() 
+                    AND TABLE_NAME = 'daily_aggregations' 
+                    AND COLUMN_NAME = 'batch_id'
+                ")->fetch(PDO::FETCH_ASSOC);
+
+                $checkMetersBatchColumn = $this->pdo->query("
+                    SELECT COUNT(*) as count 
+                    FROM information_schema.COLUMNS 
+                    WHERE TABLE_SCHEMA = DATABASE() 
+                    AND TABLE_NAME = 'meters' 
+                    AND COLUMN_NAME = 'batch_id'
+                ")->fetch(PDO::FETCH_ASSOC);
+
+                // Delete all meter readings from imports
+                if ($checkReadingsBatchColumn['count'] > 0) {
+                    $batchPlaceholders = implode(',', array_fill(0, count($batchIds), '?'));
+                    $deleteReadingsStmt = $this->pdo->prepare("
+                        DELETE FROM meter_readings WHERE batch_id IN ($batchPlaceholders)
+                    ");
+                    $deleteReadingsStmt->execute($batchIds);
+                    $totalDeletedReadings = $deleteReadingsStmt->rowCount();
+                }
+
+                // Delete all daily aggregations from imports
+                if ($checkDailyAggBatchColumn['count'] > 0) {
+                    $batchPlaceholders = implode(',', array_fill(0, count($batchIds), '?'));
+                    $deleteDailyAggStmt = $this->pdo->prepare("
+                        DELETE FROM daily_aggregations WHERE batch_id IN ($batchPlaceholders)
+                    ");
+                    $deleteDailyAggStmt->execute($batchIds);
+                    $totalDeletedDailyAggregations = $deleteDailyAggStmt->rowCount();
+                }
+
+                // Delete all auto-created meters that have no other data
+                if ($checkMetersBatchColumn['count'] > 0) {
+                    foreach ($batchIds as $batchId) {
+                        $deleteMetersStmt = $this->pdo->prepare('
+                            DELETE m FROM meters m
+                            WHERE m.batch_id = :batch_id
+                            AND NOT EXISTS (
+                                SELECT 1 FROM meter_readings mr 
+                                WHERE mr.meter_id = m.id 
+                                AND (mr.batch_id != :batch_id2 OR mr.batch_id IS NULL)
+                            )
+                        ');
+                        $deleteMetersStmt->execute([
+                            'batch_id' => $batchId,
+                            'batch_id2' => $batchId
+                        ]);
+                        $totalDeletedMeters += $deleteMetersStmt->rowCount();
+                    }
+                }
+
+                // Delete all import jobs
+                $batchPlaceholders = implode(',', array_fill(0, count($batchIds), '?'));
+                $deleteJobsStmt = $this->pdo->prepare("
+                    DELETE FROM import_jobs WHERE batch_id IN ($batchPlaceholders)
+                ");
+                $deleteJobsStmt->execute($batchIds);
+                $totalDeletedJobs = $deleteJobsStmt->rowCount();
+            }
+
+            // Delete all audit logs for imports
             $stmt = $this->pdo->prepare('DELETE FROM audit_logs WHERE action = :action');
             $stmt->execute(['action' => 'import_csv']);
             $deleted = $stmt->rowCount();
 
-            $response->getBody()->write(json_encode(['success' => true, 'deleted' => $deleted]));
+            $this->pdo->commit();
+
+            $details = [];
+            if ($totalDeletedReadings > 0) {
+                $details[] = "{$totalDeletedReadings} reading(s)";
+            }
+            if ($totalDeletedDailyAggregations > 0) {
+                $details[] = "{$totalDeletedDailyAggregations} daily aggregation(s)";
+            }
+            if ($totalDeletedMeters > 0) {
+                $details[] = "{$totalDeletedMeters} meter(s)";
+            }
+            if ($totalDeletedJobs > 0) {
+                $details[] = "{$totalDeletedJobs} import job(s)";
+            }
+
+            $message = "{$deleted} import(s) deleted successfully";
+            if (!empty($details)) {
+                $message .= '. Removed: ' . implode(', ', $details);
+            }
+
+            $response->getBody()->write(json_encode([
+                'success' => true, 
+                'deleted' => $deleted,
+                'message' => $message,
+                'details' => [
+                    'readings' => $totalDeletedReadings,
+                    'daily_aggregations' => $totalDeletedDailyAggregations,
+                    'meters' => $totalDeletedMeters,
+                    'jobs' => $totalDeletedJobs,
+                ]
+            ]));
             return $response->withHeader('Content-Type', 'application/json');
+
         } catch (\PDOException $e) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
             error_log('Failed to delete import history: ' . $e->getMessage());
             $response->getBody()->write(json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]));
+            return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
+        } catch (\Throwable $e) {
+            if ($this->pdo->inTransaction()) {
+                $this->pdo->rollBack();
+            }
+            error_log('Failed to delete import history: ' . $e->getMessage());
+            $response->getBody()->write(json_encode(['success' => false, 'message' => 'An unexpected error occurred.']));
             return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
         }
     }
