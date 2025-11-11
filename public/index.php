@@ -57,8 +57,6 @@ use Dotenv\Dotenv;
 use Monolog\Formatter\LineFormatter;
 use Monolog\Handler\StreamHandler;
 use Monolog\Logger;
-use PDO;
-use PDOException;
 use Psr\Container\ContainerInterface;
 use Slim\Factory\AppFactory;
 use Slim\Views\Twig;
@@ -140,7 +138,7 @@ $container->set('view', fn (ContainerInterface $c) => $c->get(Twig::class));
  * Bind PDO::class (nullable) and 'db' alias.
  * Returns null if connection fails—controllers using ?PDO handle that gracefully.
  */
-$container->set(PDO::class, function () {
+$container->set(\PDO::class, function () {
     $host    = $_ENV['DB_HOST'] ?? '127.0.0.1';
     $port    = $_ENV['DB_PORT'] ?? '3306';
     $dbname  = $_ENV['DB_DATABASE'] ?? $_ENV['DB_NAME'] ?? 'energy_platform';
@@ -151,29 +149,29 @@ $container->set(PDO::class, function () {
     $dsn = sprintf('mysql:host=%s;port=%s;dbname=%s;charset=%s', $host, $port, $dbname, $charset);
 
     try {
-        $pdo = new PDO(
+        $pdo = new \PDO(
             $dsn,
             $user,
             $pass,
             [
-                PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
-                PDO::ATTR_EMULATE_PREPARES   => false,
-                PDO::ATTR_PERSISTENT         => true,  // Enable persistent connections to reuse connections
-                PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci",
+                \PDO::ATTR_ERRMODE            => \PDO::ERRMODE_EXCEPTION,
+                \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,
+                \PDO::ATTR_EMULATE_PREPARES   => false,
+                \PDO::ATTR_PERSISTENT         => true,  // Enable persistent connections to reuse connections
+                \PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci",
             ]
         );
         // Set connection timeout to prevent hanging connections
-        $pdo->setAttribute(PDO::ATTR_TIMEOUT, 30);
+        $pdo->setAttribute(\PDO::ATTR_TIMEOUT, 30);
         return $pdo;
-    } catch (PDOException $e) {
+    } catch (\PDOException $e) {
         error_log('Database connection failed: ' . $e->getMessage());
         return null;
     }
 });
 
 // Backwards-compatible alias
-$container->set('db', fn (ContainerInterface $c) => $c->get(PDO::class));
+$container->set('db', fn (ContainerInterface $c) => $c->get(\PDO::class));
 
 /**
  * Monolog logger (UK date format).
