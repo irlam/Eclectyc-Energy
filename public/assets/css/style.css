@@ -1660,8 +1660,8 @@ input[type="file"]::-webkit-file-upload-button {
 
 .new-widgets-section {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 2rem;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 1.5rem;
     margin: 2rem 0;
 }
 
@@ -1672,149 +1672,161 @@ input[type="file"]::-webkit-file-upload-button {
 }
 
 .widget-card {
-    background: #ffffff;
-    border-radius: 12px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    padding: 1.5rem;
-    transition: transform 0.2s, box-shadow 0.2s;
+    background: linear-gradient(135deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02));
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    padding: 1.75rem;
+    position: relative;
+    overflow: hidden;
+    backdrop-filter: blur(10px);
+    transition: all 0.3s ease;
 }
 
 .widget-card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+    transform: translateY(-6px);
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.2);
 }
 
 .widget-header {
-    margin-bottom: 1.5rem;
-    border-bottom: 2px solid #f0f0f0;
-    padding-bottom: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1.25rem;
+    flex-direction: column;
+    gap: 0.5rem;
 }
 
 .widget-header h3 {
-    margin: 0 0 0.5rem 0;
-    color: #2c3e50;
-    font-size: 1.25rem;
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.9rem;
     font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
 .widget-date,
 .widget-subtitle {
     display: block;
-    color: #7f8c8d;
-    font-size: 0.875rem;
+    color: rgba(148, 163, 184, 0.8);
+    font-size: 0.75rem;
 }
 
 .widget-body {
-    padding: 1rem 0;
+    padding: 0.5rem 0;
 }
 
 /* Yesterday's Consumption Widget */
 .widget-yesterday .widget-main-stat {
-    text-align: center;
-    padding: 2rem 0;
+    text-align: left;
+    padding: 0.5rem 0;
 }
 
 .widget-value {
-    font-size: 3rem;
+    font-size: 2.5rem;
     font-weight: 700;
-    color: #3498db;
+    color: var(--ink);
     line-height: 1;
+    margin-bottom: 0.5rem;
 }
 
 .widget-unit {
-    font-size: 1.5rem;
-    color: #7f8c8d;
+    font-size: 1.25rem;
+    color: var(--muted);
     font-weight: 400;
 }
 
 .widget-meta {
-    margin-top: 1rem;
-    color: #95a5a6;
-    font-size: 0.95rem;
+    margin-top: 0.75rem;
+    color: rgba(148, 163, 184, 0.8);
+    font-size: 0.85rem;
 }
 
 /* Health Report Widget */
 .health-metric {
-    margin-bottom: 2rem;
+    margin-bottom: 1.5rem;
 }
 
 .health-metric h4 {
     margin: 0 0 1rem 0;
-    color: #34495e;
-    font-size: 1rem;
+    color: var(--muted);
+    font-size: 0.9rem;
     font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
 .health-stats-row {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 1rem;
-    margin-bottom: 1.5rem;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1rem;
 }
 
 .health-stat {
     display: flex;
     align-items: center;
-    gap: 1rem;
-    padding: 1rem;
-    border-radius: 8px;
-    background: #f8f9fa;
+    gap: 0.75rem;
+    padding: 0.875rem;
+    border-radius: 12px;
+    background: rgba(30, 41, 59, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .health-stat-icon {
-    width: 40px;
-    height: 40px;
+    width: 36px;
+    height: 36px;
     border-radius: 50%;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.5rem;
+    font-size: 1.25rem;
     flex-shrink: 0;
 }
 
 .health-stat-success {
-    border-left: 4px solid #27ae60;
+    border-left: 3px solid rgba(39, 174, 96, 0.6);
 }
 
 .health-stat-success .health-stat-icon {
-    background: #d4edda;
-    color: #27ae60;
+    background: rgba(39, 174, 96, 0.15);
+    color: #4CAF50;
 }
 
 .health-stat-warning {
-    border-left: 4px solid #f39c12;
+    border-left: 3px solid rgba(243, 156, 18, 0.6);
 }
 
 .health-stat-warning .health-stat-icon {
-    background: #fff3cd;
-    color: #f39c12;
+    background: rgba(243, 156, 18, 0.15);
+    color: #FFA726;
 }
 
 .health-stat-info {
-    border-left: 4px solid #3498db;
+    border-left: 3px solid rgba(52, 152, 219, 0.6);
 }
 
 .health-stat-info .health-stat-icon {
-    background: #d6eaf8;
-    color: #3498db;
+    background: rgba(52, 152, 219, 0.15);
+    color: #42A5F5;
 }
 
 .health-stat-actual {
-    border-left: 4px solid #16a085;
+    border-left: 3px solid rgba(22, 160, 133, 0.6);
 }
 
 .health-stat-actual .health-stat-icon {
-    background: #d1f2eb;
-    color: #16a085;
+    background: rgba(22, 160, 133, 0.15);
+    color: #26A69A;
 }
 
 .health-stat-estimated {
-    border-left: 4px solid #e67e22;
+    border-left: 3px solid rgba(230, 126, 34, 0.6);
 }
 
 .health-stat-estimated .health-stat-icon {
-    background: #fdebd0;
-    color: #e67e22;
+    background: rgba(230, 126, 34, 0.15);
+    color: #FF9800;
 }
 
 .health-stat-content {
@@ -1823,51 +1835,54 @@ input[type="file"]::-webkit-file-upload-button {
 
 .health-stat-value {
     display: block;
-    font-size: 1.75rem;
+    font-size: 1.5rem;
     font-weight: 700;
-    color: #2c3e50;
+    color: var(--ink);
     line-height: 1;
 }
 
 .health-stat-label {
     display: block;
     margin-top: 0.25rem;
-    color: #7f8c8d;
-    font-size: 0.875rem;
+    color: var(--muted);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
 /* Health Progress Bars */
 .health-progress-container {
-    margin-top: 1rem;
+    margin-top: 0.875rem;
 }
 
 .health-progress-bar {
-    height: 24px;
-    background: #ecf0f1;
-    border-radius: 12px;
+    height: 20px;
+    background: rgba(30, 41, 59, 0.6);
+    border-radius: 10px;
     overflow: hidden;
     display: flex;
+    border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .health-progress-fill {
     height: 100%;
-    background: #27ae60;
+    background: rgba(76, 175, 80, 0.8);
     transition: width 0.3s ease;
 }
 
 .health-progress-actual {
-    background: #16a085;
+    background: rgba(22, 160, 133, 0.8);
 }
 
 .health-progress-estimated {
-    background: #e67e22;
+    background: rgba(230, 126, 34, 0.8);
 }
 
 .health-progress-label {
     margin-top: 0.5rem;
     text-align: center;
-    color: #7f8c8d;
-    font-size: 0.875rem;
+    color: var(--muted);
+    font-size: 0.75rem;
 }
 
 .health-progress-legend {
@@ -1881,46 +1896,48 @@ input[type="file"]::-webkit-file-upload-button {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    font-size: 0.875rem;
-    color: #7f8c8d;
+    font-size: 0.75rem;
+    color: var(--muted);
 }
 
 .health-legend-dot {
-    width: 12px;
-    height: 12px;
+    width: 10px;
+    height: 10px;
     border-radius: 50%;
+}
 }
 
 .health-legend-actual {
-    background: #16a085;
+    background: rgba(22, 160, 133, 0.8);
 }
 
 .health-legend-estimated {
-    background: #e67e22;
+    background: rgba(230, 126, 34, 0.8);
 }
 
 /* Sites List Toggle */
 .health-sites-toggle {
-    margin-top: 1.5rem;
-    border-top: 1px solid #ecf0f1;
-    padding-top: 1.5rem;
+    margin-top: 1.25rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.1);
+    padding-top: 1.25rem;
 }
 
 .health-toggle-btn {
-    background: #3498db;
-    color: white;
-    border: none;
-    padding: 0.75rem 1.5rem;
-    border-radius: 6px;
+    background: rgba(76, 175, 80, 0.2);
+    color: var(--ink);
+    border: 1px solid rgba(76, 175, 80, 0.3);
+    padding: 0.75rem 1.25rem;
+    border-radius: 8px;
     cursor: pointer;
-    font-size: 0.95rem;
+    font-size: 0.875rem;
     font-weight: 600;
-    transition: background 0.2s;
+    transition: all 0.2s;
     width: 100%;
 }
 
 .health-toggle-btn:hover {
-    background: #2980b9;
+    background: rgba(76, 175, 80, 0.3);
+    border-color: rgba(76, 175, 80, 0.4);
 }
 
 .health-sites-list {
@@ -1946,32 +1963,38 @@ input[type="file"]::-webkit-file-upload-button {
 .health-sites-table {
     width: 100%;
     border-collapse: collapse;
-    background: white;
+    background: rgba(30, 41, 59, 0.4);
     border-radius: 8px;
     overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .health-sites-table thead {
-    background: #34495e;
-    color: white;
+    background: rgba(30, 41, 59, 0.6);
+    color: var(--muted);
 }
 
 .health-sites-table th,
 .health-sites-table td {
     padding: 0.75rem 1rem;
     text-align: left;
-    border-bottom: 1px solid #ecf0f1;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .health-sites-table th {
     font-weight: 600;
-    font-size: 0.875rem;
+    font-size: 0.75rem;
     text-transform: uppercase;
-    letter-spacing: 0.5px;
+    letter-spacing: 0.05em;
+}
+
+.health-sites-table td {
+    color: var(--ink);
+    font-size: 0.875rem;
 }
 
 .health-sites-table tbody tr:hover {
-    background: #f8f9fa;
+    background: rgba(79, 70, 229, 0.1);
 }
 
 .health-sites-table tbody tr:last-child td {
@@ -1979,11 +2002,11 @@ input[type="file"]::-webkit-file-upload-button {
 }
 
 .site-has-data {
-    background: #f0fdf4;
+    background: rgba(76, 175, 80, 0.05);
 }
 
 .site-no-data {
-    background: #fffbeb;
+    background: rgba(255, 193, 7, 0.05);
 }
 
 .status-badge {
@@ -1995,13 +2018,15 @@ input[type="file"]::-webkit-file-upload-button {
 }
 
 .status-active {
-    background: #d4edda;
-    color: #27ae60;
+    background: rgba(39, 174, 96, 0.2);
+    color: #4CAF50;
+    border: 1px solid rgba(39, 174, 96, 0.3);
 }
 
 .status-inactive {
-    background: #fff3cd;
-    color: #f39c12;
+    background: rgba(243, 156, 18, 0.2);
+    color: #FFA726;
+    border: 1px solid rgba(243, 156, 18, 0.3);
 }
 
 /* =============================================================================

@@ -422,7 +422,15 @@ class UsersController
         }
 
         $userId = (int)$args['id'];
-        $user = User::find($userId);
+        
+        // Get user data as array (consistent with edit method)
+        try {
+            $stmt = $this->pdo->prepare('SELECT id, email, name, role, is_active FROM users WHERE id = :id LIMIT 1');
+            $stmt->execute(['id' => $userId]);
+            $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        } catch (\PDOException $e) {
+            $user = false;
+        }
 
         if (!$user) {
             $this->setFlash('error', 'User not found.');

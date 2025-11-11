@@ -4,64 +4,74 @@
 
 {% extends "base.twig" %}
 
+{% block title %}Manage User Access{% endblock %}
+
 {% block content %}
-<div class="page-header">
-    <h2>🔐 Manage User Access</h2>
-    <p class="page-subtitle">Configure hierarchical access for {{ user.name }}</p>
-</div>
-
-{% if flash %}
-<div class="alert alert-{{ flash.type }}">
-    {{ flash.message }}
-</div>
-{% endif %}
-
-<div class="user-info-card">
-    <div class="user-info-row">
-        <div class="user-info-item">
-            <strong>User:</strong> {{ user.name }}
+<section class="card">
+    <div class="card-header">
+        <div>
+            <h2>🔐 Manage User Access</h2>
+            <p class="mb-2">Configure hierarchical access for {{ user.name }}</p>
         </div>
-        <div class="user-info-item">
-            <strong>Email:</strong> {{ user.email }}
-        </div>
-        <div class="user-info-item">
-            <strong>Role:</strong> 
-            <span class="role-badge role-{{ user.role }}">{{ user.role|capitalize }}</span>
+        <div class="action-buttons" style="gap: 0.5rem;">
+            <a class="btn btn-secondary" href="/admin/users">← Back to Users</a>
         </div>
     </div>
-</div>
+
+    {% if flash %}
+        <div class="alert alert-{{ flash.type }}">
+            {{ flash.message }}
+        </div>
+    {% endif %}
+
+    <div style="background: rgba(30, 41, 59, 0.4); border-radius: 8px; padding: 1rem; margin-bottom: 1.5rem; border: 1px solid rgba(148, 163, 184, 0.2);">
+        <div style="display: flex; gap: 2rem; flex-wrap: wrap;">
+            <div>
+                <strong style="color: #94a3b8;">User:</strong> 
+                <span style="color: #e2e8f0;">{{ user.name }}</span>
+            </div>
+            <div>
+                <strong style="color: #94a3b8;">Email:</strong> 
+                <span style="color: #e2e8f0;">{{ user.email }}</span>
+            </div>
+            <div>
+                <strong style="color: #94a3b8;">Role:</strong> 
+                <span class="role-badge role-{{ user.role }}">{{ user.role|capitalize }}</span>
+            </div>
+        </div>
+    </div>
 
 {% if user.role == 'admin' %}
-<div class="alert alert-info">
-    <strong>ℹ️ Admin Access:</strong> This user has administrative privileges and automatically has access to all companies, regions, and sites.
-</div>
+    <div class="alert alert-info">
+        <strong>ℹ️ Admin Access:</strong> This user has administrative privileges and automatically has access to all companies, regions, and sites.
+    </div>
 {% else %}
 
-<div class="access-explanation">
-    <h3>Hierarchical Access Control</h3>
-    <p>Grant access at any level of the hierarchy. Access cascades down:</p>
-    <ul>
-        <li><strong>Company Access:</strong> User can see all regions and sites under that company</li>
-        <li><strong>Region Access:</strong> User can see all sites in that region</li>
-        <li><strong>Site Access:</strong> User can see only that specific site</li>
-    </ul>
-</div>
+    <div style="background: rgba(30, 41, 59, 0.3); border-radius: 8px; padding: 1.25rem; margin-bottom: 1.5rem; border: 1px solid rgba(148, 163, 184, 0.15);">
+        <h3 style="color: #e2e8f0; font-size: 1rem; margin-bottom: 0.75rem;">Hierarchical Access Control</h3>
+        <p style="color: #94a3b8; margin-bottom: 0.75rem;">Grant access at any level of the hierarchy. Access cascades down:</p>
+        <ul style="color: #cbd5e1; margin-left: 1.5rem;">
+            <li style="margin-bottom: 0.5rem;"><strong>Company Access:</strong> User can see all regions and sites under that company</li>
+            <li style="margin-bottom: 0.5rem;"><strong>Region Access:</strong> User can see all sites in that region</li>
+            <li><strong>Site Access:</strong> User can see only that specific site</li>
+        </ul>
+    </div>
 
-<form method="POST" action="/admin/users/{{ user.id }}/access" class="access-form">
+<form method="POST" action="/admin/users/{{ user.id }}/access" class="form">
     
     <!-- Company Access Section -->
-    <div class="access-section">
-        <h3 class="access-section-title">
-            <span class="access-icon">🏢</span> Company Access
+    <div style="margin-bottom: 2rem;">
+        <h3 style="color: #4CAF50; font-size: 1rem; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+            <span>🏢</span> Company Access
         </h3>
-        <p class="access-section-description">
+        <p style="color: #94a3b8; font-size: 0.875rem; margin-bottom: 1rem;">
             Grant access to all sites and regions under selected companies
         </p>
         
         {% if companies|length > 0 %}
-        <div class="checkbox-grid">
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 0.75rem; background: rgba(30, 41, 59, 0.3); padding: 1rem; border-radius: 8px; border: 1px solid rgba(148, 163, 184, 0.15);">
             {% for company in companies %}
-            <div class="checkbox-item">
+            <label class="checkbox-label">
                 <input 
                     type="checkbox" 
                     name="company_ids[]" 
@@ -69,28 +79,29 @@
                     id="company_{{ company.id }}"
                     {% if company.id in user_access.companies|map(c => c.id) %}checked{% endif %}
                 >
-                <label for="company_{{ company.id }}">{{ company.name }}</label>
-            </div>
+                <span class="checkmark"></span>
+                <span>{{ company.name }}</span>
+            </label>
             {% endfor %}
         </div>
         {% else %}
-        <p class="no-data-message">No companies available</p>
+        <p style="color: #94a3b8; font-style: italic;">No companies available</p>
         {% endif %}
     </div>
 
     <!-- Region Access Section -->
-    <div class="access-section">
-        <h3 class="access-section-title">
-            <span class="access-icon">🗺️</span> Region Access
+    <div style="margin-bottom: 2rem;">
+        <h3 style="color: #4CAF50; font-size: 1rem; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+            <span>🗺️</span> Region Access
         </h3>
-        <p class="access-section-description">
+        <p style="color: #94a3b8; font-size: 0.875rem; margin-bottom: 1rem;">
             Grant access to all sites within selected regions
         </p>
         
         {% if regions|length > 0 %}
-        <div class="checkbox-grid">
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 0.75rem; background: rgba(30, 41, 59, 0.3); padding: 1rem; border-radius: 8px; border: 1px solid rgba(148, 163, 184, 0.15);">
             {% for region in regions %}
-            <div class="checkbox-item">
+            <label class="checkbox-label">
                 <input 
                     type="checkbox" 
                     name="region_ids[]" 
@@ -98,41 +109,43 @@
                     id="region_{{ region.id }}"
                     {% if region.id in user_access.regions|map(r => r.id) %}checked{% endif %}
                 >
-                <label for="region_{{ region.id }}">
+                <span class="checkmark"></span>
+                <span>
                     {{ region.name }}
                     {% if region.code %}({{ region.code }}){% endif %}
-                </label>
-            </div>
+                </span>
+            </label>
             {% endfor %}
         </div>
         {% else %}
-        <p class="no-data-message">No regions available</p>
+        <p style="color: #94a3b8; font-style: italic;">No regions available</p>
         {% endif %}
     </div>
 
     <!-- Site Access Section -->
-    <div class="access-section">
-        <h3 class="access-section-title">
-            <span class="access-icon">📍</span> Site Access
+    <div style="margin-bottom: 2rem;">
+        <h3 style="color: #4CAF50; font-size: 1rem; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem;">
+            <span>📍</span> Site Access
         </h3>
-        <p class="access-section-description">
+        <p style="color: #94a3b8; font-size: 0.875rem; margin-bottom: 1rem;">
             Grant access to specific individual sites
         </p>
         
         {% if sites|length > 0 %}
-        <div class="site-search">
+        <div style="margin-bottom: 1rem;">
             <input 
                 type="text" 
                 id="site-search" 
                 placeholder="Search sites..." 
-                class="search-input"
+                class="form-control"
                 onkeyup="filterSites()"
+                style="max-width: 400px;"
             >
         </div>
         
-        <div class="checkbox-grid" id="sites-grid">
+        <div id="sites-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 0.75rem; background: rgba(30, 41, 59, 0.3); padding: 1rem; border-radius: 8px; border: 1px solid rgba(148, 163, 184, 0.15); max-height: 500px; overflow-y: auto;">
             {% for site in sites %}
-            <div class="checkbox-item site-item" data-site-name="{{ site.name|lower }}" data-company-name="{{ site.company_name|lower }}">
+            <label class="checkbox-label site-item" data-site-name="{{ site.name|lower }}" data-company-name="{{ site.company_name|lower }}" style="margin-bottom: 0;">
                 <input 
                     type="checkbox" 
                     name="site_ids[]" 
@@ -140,38 +153,39 @@
                     id="site_{{ site.id }}"
                     {% if site.id in user_access.sites|map(s => s.id) %}checked{% endif %}
                 >
-                <label for="site_{{ site.id }}">
-                    <div class="site-label-content">
-                        <div class="site-name">{{ site.name }}</div>
-                        <div class="site-meta">
-                            {% if site.company_name %}{{ site.company_name }}{% endif %}
-                            {% if site.region_name %} / {{ site.region_name }}{% endif %}
-                        </div>
+                <span class="checkmark"></span>
+                <span>
+                    <div style="font-weight: 500;">{{ site.name }}</div>
+                    {% if site.company_name or site.region_name %}
+                    <div style="font-size: 0.75rem; color: #94a3b8; margin-top: 0.25rem;">
+                        {% if site.company_name %}{{ site.company_name }}{% endif %}
+                        {% if site.region_name %} / {{ site.region_name }}{% endif %}
                     </div>
-                </label>
-            </div>
+                    {% endif %}
+                </span>
+            </label>
             {% endfor %}
         </div>
         {% else %}
-        <p class="no-data-message">No sites available</p>
+        <p style="color: #94a3b8; font-style: italic;">No sites available</p>
         {% endif %}
     </div>
 
     <!-- Current Access Summary -->
-    <div class="access-summary">
-        <h3>Current Access Summary</h3>
-        <div class="summary-stats">
-            <div class="summary-stat">
-                <div class="summary-stat-value">{{ user_access.company_count }}</div>
-                <div class="summary-stat-label">Companies</div>
+    <div style="background: rgba(30, 41, 59, 0.4); border-radius: 8px; padding: 1.25rem; margin-bottom: 1.5rem; border: 1px solid rgba(148, 163, 184, 0.2);">
+        <h3 style="color: #e2e8f0; font-size: 1rem; margin-bottom: 1rem;">Current Access Summary</h3>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1rem;">
+            <div style="text-align: center; padding: 1rem; background: rgba(76, 175, 80, 0.1); border-radius: 6px; border: 1px solid rgba(76, 175, 80, 0.2);">
+                <div style="font-size: 2rem; font-weight: bold; color: #4CAF50;">{{ user_access.company_count }}</div>
+                <div style="font-size: 0.875rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">Companies</div>
             </div>
-            <div class="summary-stat">
-                <div class="summary-stat-value">{{ user_access.region_count }}</div>
-                <div class="summary-stat-label">Regions</div>
+            <div style="text-align: center; padding: 1rem; background: rgba(76, 175, 80, 0.1); border-radius: 6px; border: 1px solid rgba(76, 175, 80, 0.2);">
+                <div style="font-size: 2rem; font-weight: bold; color: #4CAF50;">{{ user_access.region_count }}</div>
+                <div style="font-size: 0.875rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">Regions</div>
             </div>
-            <div class="summary-stat">
-                <div class="summary-stat-value">{{ user_access.site_count }}</div>
-                <div class="summary-stat-label">Sites</div>
+            <div style="text-align: center; padding: 1rem; background: rgba(76, 175, 80, 0.1); border-radius: 6px; border: 1px solid rgba(76, 175, 80, 0.2);">
+                <div style="font-size: 2rem; font-weight: bold; color: #4CAF50;">{{ user_access.site_count }}</div>
+                <div style="font-size: 0.875rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em;">Sites</div>
             </div>
         </div>
     </div>
@@ -179,15 +193,17 @@
     <!-- Form Actions -->
     <div class="form-actions">
         <button type="submit" class="btn btn-primary">
-            <span>💾</span> Save Access Configuration
+            💾 Save Access Configuration
         </button>
         <a href="/admin/users" class="btn btn-secondary">
-            <span>❌</span> Cancel
+            ❌ Cancel
         </a>
     </div>
 </form>
 
 {% endif %}
+
+</section>
 
 {% endblock %}
 
