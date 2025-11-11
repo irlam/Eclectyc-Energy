@@ -42,7 +42,19 @@
     </form>
 
     {% if report.error is defined %}
-        <div class="alert alert-danger">{{ report.error }}</div>
+        <div class="alert alert-danger">
+            <strong>⚠️ Error:</strong> {{ report.error }}
+            {% if report.error_detail is defined %}
+                <details style="margin-top: 1rem;">
+                    <summary style="cursor: pointer; font-weight: 600;">Technical Details (for debugging)</summary>
+                    <pre style="margin-top: 0.5rem; padding: 0.75rem; background: rgba(0,0,0,0.2); border-radius: 4px; overflow-x: auto; font-size: 0.75rem;">{{ report.error_detail }}</pre>
+                </details>
+            {% endif %}
+            <div style="margin-top: 1rem;">
+                <a href="/admin/imports" class="btn btn-primary">Import Data</a>
+                <a href="/tools" class="btn btn-secondary" style="margin-left: 0.5rem;">System Tools</a>
+            </div>
+        </div>
     {% endif %}
 
     {% if showPerMetric and not report.hasMetricData %}

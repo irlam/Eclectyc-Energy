@@ -113,10 +113,13 @@ class ReportsController
                 $reportData['totalPerMetric'] = $totalPerMetric;
                 $reportData['hasMetricData'] = $hasMetricData;
             } catch (\Throwable $e) {
-                $reportData['error'] = 'Unable to load consumption data right now.';
+                // Log the actual error for debugging
+                error_log('Consumption report error: ' . $e->getMessage());
+                $reportData['error'] = 'Unable to load consumption data right now. Please check that all required database tables exist and contain data. See CONSUMPTION_REPORT_GUIDE.md for troubleshooting steps.';
+                $reportData['error_detail'] = $e->getMessage();
             }
         } else {
-            $reportData['error'] = 'Database connection not available.';
+            $reportData['error'] = 'Database connection not available. Please check your database configuration.';
         }
 
         return $this->view->render($response, 'reports/consumption.twig', [
