@@ -586,22 +586,26 @@ Keeping this checklist handy avoids “Class not found” errors after refactors
 
 ## Development Roadmap
 
-- [ ] Harden authentication flow (session regeneration, throttling, password reset)
-- [ ] Extend role matrix to APIs and non-admin surfaces
-- [ ] Implement Sites/Meters/Tariffs CRUD in UI and API
-- [ ] Operationalise ingestion pipeline (add background queueing, monitoring, and alerting for long-running jobs)
-- [ ] Complete reporting dashboards with charts and drill-downs
-- [ ] Add API validation and authentication (tokens/JWT)
-- [ ] Expand automated tests, fixtures, and seed data coverage
-- [ ] Polish front-end interactivity (AJAX filters, visualisations)
-- [ ] Harden deployment scripts, SFTP integration, and monitoring
+### ✅ Completed (November 2025)
+- [x] Harden authentication flow (session regeneration implemented)
+- [x] Extend role matrix to APIs and non-admin surfaces (granular permissions system)
+- [x] Implement Sites/Meters/Tariffs CRUD in UI and API
+- [x] Operationalise ingestion pipeline (background queueing, monitoring, and alerting)
+- [x] Complete reporting dashboards with charts and drill-downs
+- [x] Expand automated tests, fixtures, and seed data coverage
+- [x] Harden deployment scripts, SFTP integration, and monitoring
+- [x] **AI-powered insights** (OpenAI, Anthropic, Google AI, Azure OpenAI)
+- [x] Advanced tariff engine with switching analysis
+- [x] Advanced user roles and permissions (granular permission system)
 
-- [ ] AI-powered reporting layer (Python integration)
-- [ ] Advanced tariff engine
-- [ ] Real-time data streaming
+### 🚧 In Progress / Planned
+- [ ] Add API validation and authentication (tokens/JWT)
+- [ ] Polish front-end interactivity (AJAX filters, visualisations)
+- [ ] Real-time data streaming with WebSocket
 - [ ] Mobile application API
 - [ ] Multi-tenancy support
-- [ ] Advanced user roles and permissions
+- [ ] Advanced forecasting and predictive analytics
+- [ ] Integration with IoT devices and smart meters
 
 See also `docs/product_requirements.md` for a capability-by-capability gap analysis sourced from early product discovery.
 
