@@ -77,21 +77,32 @@
     </div>
 
     <div class="configuration-steps mt-4">
-        <h3>Configuration Steps</h3>
+        <h3>Configuration Options</h3>
+        
+        <div class="alert alert-info mb-4">
+            <strong>✨ New: Admin Panel Configuration</strong>
+            <p>You can now configure AI API keys directly through the admin panel! Visit <a href="/tools/settings" class="font-bold">System Settings</a> and look for the "AI Insights" section.</p>
+            <p class="mb-0">This is the recommended method as it doesn't require server restarts and allows easier management.</p>
+        </div>
         
         <div class="step">
             <div class="step-number">1</div>
             <div class="step-content">
-                <h4>Choose an AI Provider</h4>
-                <p>Click "Get API Key" on one of the providers above to create an account and obtain your API key.</p>
+                <h4>Option A: Configure via Admin Panel (Recommended)</h4>
+                <p>Go to <a href="/tools/settings">Tools → System Settings</a> and scroll to the "AI Insights" section. Enter your API key and select your provider.</p>
+                <ul>
+                    <li>No server restart required</li>
+                    <li>Easy to update and manage</li>
+                    <li>Changes take effect immediately</li>
+                </ul>
             </div>
         </div>
 
         <div class="step">
             <div class="step-number">2</div>
             <div class="step-content">
-                <h4>Add API Key to Environment</h4>
-                <p>Add your API key to the <code>.env</code> file in the project root:</p>
+                <h4>Option B: Configure via Environment File</h4>
+                <p>Alternatively, you can still add your API key to the <code>.env</code> file in the project root:</p>
                 <div class="code-block">
                     <strong>For OpenAI:</strong><br>
                     <code>OPENAI_API_KEY=sk-proj-your-api-key-here</code><br>
@@ -110,25 +121,12 @@
                     <code>AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com</code><br>
                     <code>AZURE_OPENAI_MODEL=gpt-4</code>
                 </div>
+                <p class="mt-3"><small><strong>Note:</strong> After updating the .env file, restart your web server or PHP-FPM to load the new environment variables.</small></p>
             </div>
         </div>
 
         <div class="step">
             <div class="step-number">3</div>
-            <div class="step-content">
-                <h4>Restart Web Server</h4>
-                <p>Restart your web server or PHP-FPM to load the new environment variables:</p>
-                <div class="code-block">
-                    <code>sudo systemctl restart php-fpm</code><br>
-                    <em>or</em><br>
-                    <code>sudo service apache2 restart</code>
-                </div>
-                <p><small>On Plesk, you can restart PHP via: Domains → Your Domain → PHP Settings → Reload/Restart PHP</small></p>
-            </div>
-        </div>
-
-        <div class="step">
-            <div class="step-number">4</div>
             <div class="step-content">
                 <h4>Generate Your First Insight</h4>
                 <p>Return to the <a href="/admin/ai-insights">AI Insights dashboard</a> and select a meter to generate insights.</p>
