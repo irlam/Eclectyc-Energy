@@ -1017,6 +1017,13 @@ input[type="file"]::-webkit-file-upload-button {
     opacity: 0.8;
 }
 
+.energy-date {
+    display: block;
+    color: rgba(148, 163, 184, 0.8);
+    font-size: 0.75rem;
+    margin-top: 0.25rem;
+}
+
 @keyframes pulse {
     0%, 100% { opacity: 1; }
     50% { opacity: 0.5; }
@@ -1660,9 +1667,13 @@ input[type="file"]::-webkit-file-upload-button {
 
 .new-widgets-section {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    grid-template-columns: 1fr;
     gap: 1.5rem;
     margin: 2rem 0;
+}
+
+.new-widgets-section--full-width {
+    grid-template-columns: 1fr;
 }
 
 @media (max-width: 968px) {
