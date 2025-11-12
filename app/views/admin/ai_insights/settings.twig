@@ -1,0 +1,279 @@
+{% extends "base.twig" %}
+
+{% block title %}AI Insights Settings{% endblock %}
+
+{% block content %}
+<section class="card">
+    <div class="card-header">
+        <div>
+            <h2>⚙️ AI Insights Configuration</h2>
+            <p class="mb-2">Configure your AI provider for intelligent energy insights</p>
+        </div>
+        <a class="btn btn-secondary" href="/admin/ai-insights">← Back to Insights</a>
+    </div>
+
+    {% if flash %}
+        <div class="alert alert-{{ flash.type }}">
+            {{ flash.message }}
+        </div>
+    {% endif %}
+
+    <div class="configuration-info">
+        <h3>How AI Insights Work</h3>
+        <p>
+            AI Insights analyzes your energy consumption data and provides intelligent recommendations for:
+        </p>
+        <ul>
+            <li><strong>Consumption Pattern Analysis:</strong> Identify daily, weekly, and seasonal trends</li>
+            <li><strong>Cost Optimization:</strong> Find savings opportunities and tariff recommendations</li>
+            <li><strong>Anomaly Detection:</strong> Detect unusual patterns and potential equipment issues</li>
+            <li><strong>Carbon Reduction:</strong> Suggest strategies to reduce carbon footprint</li>
+            <li><strong>Predictive Maintenance:</strong> Anticipate equipment problems before they occur</li>
+        </ul>
+
+        <h3 class="mt-4">Supported AI Providers</h3>
+        <p>Choose one of the following AI providers. Only one provider needs to be configured.</p>
+    </div>
+
+    <div class="providers-grid">
+        {% for key, provider in providers %}
+            <div class="provider-card {{ provider.configured ? 'configured' : '' }}">
+                <div class="provider-header">
+                    <h4>{{ provider.name }}</h4>
+                    {% if provider.configured %}
+                        <span class="status status-success">✓ Configured</span>
+                    {% else %}
+                        <span class="status status-muted">Not Configured</span>
+                    {% endif %}
+                </div>
+                
+                <div class="provider-body">
+                    {% if key == 'openai' %}
+                        <p><strong>GPT-4</strong> - Industry-leading language model with excellent reasoning capabilities</p>
+                        <p><small>Best for: General purpose insights, comprehensive analysis</small></p>
+                        <p><strong>Cost:</strong> ~$0.03 per insight (using gpt-4o-mini)</p>
+                    {% elseif key == 'anthropic' %}
+                        <p><strong>Claude 3.5 Sonnet</strong> - Advanced AI with strong analytical skills</p>
+                        <p><small>Best for: Detailed technical analysis, safety-focused recommendations</small></p>
+                        <p><strong>Cost:</strong> ~$0.015 per insight</p>
+                    {% elseif key == 'google' %}
+                        <p><strong>Gemini Pro</strong> - Google's multimodal AI model</p>
+                        <p><small>Best for: Fast insights, cost-effective option</small></p>
+                        <p><strong>Cost:</strong> Free tier available, then ~$0.001 per insight</p>
+                    {% elseif key == 'azure' %}
+                        <p><strong>Azure OpenAI</strong> - Enterprise GPT-4 with Microsoft integration</p>
+                        <p><small>Best for: Enterprise deployments, compliance requirements</small></p>
+                        <p><strong>Cost:</strong> Varies by Azure subscription</p>
+                    {% endif %}
+                </div>
+
+                <div class="provider-footer">
+                    <a href="{{ provider.url }}" target="_blank" class="btn btn-sm btn-primary">
+                        Get API Key →
+                    </a>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    <div class="configuration-steps mt-4">
+        <h3>Configuration Steps</h3>
+        
+        <div class="step">
+            <div class="step-number">1</div>
+            <div class="step-content">
+                <h4>Choose an AI Provider</h4>
+                <p>Click "Get API Key" on one of the providers above to create an account and obtain your API key.</p>
+            </div>
+        </div>
+
+        <div class="step">
+            <div class="step-number">2</div>
+            <div class="step-content">
+                <h4>Add API Key to Environment</h4>
+                <p>Add your API key to the <code>.env</code> file in the project root:</p>
+                <div class="code-block">
+                    <strong>For OpenAI:</strong><br>
+                    <code>OPENAI_API_KEY=sk-proj-your-api-key-here</code><br>
+                    <code>OPENAI_MODEL=gpt-4o-mini</code>
+                    <br><br>
+                    <strong>For Anthropic:</strong><br>
+                    <code>ANTHROPIC_API_KEY=sk-ant-your-api-key-here</code><br>
+                    <code>ANTHROPIC_MODEL=claude-3-5-sonnet-20241022</code>
+                    <br><br>
+                    <strong>For Google AI:</strong><br>
+                    <code>GOOGLE_AI_API_KEY=your-api-key-here</code><br>
+                    <code>GOOGLE_MODEL=gemini-pro</code>
+                    <br><br>
+                    <strong>For Azure OpenAI:</strong><br>
+                    <code>AZURE_OPENAI_API_KEY=your-api-key-here</code><br>
+                    <code>AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com</code><br>
+                    <code>AZURE_OPENAI_MODEL=gpt-4</code>
+                </div>
+            </div>
+        </div>
+
+        <div class="step">
+            <div class="step-number">3</div>
+            <div class="step-content">
+                <h4>Restart Web Server</h4>
+                <p>Restart your web server or PHP-FPM to load the new environment variables:</p>
+                <div class="code-block">
+                    <code>sudo systemctl restart php-fpm</code><br>
+                    <em>or</em><br>
+                    <code>sudo service apache2 restart</code>
+                </div>
+                <p><small>On Plesk, you can restart PHP via: Domains → Your Domain → PHP Settings → Reload/Restart PHP</small></p>
+            </div>
+        </div>
+
+        <div class="step">
+            <div class="step-number">4</div>
+            <div class="step-content">
+                <h4>Generate Your First Insight</h4>
+                <p>Return to the <a href="/admin/ai-insights">AI Insights dashboard</a> and select a meter to generate insights.</p>
+            </div>
+        </div>
+    </div>
+
+    {% if active_provider %}
+        <div class="alert alert-success mt-4">
+            <strong>✅ Active Provider: {{ active_provider|upper }}</strong>
+            <p>AI Insights are enabled and ready to use!</p>
+        </div>
+    {% else %}
+        <div class="alert alert-warning mt-4">
+            <strong>⚠️ No Provider Configured</strong>
+            <p>Follow the steps above to configure an AI provider.</p>
+        </div>
+    {% endif %}
+
+    <div class="mt-4">
+        <h3>Security & Privacy</h3>
+        <ul>
+            <li><strong>Data Privacy:</strong> Only aggregated consumption statistics are sent to the AI provider, not raw meter readings</li>
+            <li><strong>API Key Security:</strong> Store API keys in the <code>.env</code> file, never commit them to version control</li>
+            <li><strong>Rate Limiting:</strong> The system automatically handles API rate limits and retries</li>
+            <li><strong>Cost Control:</strong> Monitor your API usage through the provider's dashboard to control costs</li>
+            <li><strong>GDPR Compliance:</strong> Ensure your chosen provider's terms comply with your data protection requirements</li>
+        </ul>
+    </div>
+</section>
+
+<style>
+.configuration-info {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 2rem;
+}
+
+.configuration-info h3 {
+    margin-top: 0;
+}
+
+.providers-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1.5rem;
+    margin: 2rem 0;
+}
+
+.provider-card {
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    padding: 1.5rem;
+    background: white;
+    transition: all 0.3s;
+}
+
+.provider-card.configured {
+    border-color: #28a745;
+    background: #f0f8f0;
+}
+
+.provider-card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.provider-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.provider-header h4 {
+    margin: 0;
+    font-size: 1.2rem;
+}
+
+.provider-body {
+    margin-bottom: 1rem;
+    min-height: 140px;
+}
+
+.provider-body p {
+    margin: 0.5rem 0;
+}
+
+.provider-footer {
+    padding-top: 1rem;
+    border-top: 1px solid #eee;
+}
+
+.configuration-steps {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 2rem;
+}
+
+.step {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.step:last-child {
+    margin-bottom: 0;
+}
+
+.step-number {
+    flex-shrink: 0;
+    width: 40px;
+    height: 40px;
+    background: #007bff;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 1.2rem;
+}
+
+.step-content h4 {
+    margin: 0 0 0.5rem 0;
+}
+
+.step-content p {
+    margin: 0.5rem 0;
+}
+
+.code-block {
+    background: #f5f5f5;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 1rem;
+    margin: 1rem 0;
+    font-family: monospace;
+}
+
+.code-block code {
+    background: none;
+    padding: 0;
+    color: #d63384;
+}
+</style>
+{% endblock %}

@@ -1,0 +1,249 @@
+{% extends "base.twig" %}
+
+{% block title %}AI Insights{% endblock %}
+
+{% block content %}
+<section class="card">
+    <div class="card-header">
+        <div>
+            <h2>🤖 AI-Powered Energy Insights</h2>
+            <p class="mb-2">Intelligent analysis and recommendations for energy optimization</p>
+        </div>
+        <a class="btn btn-secondary" href="/admin/ai-insights/settings">⚙️ Configure AI</a>
+    </div>
+
+    {% if flash %}
+        <div class="alert alert-{{ flash.type }}">
+            {{ flash.message }}
+        </div>
+    {% endif %}
+
+    {% if not is_configured %}
+        <div class="alert alert-warning">
+            <strong>⚠️ AI Provider Not Configured</strong>
+            <p>To enable AI-powered insights, you need to configure an AI provider API key.</p>
+            <p>
+                <a href="/admin/ai-insights/settings" class="btn btn-primary">Configure Now</a>
+            </p>
+            <p class="mt-2"><small>Supported providers: OpenAI (GPT-4), Anthropic (Claude), Google AI (Gemini), Azure OpenAI</small></p>
+        </div>
+    {% else %}
+        <div class="alert alert-success">
+            <strong>✅ AI Insights Enabled</strong>
+            <p>Using provider: <strong>{{ provider_name|upper }}</strong></p>
+        </div>
+    {% endif %}
+
+    <div class="stats-grid">
+        <div class="stat">
+            <span>Total Meters</span>
+            <strong>{{ meters|length }}</strong>
+        </div>
+        <div class="stat">
+            <span>Active Insights</span>
+            <strong>{{ recent_insights|length }}</strong>
+        </div>
+        <div class="stat">
+            <span>Provider Status</span>
+            <strong>{{ is_configured ? 'Configured' : 'Not Configured' }}</strong>
+        </div>
+    </div>
+
+    {% if is_configured %}
+        <h3 class="mt-4">Generate New Insights</h3>
+        <form method="post" action="/admin/ai-insights/generate" class="mb-4">
+            <div class="form-row">
+                <div class="form-group" style="flex: 1;">
+                    <label for="meter_id">Select Meter</label>
+                    <select name="meter_id" id="meter_id" class="form-control" required>
+                        <option value="">Choose a meter...</option>
+                        {% for meter in meters %}
+                            <option value="{{ meter.id }}">
+                                {{ meter.mpan }} - {{ meter.site_name }} ({{ meter.energy_type }})
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group" style="flex: 1;">
+                    <label for="insight_type">Insight Type</label>
+                    <select name="insight_type" id="insight_type" class="form-control">
+                        <option value="">All Types (Comprehensive)</option>
+                        <option value="consumption_pattern">Consumption Patterns</option>
+                        <option value="cost_optimization">Cost Optimization</option>
+                        <option value="anomaly_detection">Anomaly Detection</option>
+                        <option value="carbon_reduction">Carbon Reduction</option>
+                    </select>
+                </div>
+                <div class="form-group" style="align-self: flex-end;">
+                    <button type="submit" class="btn btn-primary">Generate Insight</button>
+                </div>
+            </div>
+        </form>
+    {% endif %}
+
+    <h3 class="mt-4">Recent Insights</h3>
+    {% if recent_insights is not empty %}
+        <div class="insights-grid">
+            {% for insight in recent_insights %}
+                <div class="insight-card priority-{{ insight.priority }}">
+                    <div class="insight-header">
+                        <div>
+                            <h4>{{ insight.title }}</h4>
+                            <p class="text-muted">
+                                <small>
+                                    {{ insight.mpan }} - {{ insight.site_name }}<br>
+                                    {{ insight.insight_date|date("d/m/Y") }} • 
+                                    Type: {{ insight.insight_type|replace({'_': ' '})|title }} •
+                                    Confidence: {{ insight.confidence_score }}%
+                                </small>
+                            </p>
+                        </div>
+                        <span class="priority-badge priority-{{ insight.priority }}">
+                            {{ insight.priority|upper }}
+                        </span>
+                    </div>
+                    <div class="insight-body">
+                        <p>{{ insight.description|nl2br }}</p>
+                        
+                        {% if insight.recommendations is not empty %}
+                            <h5>Recommendations:</h5>
+                            <ul>
+                                {% for rec in insight.recommendations %}
+                                    <li>{{ rec }}</li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                    </div>
+                    <div class="insight-footer">
+                        <a href="/admin/ai-insights/meter/{{ insight.meter_id }}" class="btn btn-sm btn-secondary">
+                            View All for This Meter
+                        </a>
+                        <form method="post" action="/admin/ai-insights/{{ insight.id }}/dismiss" style="display:inline;">
+                            <button type="submit" class="btn btn-sm btn-outline">Dismiss</button>
+                        </form>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="text-muted">No insights generated yet. Select a meter above to generate your first AI-powered insight.</p>
+    {% endif %}
+
+    <h3 class="mt-4">Meters Overview</h3>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>MPAN</th>
+                <th>Site</th>
+                <th>Energy Type</th>
+                <th>Insights Count</th>
+                <th>Last Insight</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for meter in meters %}
+                <tr>
+                    <td><strong>{{ meter.mpan }}</strong></td>
+                    <td>{{ meter.site_name }}</td>
+                    <td>{{ meter.energy_type|upper }}</td>
+                    <td>{{ meter.insight_count }}</td>
+                    <td>{{ meter.last_insight_date ? meter.last_insight_date|date("d/m/Y") : 'Never' }}</td>
+                    <td>
+                        <a href="/admin/ai-insights/meter/{{ meter.id }}" class="btn btn-sm btn-secondary">
+                            View Insights
+                        </a>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</section>
+
+<style>
+.insights-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1rem;
+}
+
+.insight-card {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 1.5rem;
+    background: white;
+}
+
+.insight-card.priority-high {
+    border-left: 4px solid #dc3545;
+}
+
+.insight-card.priority-medium {
+    border-left: 4px solid #ffc107;
+}
+
+.insight-card.priority-low {
+    border-left: 4px solid #28a745;
+}
+
+.insight-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+}
+
+.insight-header h4 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.1rem;
+}
+
+.priority-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    color: white;
+}
+
+.priority-badge.priority-high {
+    background: #dc3545;
+}
+
+.priority-badge.priority-medium {
+    background: #ffc107;
+    color: #000;
+}
+
+.priority-badge.priority-low {
+    background: #28a745;
+}
+
+.insight-body {
+    margin-bottom: 1rem;
+}
+
+.insight-body h5 {
+    margin-top: 1rem;
+    font-size: 0.9rem;
+    font-weight: bold;
+}
+
+.insight-body ul {
+    margin: 0.5rem 0 0 1.5rem;
+}
+
+.insight-footer {
+    display: flex;
+    gap: 0.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid #eee;
+}
+
+.form-row {
+    display: flex;
+    gap: 1rem;
+}
+</style>
+{% endblock %}

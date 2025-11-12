@@ -10,3 +10,4 @@ exports/
 !exports/.gitkeep
 storage/imports/*.csv
 !storage/imports/.gitignore
+archive/
