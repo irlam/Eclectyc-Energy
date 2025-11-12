@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Layout Preview - Eclectyc Energy</title>
+    <link rel="stylesheet" href="/assets/css/style.css">
+    <style>
+        :root {
+            --ink: #f8fafc;
+            --muted: #94a3b8;
+            --brand: #27e0a5;
+            --brand-alt: #1fc18a;
+            --bg: #0f172a;
+        }
+        
+        body {
+            background: linear-gradient(180deg, #0f172a 0%, #111827 45%, #0b1120 100%);
+            color: var(--ink);
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            padding: 2rem;
+            margin: 0;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        .dashboard-header {
+            margin-bottom: 2rem;
+        }
+        
+        .dashboard-header h2 {
+            font-size: 2.5rem;
+            margin: 0 0 0.5rem 0;
+            color: var(--ink);
+        }
+        
+        .dashboard-subtitle {
+            color: var(--muted);
+            font-size: 1.1rem;
+            margin: 0;
+        }
+        
+        .section-badge {
+            display: inline-block;
+            background: rgba(39, 224, 165, 0.15);
+            color: var(--brand);
+            padding: 0.5rem 1rem;
+            border-radius: 999px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin: 1.5rem 0 1rem 0;
+        }
+        
+        .layout-note {
+            background: rgba(255, 193, 7, 0.15);
+            border: 1px solid rgba(255, 193, 7, 0.3);
+            color: #ffc107;
+            padding: 1rem 1.5rem;
+            border-radius: 12px;
+            margin: 2rem 0;
+            font-size: 0.9rem;
+        }
+        
+        .layout-note strong {
+            color: #ffd54f;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="dashboard-header">
+            <h2>Energy Management Dashboard</h2>
+            <p class="dashboard-subtitle">Real-time insights into your energy portfolio</p>
+        </div>
+
+        <div class="layout-note">
+            <strong>🎨 Layout Changes Preview:</strong><br>
+            ✓ "Yesterday's Energy Consumption" moved to energy-cards section (next to Carbon Intensity)<br>
+            ✓ "Interactive Health Report" expanded to full width below
+        </div>
+
+        <!-- Primary Stats - Horizontal Row -->
+        <span class="section-badge">Primary Energy Cards</span>
+        <div class="energy-cards">
+            <div class="energy-card energy-card-weekly">
+                <div class="energy-header">
+                    <h3>Week to Date</h3>
+                    <div class="energy-trend energy-trend-up">+12%</div>
+                </div>
+                <div class="energy-value">
+                    12,456.7
+                    <span class="energy-unit">kWh</span>
+                </div>
+                <div class="energy-footer">
+                    <div class="energy-progress">
+                        <div class="energy-progress-bar" style="width: 65%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="energy-card energy-card-monthly">
+                <div class="energy-header">
+                    <h3>Month to Date</h3>
+                    <div class="energy-trend energy-trend-down">-5%</div>
+                </div>
+                <div class="energy-value">
+                    45,789.2
+                    <span class="energy-unit">kWh</span>
+                </div>
+                <div class="energy-footer">
+                    <div class="energy-progress">
+                        <div class="energy-progress-bar" style="width: 45%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="energy-card energy-card-status">
+                <div class="energy-header">
+                    <h3>Last Import</h3>
+                    <div class="import-status import-status-success"></div>
+                </div>
+                <div class="energy-value energy-value-small">
+                    2 hours ago
+                </div>
+                <div class="energy-footer">
+                    <button class="import-action-btn">View Details</button>
+                </div>
+            </div>
+
+            <div class="energy-card energy-card-carbon">
+                <div class="energy-header">
+                    <h3>Carbon Intensity</h3>
+                    <div class="energy-trend energy-trend-down">Falling</div>
+                </div>
+                <div class="energy-value">
+                    142
+                    <span class="energy-unit">gCO2/kWh</span>
+                </div>
+                <div class="energy-footer">
+                    <div class="carbon-level" style="background-color: #fbbf24;">
+                        Moderate
+                    </div>
+                    <div class="energy-meta">Updated: 14:20</div>
+                </div>
+            </div>
+
+            <!-- NEW POSITION: Yesterday's Consumption Card -->
+            <div class="energy-card energy-card-yesterday" style="border: 2px solid var(--brand);">
+                <div class="energy-header">
+                    <h3>📅 Yesterday's Energy Consumption</h3>
+                    <span class="energy-date">Monday, 11 Nov</span>
+                </div>
+                <div class="energy-value">
+                    8,234.5
+                    <span class="energy-unit">kWh</span>
+                </div>
+                <div class="energy-footer">
+                    <div class="energy-meta">
+                        Across 24 meters
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Interactive Health Report - Now Full Width -->
+        <span class="section-badge">Full Width Health Report</span>
+        <div class="new-widgets-section new-widgets-section--full-width">
+            <div class="widget-card widget-health widget-health--full-width" style="border: 2px solid var(--brand);">
+                <div class="widget-header">
+                    <h3>🏥 Interactive Health Report</h3>
+                    <span class="widget-subtitle">Site Data Coverage & Quality</span>
+                </div>
+                <div class="widget-body">
+                    <!-- Sites with/without data -->
+                    <div class="health-metric">
+                        <h4>Sites Data Status (Last 7 Days)</h4>
+                        <div class="health-stats-row">
+                            <div class="health-stat health-stat-success">
+                                <div class="health-stat-icon">✓</div>
+                                <div class="health-stat-content">
+                                    <div class="health-stat-value">18</div>
+                                    <div class="health-stat-label">Sites with Data</div>
+                                </div>
+                            </div>
+                            <div class="health-stat health-stat-warning">
+                                <div class="health-stat-icon">⚠</div>
+                                <div class="health-stat-content">
+                                    <div class="health-stat-value">2</div>
+                                    <div class="health-stat-label">Sites without Data</div>
+                                </div>
+                            </div>
+                            <div class="health-stat health-stat-info">
+                                <div class="health-stat-icon">Σ</div>
+                                <div class="health-stat-content">
+                                    <div class="health-stat-value">20</div>
+                                    <div class="health-stat-label">Total Sites</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Progress bar for sites -->
+                        <div class="health-progress-container">
+                            <div class="health-progress-bar">
+                                <div class="health-progress-fill" style="width: 90%"></div>
+                            </div>
+                            <div class="health-progress-label">90% of sites reporting data</div>
+                        </div>
+                    </div>
+
+                    <!-- Estimated vs Actual data -->
+                    <div class="health-metric">
+                        <h4>Reading Type Distribution</h4>
+                        <div class="health-stats-row">
+                            <div class="health-stat health-stat-actual">
+                                <div class="health-stat-icon">📊</div>
+                                <div class="health-stat-content">
+                                    <div class="health-stat-value">78%</div>
+                                    <div class="health-stat-label">Actual Readings</div>
+                                </div>
+                            </div>
+                            <div class="health-stat health-stat-estimated">
+                                <div class="health-stat-icon">📈</div>
+                                <div class="health-stat-content">
+                                    <div class="health-stat-value">22%</div>
+                                    <div class="health-stat-label">Estimated Readings</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Progress bar for reading types -->
+                        <div class="health-progress-container">
+                            <div class="health-progress-bar">
+                                <div class="health-progress-fill health-progress-actual" style="width: 78%"></div>
+                                <div class="health-progress-fill health-progress-estimated" style="width: 22%"></div>
+                            </div>
+                            <div class="health-progress-legend">
+                                <span class="health-legend-item">
+                                    <span class="health-legend-dot health-legend-actual"></span> Actual
+                                </span>
+                                <span class="health-legend-item">
+                                    <span class="health-legend-dot health-legend-estimated"></span> Estimated
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="layout-note" style="margin-top: 3rem;">
+            <strong>✅ Changes Summary:</strong><br>
+            1. Yesterday's Energy Consumption card has been <strong>moved from a separate widget section to the main energy-cards grid</strong><br>
+            2. It now appears <strong>to the right of the Carbon Intensity card</strong> (shown with green border above)<br>
+            3. The Interactive Health Report widget is now <strong>full width</strong> (shown with green border above)<br>
+            4. Layout is responsive and adapts to different screen sizes
+        </div>
+    </div>
+</body>
+</html>
