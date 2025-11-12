@@ -5,6 +5,7 @@
  * Last updated: 06/11/2024 14:45:00
  */
 
+use App\Http\Controllers\Admin\AiInsightsController;
 use App\Http\Controllers\Admin\AlarmsController;
 use App\Http\Controllers\Admin\DocsController;
 use App\Http\Controllers\Admin\ExportsController;
@@ -234,6 +235,13 @@ $app->group('/admin', function ($group) {
     $group->post('/scheduled-reports/{id}/delete', [ScheduledReportsController::class, 'delete'])->setName('admin.scheduled_reports.delete');
     $group->post('/scheduled-reports/{id}/run', [ScheduledReportsController::class, 'run'])->setName('admin.scheduled_reports.run');
     $group->get('/scheduled-reports/{id}/history', [ScheduledReportsController::class, 'history'])->setName('admin.scheduled_reports.history');
+    
+    // AI Insights routes
+    $group->get('/ai-insights', [AiInsightsController::class, 'index'])->setName('admin.ai_insights');
+    $group->post('/ai-insights/generate', [AiInsightsController::class, 'generate'])->setName('admin.ai_insights.generate');
+    $group->get('/ai-insights/meter/{id}', [AiInsightsController::class, 'viewMeter'])->setName('admin.ai_insights.meter');
+    $group->post('/ai-insights/{id}/dismiss', [AiInsightsController::class, 'dismiss'])->setName('admin.ai_insights.dismiss');
+    $group->get('/ai-insights/settings', [AiInsightsController::class, 'settings'])->setName('admin.ai_insights.settings');
 })->add(function ($request, $handler) use ($container) {
     $middleware = new AuthMiddleware($container->get(AuthService::class), ['admin']);
     return $middleware->process($request, $handler);

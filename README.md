@@ -18,6 +18,7 @@ The Eclectyc Energy platform is a comprehensive solution for energy management t
 ⚡ **Smart Import System** - Web-triggered async CSV imports with progress tracking  
 💰 **Tariff Intelligence** - Automated switching analysis with savings recommendations  
 📊 **Advanced Analytics** - Consumption trends, baseload analysis, and year-over-year comparisons  
+🤖 **AI-Powered Insights** - Intelligent recommendations using OpenAI, Anthropic, Google AI, or Azure OpenAI  
 🔄 **Background Processing** - Queue-based import jobs with retry logic and monitoring  
 📧 **Alerting & Notifications** - Email and Slack alerts for system events  
 🌍 **Carbon Reporting** - Real-time UK grid carbon intensity integration  
@@ -25,7 +26,8 @@ The Eclectyc Energy platform is a comprehensive solution for energy management t
 📈 **Data Quality** - Automated quality checks, outlier detection, and gap analysis  
 🚀 **Production Ready** - Complete with deployment configs, monitoring, and maintenance scripts
 
-[📘 Complete Feature Showcase](docs/COMPLETE_GUIDE.md) | [🚀 Quick Start](docs/quick_start_import.md) | [⚙️ Deployment Guide](docs/operationalizing_async_systems.md)
+[📘 Complete Feature Showcase](docs/COMPLETE_GUIDE.md) | [🚀 Quick Start](docs/quick_start_import.md) | [⚙️ Deployment Guide](docs/operationalizing_async_systems.md) | [🤖 AI Insights](docs/ai_insights.md)
+
 
 ## System Requirements
 
@@ -232,12 +234,30 @@ Visit: https://eclectyc.energy/tools/show
 - `/admin/sites` (admin only) shows estates with meter counts and status.
 - `/admin/tariffs` (admin only) lists configured supply tariffs including UK energy suppliers (British Gas, EDF, Octopus Energy, OVO Energy).
 - `/admin/tariff-switching` (admin only) analyzes switching opportunities and recommends alternative tariffs based on consumption history with selectable current tariff.
+- `/admin/ai-insights` (admin only) generates AI-powered insights and recommendations for energy optimization using OpenAI, Anthropic, Google AI, or Azure OpenAI.
 - `/admin/users` (admin only) lists seeded accounts for quick role testing, with granular permission management for each user.
 - `/admin/imports` (admin only) provides CSV uploads with optional dry-run previews, batch summaries, and optional default site/tariff assignment for imported meters.
 - `/admin/imports/jobs` (admin only) shows all import jobs with real-time progress tracking and filtering.
 - `/admin/imports/history` (admin only) lists recent ingestion runs with filters, decoded metadata, and surfaced errors.
 - `/admin/exports` (admin only) tracks SFTP export jobs, delivery status, and failure messages.
 - `/admin/meters` (admin only) allows you to add, view, and manage meters with pagination (10 meters per page by default).
+
+## AI-Powered Energy Insights
+
+The platform includes groundbreaking AI-powered insights that analyze your energy data and provide intelligent recommendations:
+
+- **Consumption Pattern Analysis**: Identify daily, weekly, and seasonal trends with AI-driven analysis
+- **Cost Optimization**: Get personalized recommendations for reducing energy costs
+- **Anomaly Detection**: Automatically detect unusual consumption patterns and potential equipment issues
+- **Carbon Reduction Strategies**: AI-suggested approaches to reduce your carbon footprint
+- **Predictive Maintenance**: Anticipate equipment problems before they occur
+- **Multi-Provider Support**: Choose from OpenAI (GPT-4), Anthropic (Claude), Google AI (Gemini), or Azure OpenAI
+- **Privacy-Focused**: Only aggregated statistics are sent to AI providers, never raw meter readings
+- **Cost-Effective**: Starting from ~$0.001 per insight with Google Gemini
+
+**Setup**: Simply add your preferred AI provider's API key to the `.env` file and restart your web server. See [docs/ai_insights.md](docs/ai_insights.md) for detailed setup instructions.
+
+**Access**: Navigate to `/admin/ai-insights` to start generating intelligent insights for your meters.
 
 ## Tariff Switching Analysis
 
