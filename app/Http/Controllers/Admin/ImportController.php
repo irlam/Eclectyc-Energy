@@ -692,8 +692,11 @@ class ImportController
             $deletedReadings = 0;
             $deletedMeters = 0;
             $deletedDailyAggregations = 0;
+            $deletedJobs = 0;
 
             if ($batchId) {
+                error_log("Deleting import with batch_id: {$batchId}");
+                
                 // Delete meter readings associated with this batch
                 $checkBatchColumn = $this->pdo->query("
                     SELECT COUNT(*) as count 
@@ -709,6 +712,7 @@ class ImportController
                     ');
                     $deleteReadingsStmt->execute(['batch_id' => $batchId]);
                     $deletedReadings = $deleteReadingsStmt->rowCount();
+                    error_log("Deleted {$deletedReadings} meter readings");
                 }
 
                 // Delete daily aggregations associated with this batch
@@ -726,6 +730,7 @@ class ImportController
                     ');
                     $deleteDailyAggStmt->execute(['batch_id' => $batchId]);
                     $deletedDailyAggregations = $deleteDailyAggStmt->rowCount();
+                    error_log("Deleted {$deletedDailyAggregations} daily aggregations");
                 }
 
                 // Delete meters that were auto-created by this import and have no other data
@@ -753,6 +758,7 @@ class ImportController
                         'batch_id2' => $batchId
                     ]);
                     $deletedMeters = $deleteMetersStmt->rowCount();
+                    error_log("Deleted {$deletedMeters} meters");
                 }
 
                 // Delete any associated import job entries
@@ -760,6 +766,8 @@ class ImportController
                     DELETE FROM import_jobs WHERE batch_id = :batch_id
                 ');
                 $deleteJobStmt->execute(['batch_id' => $batchId]);
+                $deletedJobs = $deleteJobStmt->rowCount();
+                error_log("Deleted {$deletedJobs} import jobs");
             }
 
             // Delete the audit log entry
@@ -770,6 +778,7 @@ class ImportController
             ]);
 
             $this->pdo->commit();
+            error_log("Successfully deleted import entry {$entryId} with batch_id: {$batchId}");
 
             $details = [];
             if ($deletedReadings > 0) {
@@ -780,6 +789,9 @@ class ImportController
             }
             if ($deletedMeters > 0) {
                 $details[] = "{$deletedMeters} meter(s)";
+            }
+            if ($deletedJobs > 0) {
+                $details[] = "{$deletedJobs} job(s)";
             }
 
             $message = 'Import deleted successfully';
@@ -795,6 +807,7 @@ class ImportController
                     'readings' => $deletedReadings,
                     'daily_aggregations' => $deletedDailyAggregations,
                     'meters' => $deletedMeters,
+                    'jobs' => $deletedJobs,
                 ]
             ]));
             return $response->withHeader('Content-Type', 'application/json');
@@ -803,15 +816,25 @@ class ImportController
             if ($this->pdo->inTransaction()) {
                 $this->pdo->rollBack();
             }
-            error_log('Failed to delete import history: ' . $e->getMessage());
-            $response->getBody()->write(json_encode(['success' => false, 'message' => 'Database error: ' . $e->getMessage()]));
+            error_log('Failed to delete import history (entry_id: ' . $entryId . ', batch_id: ' . ($batchId ?? 'unknown') . '): ' . $e->getMessage());
+            error_log('PDO Error Details: ' . print_r($e->errorInfo ?? [], true));
+            $response->getBody()->write(json_encode([
+                'success' => false, 
+                'message' => 'Database error while deleting import. Error: ' . $e->getMessage(),
+                'error_code' => $e->getCode(),
+                'batch_id' => $batchId ?? null
+            ]));
             return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
         } catch (\Throwable $e) {
             if ($this->pdo->inTransaction()) {
                 $this->pdo->rollBack();
             }
-            error_log('Failed to delete import history: ' . $e->getMessage());
-            $response->getBody()->write(json_encode(['success' => false, 'message' => 'An unexpected error occurred.']));
+            error_log('Failed to delete import history (entry_id: ' . $entryId . '): ' . $e->getMessage() . "\n" . $e->getTraceAsString());
+            $response->getBody()->write(json_encode([
+                'success' => false, 
+                'message' => 'An unexpected error occurred while deleting import.',
+                'error' => $e->getMessage()
+            ]));
             return $response->withHeader('Content-Type', 'application/json')->withStatus(500);
         }
     }
