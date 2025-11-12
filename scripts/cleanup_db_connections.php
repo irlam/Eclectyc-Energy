@@ -190,6 +190,36 @@ try {
 
 } catch (PDOException $e) {
     echo "Error: " . $e->getMessage() . "\n";
+    
+    // If we can't connect due to max_user_connections, suggest alternative cleanup
+    if (strpos($e->getMessage(), 'max_user_connections') !== false) {
+        echo "\n";
+        echo "===========================================\n";
+        echo "EMERGENCY CONNECTION CLEANUP REQUIRED\n";
+        echo "===========================================\n";
+        echo "\n";
+        echo "The connection pool is exhausted. You need to kill connections manually.\n";
+        echo "\n";
+        echo "Option 1: Restart the web server/PHP-FPM\n";
+        echo "  - This will close all PHP connections\n";
+        echo "  - Run: sudo systemctl restart php-fpm (or similar)\n";
+        echo "\n";
+        echo "Option 2: Kill all connections via MySQL\n";
+        echo "  - Connect as root or admin user (different from app user)\n";
+        echo "  - Run: mysql -u root -p\n";
+        echo "  - Then: SELECT * FROM information_schema.processlist WHERE User = 'k87747_eclectyc';\n";
+        echo "  - For each ID: KILL <id>;\n";
+        echo "\n";
+        echo "Option 3: Restart MySQL (last resort)\n";
+        echo "  - Run: sudo systemctl restart mysql\n";
+        echo "\n";
+        echo "To prevent this in the future:\n";
+        echo "  - Ensure process_import_jobs.php is not running multiple times\n";
+        echo "  - Check for hung PHP processes: ps aux | grep php\n";
+        echo "  - Kill hung processes: kill -9 <pid>\n";
+        echo "\n";
+    }
+    
     exit(1);
 } catch (Exception $e) {
     echo "Error: " . $e->getMessage() . "\n";

@@ -57,6 +57,11 @@ try {
     $csvService = new CsvIngestionService($db);
     $alertService = new ImportAlertService($db);
 
+    // Register shutdown handler to ensure connection cleanup
+    register_shutdown_function(function() {
+        Database::closeConnection();
+    });
+
     do {
         $jobs = $jobService->getQueuedJobs($limit);
         
@@ -66,9 +71,22 @@ try {
                 break;
             }
             
+            // Close connection before sleeping to free up resources
+            Database::closeConnection();
+            
             // Wait before checking again
             echo "[" . date('H:i:s') . "] No jobs in queue. Waiting 30 seconds...\n";
             sleep(30);
+            
+            // Reconnect after sleep
+            $db = Database::getConnection();
+            if (!$db) {
+                throw new Exception('Failed to reconnect to database');
+            }
+            $jobService = new ImportJobService($db);
+            $csvService = new CsvIngestionService($db);
+            $alertService = new ImportAlertService($db);
+            
             continue;
         }
 
@@ -163,15 +181,32 @@ try {
             break;
         }
 
+        // Close and reopen connection between iterations to prevent connection leaks
+        Database::closeConnection();
+        
         // Small delay between iterations
         sleep(5);
+        
+        // Reconnect for next iteration
+        $db = Database::getConnection();
+        if (!$db) {
+            throw new Exception('Failed to reconnect to database');
+        }
+        $jobService = new ImportJobService($db);
+        $csvService = new CsvIngestionService($db);
+        $alertService = new ImportAlertService($db);
 
     } while (true);
 
+    // Clean up connection before exit
+    Database::closeConnection();
+    
     echo "Import job processor finished.\n\n";
     exit(0);
 
 } catch (Exception $e) {
     echo "Fatal Error: " . $e->getMessage() . "\n";
+    // Ensure connection is closed on error
+    Database::closeConnection();
     exit(1);
 }
