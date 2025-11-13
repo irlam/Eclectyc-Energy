@@ -72,61 +72,30 @@ class AiInsightsService
      */
     private function getConfiguredProvider(): ?array
     {
-        // Try to get settings from database first
-        $dbApiKey = null;
-        $dbModel = null;
-        $dbEndpoint = null;
-        $dbProvider = null;
-        
-        if ($this->db) {
-            try {
-                // Check for system settings
-                $stmt = $this->db->query("
-                    SELECT setting_key, setting_value 
-                    FROM system_settings 
-                    WHERE setting_key LIKE 'ai_%'
-                ");
-                $settings = $stmt->fetchAll(PDO::FETCH_KEY_PAIR);
-                
-                // Determine which provider is configured in database
-                if (!empty($settings['ai_provider'])) {
-                    $dbProvider = $settings['ai_provider'];
-                }
-            } catch (\PDOException $e) {
-                // Table might not exist, continue with env vars
-                error_log('Could not load AI settings from database: ' . $e->getMessage());
-            }
-        }
-        
         $providers = [
             self::PROVIDER_OPENAI => [
-                'api_key' => $settings['ai_openai_api_key'] ?? $_ENV['OPENAI_API_KEY'] ?? null,
+                'api_key' => $_ENV['OPENAI_API_KEY'] ?? null,
                 'endpoint' => 'https://api.openai.com/v1/chat/completions',
-                'model' => $settings['ai_openai_model'] ?? $_ENV['OPENAI_MODEL'] ?? 'gpt-4o-mini'
+                'model' => $_ENV['OPENAI_MODEL'] ?? 'gpt-4o-mini'
             ],
             self::PROVIDER_ANTHROPIC => [
-                'api_key' => $settings['ai_anthropic_api_key'] ?? $_ENV['ANTHROPIC_API_KEY'] ?? null,
+                'api_key' => $_ENV['ANTHROPIC_API_KEY'] ?? null,
                 'endpoint' => 'https://api.anthropic.com/v1/messages',
-                'model' => $settings['ai_anthropic_model'] ?? $_ENV['ANTHROPIC_MODEL'] ?? 'claude-3-5-sonnet-20241022'
+                'model' => $_ENV['ANTHROPIC_MODEL'] ?? 'claude-3-5-sonnet-20241022'
             ],
             self::PROVIDER_GOOGLE => [
-                'api_key' => $settings['ai_google_api_key'] ?? $_ENV['GOOGLE_AI_API_KEY'] ?? null,
+                'api_key' => $_ENV['GOOGLE_AI_API_KEY'] ?? null,
                 'endpoint' => 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent',
-                'model' => $settings['ai_google_model'] ?? $_ENV['GOOGLE_MODEL'] ?? 'gemini-pro'
+                'model' => $_ENV['GOOGLE_MODEL'] ?? 'gemini-pro'
             ],
             self::PROVIDER_AZURE => [
-                'api_key' => $settings['ai_azure_api_key'] ?? $_ENV['AZURE_OPENAI_API_KEY'] ?? null,
-                'endpoint' => $settings['ai_azure_endpoint'] ?? $_ENV['AZURE_OPENAI_ENDPOINT'] ?? null,
-                'model' => $settings['ai_azure_model'] ?? $_ENV['AZURE_OPENAI_MODEL'] ?? 'gpt-4'
+                'api_key' => $_ENV['AZURE_OPENAI_API_KEY'] ?? null,
+                'endpoint' => $_ENV['AZURE_OPENAI_ENDPOINT'] ?? null,
+                'model' => $_ENV['AZURE_OPENAI_MODEL'] ?? 'gpt-4'
             ]
         ];
         
-        // If a specific provider is set in database settings, try that first
-        if ($dbProvider && isset($providers[$dbProvider]) && !empty($providers[$dbProvider]['api_key'])) {
-            return array_merge($providers[$dbProvider], ['name' => $dbProvider]);
-        }
-        
-        // Otherwise, return first configured provider
+        // Return first configured provider
         foreach ($providers as $name => $config) {
             if (!empty($config['api_key'])) {
                 return array_merge($config, ['name' => $name]);
