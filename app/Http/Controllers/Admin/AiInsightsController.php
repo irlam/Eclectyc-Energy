@@ -26,52 +26,67 @@ class AiInsightsController
      */
     public function index(Request $request, Response $response): Response
     {
-        // Check if AI is configured
-        $isConfigured = $this->aiService->isConfigured();
-        $providerName = $this->aiService->getConfiguredProviderName();
-        
-        // Get all meters with their latest insights
-        $stmt = $this->db->query("
-            SELECT 
-                m.id, m.mpan, m.energy_type,
-                s.name as site_name,
-                COUNT(DISTINCT ai.id) as insight_count,
-                MAX(ai.insight_date) as last_insight_date
-            FROM meters m
-            LEFT JOIN sites s ON m.site_id = s.id
-            LEFT JOIN ai_insights ai ON m.id = ai.meter_id AND ai.is_dismissed = 0
-            GROUP BY m.id
-            ORDER BY insight_count DESC, m.mpan
-        ");
-        $meters = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
-        // Get recent insights across all meters
-        $stmt = $this->db->query("
-            SELECT 
-                ai.*,
-                m.mpan,
-                s.name as site_name
-            FROM ai_insights ai
-            JOIN meters m ON ai.meter_id = m.id
-            LEFT JOIN sites s ON m.site_id = s.id
-            WHERE ai.is_dismissed = 0
-            ORDER BY ai.insight_date DESC, ai.priority DESC
-            LIMIT 20
-        ");
-        $recentInsights = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
-        // Decode recommendations
-        foreach ($recentInsights as &$insight) {
-            $insight['recommendations'] = json_decode($insight['recommendations'] ?? '[]', true);
+        try {
+            // Check if AI is configured
+            $isConfigured = $this->aiService->isConfigured();
+            $providerName = $this->aiService->getConfiguredProviderName();
+            
+            // Get all meters with their latest insights
+            $stmt = $this->db->query("
+                SELECT 
+                    m.id, m.mpan, m.energy_type,
+                    s.name as site_name,
+                    COUNT(DISTINCT ai.id) as insight_count,
+                    MAX(ai.insight_date) as last_insight_date
+                FROM meters m
+                LEFT JOIN sites s ON m.site_id = s.id
+                LEFT JOIN ai_insights ai ON m.id = ai.meter_id AND ai.is_dismissed = 0
+                GROUP BY m.id
+                ORDER BY insight_count DESC, m.mpan
+            ");
+            $meters = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Get recent insights across all meters
+            $stmt = $this->db->query("
+                SELECT 
+                    ai.*,
+                    m.mpan,
+                    s.name as site_name
+                FROM ai_insights ai
+                JOIN meters m ON ai.meter_id = m.id
+                LEFT JOIN sites s ON m.site_id = s.id
+                WHERE ai.is_dismissed = 0
+                ORDER BY ai.insight_date DESC, ai.priority DESC
+                LIMIT 20
+            ");
+            $recentInsights = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Decode recommendations
+            foreach ($recentInsights as &$insight) {
+                $insight['recommendations'] = json_decode($insight['recommendations'] ?? '[]', true);
+            }
+            
+            return $this->view->render($response, 'admin/ai_insights/index.twig', [
+                'title' => 'AI Insights',
+                'is_configured' => $isConfigured,
+                'provider_name' => $providerName,
+                'meters' => $meters,
+                'recent_insights' => $recentInsights
+            ]);
+        } catch (\Exception $e) {
+            // Log the error
+            error_log('AI Insights error: ' . $e->getMessage());
+            
+            // Return a user-friendly error page
+            return $this->view->render($response, 'admin/ai_insights/index.twig', [
+                'title' => 'AI Insights',
+                'error' => 'Unable to load AI insights. Please ensure the database is properly configured.',
+                'is_configured' => false,
+                'provider_name' => null,
+                'meters' => [],
+                'recent_insights' => []
+            ]);
         }
-        
-        return $this->view->render($response, 'admin/ai_insights/index.twig', [
-            'title' => 'AI Insights',
-            'is_configured' => $isConfigured,
-            'provider_name' => $providerName,
-            'meters' => $meters,
-            'recent_insights' => $recentInsights
-        ]);
     }
     
     /**
