@@ -20,14 +20,16 @@ WHERE batch_id = '758ca034'
 -- Delete meters created by import 758ca034 (only if they have no other data)
 -- =====================================================
 -- First, check if any meters were created by this import and have no other readings
-DELETE FROM meters 
-WHERE batch_id = '758ca034'
-  AND id NOT IN (
-      SELECT DISTINCT meter_id 
-      FROM meter_readings 
-      WHERE batch_id != '758ca034' 
-        OR batch_id IS NULL
-  );
+-- Using a temporary table to avoid MySQL limitation with subquery
+DELETE m FROM meters m
+LEFT JOIN (
+    SELECT DISTINCT meter_id 
+    FROM meter_readings 
+    WHERE batch_id != '758ca034' 
+       OR batch_id IS NULL
+) AS keep_meters ON m.id = keep_meters.meter_id
+WHERE m.batch_id = '758ca034'
+  AND keep_meters.meter_id IS NULL;
 
 -- =====================================================
 -- Delete audit log entries for import 758ca034
