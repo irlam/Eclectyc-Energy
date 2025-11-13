@@ -67,6 +67,7 @@ $app->group('/api', function ($group) {
 // Tools Routes
 $app->group('/tools', function ($group) {
     $group->get('', [ToolsController::class, 'index'])->setName('tools.index');
+    $group->get('/', [ToolsController::class, 'index']);
     $group->get('/check', [ToolsController::class, 'checkStructure'])->setName('tools.check');
     $group->get('/show', [ToolsController::class, 'showStructure'])->setName('tools.show');
     $group->get('/system-health', [ToolsController::class, 'systemHealth'])->setName('tools.health');
