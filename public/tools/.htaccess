@@ -1,0 +1,6 @@
+# Disable directory listing
+Options -Indexes
+
+# Redirect all requests to /tools (without trailing slash)
+# This ensures the application router handles the request
+DirectoryIndex index.php
