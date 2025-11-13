@@ -95,22 +95,6 @@
                             </div>
                         </div>
                     {% endif %}
-                    
-                    {% if category == 'AI Insights' %}
-                        <div class="category-description">
-                            <p>
-                                <strong>AI Insights</strong> uses artificial intelligence to analyze your energy consumption data and provide intelligent recommendations.
-                                Configure your preferred AI provider below.
-                            </p>
-                            <p class="mb-0">
-                                <strong>Quick Start:</strong> 
-                                1. Select a provider in the <code>ai_provider</code> field (openai, anthropic, google, or azure)
-                                2. Enter your API key for that provider
-                                3. Optional: Customize the model name
-                                4. Save settings and visit <a href="/admin/ai-insights" target="_blank">AI Insights</a> to start generating insights
-                            </p>
-                        </div>
-                    {% endif %}
 
                     <div class="settings-grid">
                         {% for key, setting in categorySettings %}
@@ -160,53 +144,14 @@
                                             <span class="input-hint">megabytes</span>
                                         {% endif %}
                                     {% else %}
-                                        {% if key == 'ai_provider' %}
-                                            <select 
-                                                id="setting_{{ key }}" 
-                                                name="{{ key }}"
-                                                class="form-input"
-                                                {% if not setting.is_editable %}disabled{% endif %}
-                                            >
-                                                <option value="">-- Select Provider --</option>
-                                                <option value="openai" {% if setting.value == 'openai' %}selected{% endif %}>OpenAI (GPT-4)</option>
-                                                <option value="anthropic" {% if setting.value == 'anthropic' %}selected{% endif %}>Anthropic (Claude)</option>
-                                                <option value="google" {% if setting.value == 'google' %}selected{% endif %}>Google AI (Gemini)</option>
-                                                <option value="azure" {% if setting.value == 'azure' %}selected{% endif %}>Azure OpenAI</option>
-                                            </select>
-                                        {% elseif key starts with 'ai_' and key ends with '_api_key' %}
-                                            <input 
-                                                type="password" 
-                                                id="setting_{{ key }}" 
-                                                name="{{ key }}"
-                                                value="{{ setting.value }}"
-                                                class="form-input"
-                                                {% if not setting.is_editable %}readonly{% endif %}
-                                                placeholder="Enter your API key..."
-                                            >
-                                            {% if key == 'ai_openai_api_key' %}
-                                                <span class="input-hint"><a href="https://platform.openai.com/api-keys" target="_blank">Get API Key →</a></span>
-                                            {% elseif key == 'ai_anthropic_api_key' %}
-                                                <span class="input-hint"><a href="https://console.anthropic.com/" target="_blank">Get API Key →</a></span>
-                                            {% elseif key == 'ai_google_api_key' %}
-                                                <span class="input-hint"><a href="https://makersuite.google.com/app/apikey" target="_blank">Get API Key →</a></span>
-                                            {% elseif key == 'ai_azure_api_key' %}
-                                                <span class="input-hint"><a href="https://portal.azure.com/" target="_blank">Get from Azure Portal →</a></span>
-                                            {% endif %}
-                                        {% else %}
-                                            <input 
-                                                type="text" 
-                                                id="setting_{{ key }}" 
-                                                name="{{ key }}"
-                                                value="{{ setting.value }}"
-                                                class="form-input"
-                                                {% if not setting.is_editable %}readonly{% endif %}
-                                            >
-                                            {% if key == 'ai_azure_endpoint' %}
-                                                <span class="input-hint">e.g., https://your-resource.openai.azure.com</span>
-                                            {% elseif key ends with '_model' %}
-                                                <span class="input-hint">Leave default unless you need a specific model</span>
-                                            {% endif %}
-                                        {% endif %}
+                                        <input 
+                                            type="text" 
+                                            id="setting_{{ key }}" 
+                                            name="{{ key }}"
+                                            value="{{ setting.value }}"
+                                            class="form-input"
+                                            {% if not setting.is_editable %}readonly{% endif %}
+                                        >
                                     {% endif %}
 
                                     {% if setting.is_editable %}
@@ -228,14 +173,6 @@
                                 {% elseif key == 'import_throttle_enabled' and not setting.value %}
                                     <div class="setting-note warning">
                                         <strong>Warning:</strong> Throttling is disabled. Large imports may cause 504 timeouts.
-                                    </div>
-                                {% elseif key == 'ai_provider' and setting.value %}
-                                    <div class="setting-note">
-                                        <strong>✓ Provider Selected:</strong> {{ setting.value|upper }}. Don't forget to add your API key below!
-                                    </div>
-                                {% elseif key == 'ai_provider' and not setting.value %}
-                                    <div class="setting-note info">
-                                        <strong>Info:</strong> Select a provider to enable AI-powered insights.
                                     </div>
                                 {% endif %}
                             </div>

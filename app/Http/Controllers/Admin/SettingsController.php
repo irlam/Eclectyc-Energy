@@ -72,76 +72,6 @@ class SettingsController
             'is_editable' => true,
             'category'    => 'Import Throttling',
         ],
-        'ai_provider' => [
-            'value'       => '',
-            'type'        => 'string',
-            'description' => 'AI provider to use (openai, anthropic, google, or azure)',
-            'is_editable' => true,
-            'category'    => 'AI Insights',
-        ],
-        'ai_openai_api_key' => [
-            'value'       => '',
-            'type'        => 'string',
-            'description' => 'OpenAI API Key (starts with sk-proj- or sk-)',
-            'is_editable' => true,
-            'category'    => 'AI Insights',
-        ],
-        'ai_openai_model' => [
-            'value'       => 'gpt-4o-mini',
-            'type'        => 'string',
-            'description' => 'OpenAI model to use',
-            'is_editable' => true,
-            'category'    => 'AI Insights',
-        ],
-        'ai_anthropic_api_key' => [
-            'value'       => '',
-            'type'        => 'string',
-            'description' => 'Anthropic API Key (starts with sk-ant-)',
-            'is_editable' => true,
-            'category'    => 'AI Insights',
-        ],
-        'ai_anthropic_model' => [
-            'value'       => 'claude-3-5-sonnet-20241022',
-            'type'        => 'string',
-            'description' => 'Anthropic model to use',
-            'is_editable' => true,
-            'category'    => 'AI Insights',
-        ],
-        'ai_google_api_key' => [
-            'value'       => '',
-            'type'        => 'string',
-            'description' => 'Google AI API Key',
-            'is_editable' => true,
-            'category'    => 'AI Insights',
-        ],
-        'ai_google_model' => [
-            'value'       => 'gemini-pro',
-            'type'        => 'string',
-            'description' => 'Google AI model to use',
-            'is_editable' => true,
-            'category'    => 'AI Insights',
-        ],
-        'ai_azure_api_key' => [
-            'value'       => '',
-            'type'        => 'string',
-            'description' => 'Azure OpenAI API Key',
-            'is_editable' => true,
-            'category'    => 'AI Insights',
-        ],
-        'ai_azure_endpoint' => [
-            'value'       => '',
-            'type'        => 'string',
-            'description' => 'Azure OpenAI Endpoint URL',
-            'is_editable' => true,
-            'category'    => 'AI Insights',
-        ],
-        'ai_azure_model' => [
-            'value'       => 'gpt-4',
-            'type'        => 'string',
-            'description' => 'Azure OpenAI model deployment name',
-            'is_editable' => true,
-            'category'    => 'AI Insights',
-        ],
     ];
 
     public function __construct(Twig $view, ?PDO $pdo)
@@ -358,9 +288,6 @@ class SettingsController
     {
         if (str_starts_with($key, 'import_')) {
             return 'Import Throttling';
-        }
-        if (str_starts_with($key, 'ai_')) {
-            return 'AI Insights';
         }
         return 'General';
     }
