@@ -1,6 +1,16 @@
-# Disable directory listing
-Options -Indexes
+# Enable mod_rewrite for URL handling
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /tools/
+    
+    # If requesting the directory (with or without trailing slash)
+    # serve the index.php file
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteRule ^$ index.php [L]
+</IfModule>
 
-# Redirect all requests to /tools (without trailing slash)
-# This ensures the application router handles the request
+# Set index.php as the directory index
 DirectoryIndex index.php
+
+# Disable directory listing as fallback
+Options -Indexes
