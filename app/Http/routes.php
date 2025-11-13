@@ -93,12 +93,6 @@ $app->group('/tools', function ($group) {
     $group->post('/settings', [SettingsController::class, 'update'])->setName('tools.settings.update');
     $group->post('/settings/reset', [SettingsController::class, 'reset'])->setName('tools.settings.reset');
     
-    // Environment Configuration routes
-    $group->get('/env-config', [EnvConfigController::class, 'index'])->setName('tools.env_config');
-    $group->post('/env-config', [EnvConfigController::class, 'update'])->setName('tools.env_config.update');
-    $group->get('/env-config/test', [EnvConfigController::class, 'testPermissions'])->setName('tools.env_config.test');
-    $group->get('/env-config/backup', [EnvConfigController::class, 'downloadBackup'])->setName('tools.env_config.backup');
-    
     // Documentation routes
     $group->get('/docs', [DocsController::class, 'index'])->setName('tools.docs');
     $group->get('/docs/{filename:.+}', [DocsController::class, 'view'])->setName('tools.docs.view');
@@ -249,6 +243,12 @@ $app->group('/admin', function ($group) {
     $group->get('/ai-insights/meter/{id}', [AiInsightsController::class, 'viewMeter'])->setName('admin.ai_insights.meter');
     $group->post('/ai-insights/{id}/dismiss', [AiInsightsController::class, 'dismiss'])->setName('admin.ai_insights.dismiss');
     $group->get('/ai-insights/settings', [AiInsightsController::class, 'settings'])->setName('admin.ai_insights.settings');
+    
+    // Environment Configuration routes
+    $group->get('/env-config', [EnvConfigController::class, 'index'])->setName('admin.env_config');
+    $group->post('/env-config', [EnvConfigController::class, 'update'])->setName('admin.env_config.update');
+    $group->get('/env-config/test', [EnvConfigController::class, 'testPermissions'])->setName('admin.env_config.test');
+    $group->get('/env-config/backup', [EnvConfigController::class, 'downloadBackup'])->setName('admin.env_config.backup');
 })->add(function ($request, $handler) use ($container) {
     $middleware = new AuthMiddleware($container->get(AuthService::class), ['admin']);
     return $middleware->process($request, $handler);

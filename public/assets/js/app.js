@@ -14,7 +14,6 @@ document.addEventListener('DOMContentLoaded', function() {
     initializeCharts();
     initializeCarbonIntensity();
     initializeDeleteConfirmations();
-    initializeNavDropdowns();
 });
 
 /**
@@ -539,56 +538,3 @@ window.EclectycEnergy = {
     checkHealth: initializeHealthCheck,
     refreshCarbonIntensity
 };
-
-/**
- * Initialize navigation dropdowns
- */
-function initializeNavDropdowns() {
-    const dropdowns = document.querySelectorAll('.nav-dropdown');
-    
-    dropdowns.forEach(dropdown => {
-        const toggle = dropdown.querySelector('.nav-dropdown-toggle');
-        const menu = dropdown.querySelector('.nav-dropdown-menu');
-        
-        if (!toggle || !menu) return;
-        
-        // Toggle dropdown on click
-        toggle.addEventListener('click', function(e) {
-            e.preventDefault();
-            e.stopPropagation();
-            
-            // Close other dropdowns
-            dropdowns.forEach(other => {
-                if (other !== dropdown) {
-                    other.classList.remove('active');
-                }
-            });
-            
-            // Toggle current dropdown
-            dropdown.classList.toggle('active');
-        });
-        
-        // Prevent menu clicks from closing dropdown
-        menu.addEventListener('click', function(e) {
-            e.stopPropagation();
-        });
-    });
-    
-    // Close dropdowns when clicking outside
-    document.addEventListener('click', function(e) {
-        if (!e.target.closest('.nav-dropdown')) {
-            dropdowns.forEach(dropdown => {
-                dropdown.classList.remove('active');
-            });
-        }
-    });
-    
-    // Close dropdowns on Escape key
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-            dropdowns.forEach(dropdown => {
-                dropdown.classList.remove('active');
-            });
-        }
-    });
-}

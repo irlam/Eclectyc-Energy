@@ -12,7 +12,7 @@
             </p>
         </div>
         <div style="display: flex; gap: 0.5rem;">
-            <a href="/tools/env-config/backup" class="btn btn-sm btn-secondary" title="Download current .env as backup">
+            <a href="/admin/env-config/backup" class="btn btn-sm btn-secondary" title="Download current .env as backup">
                 💾 Download Backup
             </a>
             <button type="button" onclick="testPermissions()" class="btn btn-sm btn-secondary" title="Test file permissions">
@@ -51,7 +51,7 @@
             </div>
         {% endif %}
 
-        <form method="POST" action="/tools/env-config" class="env-config-form">
+        <form method="POST" action="/admin/env-config" class="env-config-form">
             {% for category, categorySettings in settings %}
                 <div class="settings-category">
                     <h3 class="category-title">{{ category }}</h3>
@@ -231,39 +231,39 @@
 .settings-category {
     margin-bottom: 3rem;
     padding: 1.5rem;
-    background: var(--card);
-    border-radius: var(--radius);
-    border: 1px solid var(--line);
+    background: var(--card-bg);
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
 }
 
 .category-title {
     margin: 0 0 1rem 0;
     font-size: 1.3rem;
-    color: var(--brand);
-    border-bottom: 2px solid var(--brand);
+    color: var(--primary);
+    border-bottom: 2px solid var(--primary);
     padding-bottom: 0.5rem;
 }
 
 .category-description {
-    background: rgba(87, 161, 255, 0.1);
+    background: #f0f7ff;
     padding: 1rem;
     border-radius: 6px;
     margin-bottom: 1.5rem;
-    border-left: 4px solid var(--brand-alt);
+    border-left: 4px solid var(--primary);
 }
 
 .category-description p {
     margin: 0;
-    color: var(--brand-alt);
+    color: #1e40af;
 }
 
 .category-warning {
-    background: rgba(244, 183, 64, 0.1);
+    background: #fff4e6;
     padding: 1rem;
     border-radius: 6px;
     margin-bottom: 1.5rem;
-    border-left: 4px solid var(--warning);
-    color: var(--warning);
+    border-left: 4px solid #f59e0b;
+    color: #92400e;
 }
 
 .settings-grid {
@@ -272,14 +272,14 @@
 }
 
 .setting-item {
-    background: rgba(255, 255, 255, 0.03);
+    background: white;
     padding: 1rem;
     border-radius: 6px;
-    border: 1px solid var(--line);
+    border: 1px solid #e5e7eb;
 }
 
 .setting-item.required {
-    border-left: 3px solid var(--brand);
+    border-left: 3px solid var(--primary);
 }
 
 .setting-header {
@@ -289,14 +289,14 @@
 .setting-label {
     display: block;
     font-weight: 600;
-    color: var(--ink);
+    color: #1f2937;
     font-size: 0.9rem;
     font-family: 'Courier New', monospace;
     margin-bottom: 0.25rem;
 }
 
 .required-mark {
-    color: var(--danger);
+    color: #ef4444;
     margin-left: 0.25rem;
 }
 
@@ -316,56 +316,53 @@
 .form-input {
     flex: 1;
     padding: 0.5rem 0.75rem;
-    border: 1px solid var(--line);
+    border: 1px solid #d1d5db;
     border-radius: 6px;
     font-size: 0.9rem;
     font-family: 'Courier New', monospace;
-    background: rgba(255, 255, 255, 0.05);
-    color: var(--ink);
 }
 
 .form-input:focus {
     outline: none;
-    border-color: var(--brand);
-    box-shadow: 0 0 0 3px rgba(39, 224, 165, 0.1);
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 .form-input:read-only {
-    background: rgba(255, 255, 255, 0.02);
-    color: var(--muted);
+    background: #f9fafb;
+    color: #6b7280;
 }
 
 .btn-show-password {
     padding: 0.5rem 0.75rem;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid var(--line);
+    background: #f3f4f6;
+    border: 1px solid #d1d5db;
     border-radius: 6px;
     cursor: pointer;
     font-size: 1rem;
-    color: var(--ink);
 }
 
 .btn-show-password:hover {
-    background: rgba(255, 255, 255, 0.08);
+    background: #e5e7eb;
 }
 
 .setting-note {
     margin-top: 0.5rem;
     padding: 0.5rem 0.75rem;
-    background: rgba(87, 161, 255, 0.08);
+    background: #f0f9ff;
     border-radius: 4px;
     font-size: 0.85rem;
-    color: var(--brand-alt);
+    color: #0c4a6e;
 }
 
 .setting-note.warning {
-    background: rgba(244, 183, 64, 0.1);
-    color: var(--warning);
+    background: #fff4e6;
+    color: #92400e;
 }
 
 .setting-note.info {
-    background: rgba(39, 224, 165, 0.08);
-    color: var(--brand);
+    background: #f0fdf4;
+    color: #14532d;
 }
 
 .toggle-switch {
@@ -388,7 +385,7 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: rgba(255, 255, 255, 0.1);
+    background-color: #ccc;
     transition: 0.4s;
     border-radius: 28px;
 }
@@ -400,13 +397,13 @@
     width: 20px;
     left: 4px;
     bottom: 4px;
-    background-color: var(--ink);
+    background-color: white;
     transition: 0.4s;
     border-radius: 50%;
 }
 
 .toggle-switch input:checked + .toggle-slider {
-    background-color: var(--brand);
+    background-color: var(--primary);
 }
 
 .toggle-switch input:checked + .toggle-slider:before {
@@ -420,21 +417,21 @@
 
 .toggle-label {
     font-size: 0.9rem;
-    color: var(--muted);
+    color: #6b7280;
 }
 
 .form-actions {
     margin-top: 2rem;
     padding: 1.5rem;
-    background: var(--card);
-    border-radius: var(--radius);
+    background: #f9fafb;
+    border-radius: 8px;
     display: flex;
     align-items: center;
     gap: 1rem;
 }
 
 .help-text {
-    color: var(--muted);
+    color: #6b7280;
     font-size: 0.9rem;
 }
 </style>
@@ -446,7 +443,7 @@ function togglePassword(fieldId) {
 }
 
 function testPermissions() {
-    fetch('/tools/env-config/test')
+    fetch('/admin/env-config/test')
         .then(response => response.json())
         .then(data => {
             if (data.success) {
