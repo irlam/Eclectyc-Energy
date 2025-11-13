@@ -46,16 +46,31 @@
                     {% endif %}
 
                     {% if role == 'admin' %}
-                        <li><a href="/admin/imports">Imports</a></li>
-                        <li><a href="/admin/imports/history">Import History</a></li>
-                        <li><a href="/admin/exports">Exports</a></li>
+                        <li class="nav-dropdown">
+                            <button class="nav-dropdown-toggle">
+                                Data Management
+                                <span class="nav-dropdown-icon">▼</span>
+                            </button>
+                            <div class="nav-dropdown-menu">
+                                <a href="/admin/imports">Imports</a>
+                                <a href="/admin/imports/history">Import History</a>
+                                <a href="/admin/exports">Exports</a>
+                            </div>
+                        </li>
                         <li><a href="/admin/meters">Meters</a></li>
                         <li><a href="/admin/sites">Sites</a></li>
-                        <li><a href="/admin/tariffs">Tariffs</a></li>
-                        <li><a href="/admin/tariff-switching">Tariff Switching</a></li>
+                        <li class="nav-dropdown">
+                            <button class="nav-dropdown-toggle">
+                                Tariffs
+                                <span class="nav-dropdown-icon">▼</span>
+                            </button>
+                            <div class="nav-dropdown-menu">
+                                <a href="/admin/tariffs">Tariffs</a>
+                                <a href="/admin/tariff-switching">Tariff Switching</a>
+                            </div>
+                        </li>
                         <li><a href="/admin/ai-insights">🤖 AI Insights</a></li>
                         <li><a href="/admin/users">Users</a></li>
-                        <li><a href="/admin/env-config">🔧 Environment Config</a></li>
                         <li><a href="/tools">Tools</a></li>
                     {% endif %}
                 </ul>
