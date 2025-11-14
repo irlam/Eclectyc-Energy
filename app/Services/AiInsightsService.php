@@ -144,7 +144,7 @@ class AiInsightsService
     {
         $mpan = $meterData['mpan'];
         $siteName = $meterData['site_name'] ?? 'Unknown Site';
-        $energyType = $meterData['energy_type'];
+        $energyType = $meterData['meter_type'];
         $tariffName = $meterData['tariff_name'] ?? 'No tariff';
         
         // Calculate statistics

@@ -46,7 +46,7 @@ class AiInsightsController
             // Get all meters with their latest insights
             $stmt = $this->db->query("
                 SELECT 
-                    m.id, m.mpan, m.energy_type,
+                    m.id, m.mpan, m.meter_type,
                     s.name as site_name,
                     COUNT(DISTINCT ai.id) as insight_count,
                     MAX(ai.insight_date) as last_insight_date
