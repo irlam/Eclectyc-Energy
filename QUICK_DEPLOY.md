@@ -2,6 +2,17 @@
 
 ## ⚠️ CRITICAL STEP - DO NOT SKIP
 
+### 1. Check Deployment Structure FIRST
+
+```bash
+# Run this BEFORE doing anything else (first-time deployments)
+php scripts/check-deployment.php
+```
+
+This prevents the common `public/public/` path duplication error!
+
+### 2. Install Dependencies
+
 After pulling the latest code, you MUST run:
 
 ```bash
@@ -13,6 +24,9 @@ Without this step, the website will NOT work!
 ## Quick Deployment Commands
 
 ```bash
+# 0. Check deployment structure (first-time only)
+php scripts/check-deployment.php
+
 # 1. Navigate to project directory
 cd /path/to/eclectyc-energy
 
@@ -48,13 +62,32 @@ tail -f logs/php-error.log
 ✅ Fixed missing controller registrations (AI Insights, Alarms, Scheduled Reports)
 ✅ Improved database connection timeout
 ✅ Added deployment documentation
+✅ Added deployment path checker to prevent public/public errors
+
+## Common Issues
+
+### "public/public/index.php" or "Failed to open vendor/autoload.php"
+
+This means files were uploaded to wrong location!
+
+**Quick Fix:**
+```bash
+# Check for the issue
+php scripts/check-deployment.php
+
+# If confirmed, see detailed instructions:
+cat docs/DEPLOYMENT_PATH_ISSUE.md
+```
+
+**Root Cause:** Project files were uploaded to `httpdocs/public/` instead of `httpdocs/`
 
 ## Need More Help?
 
 See full documentation:
-- 📋 [DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md)
-- 📄 [WEBSITE_FIX_SUMMARY.md](WEBSITE_FIX_SUMMARY.md)
-- 📖 [README.md](README.md)
+- 🔍 [DEPLOYMENT_PATH_ISSUE.md](docs/DEPLOYMENT_PATH_ISSUE.md) - Fix public/public errors
+- 📋 [DEPLOYMENT_CHECKLIST.md](DEPLOYMENT_CHECKLIST.md) - Complete deployment guide
+- 📄 [WEBSITE_FIX_SUMMARY.md](WEBSITE_FIX_SUMMARY.md) - Recent fixes
+- 📖 [README.md](README.md) - Installation instructions
 
 ## Support
 

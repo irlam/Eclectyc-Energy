@@ -49,16 +49,30 @@ The Eclectyc Energy platform is a comprehensive solution for energy management t
 
 ### 2. Upload Project Files
 
+⚠️ **CRITICAL: Upload to the Correct Location!**
+
+**Correct:** Upload to `httpdocs/` (or `public_html/` depending on host)
+**Incorrect:** Do NOT upload to `httpdocs/public/` - this causes `public/public/` errors!
+
 #### Method A: Via Plesk File Manager
 1. Create a ZIP file of the entire project folder
-2. Upload via Plesk File Manager to your domain directory
+2. Upload via Plesk File Manager to your **domain directory** (`httpdocs/`, NOT `httpdocs/public/`)
 3. Extract the ZIP file
-4. Ensure the folder structure is correct (public/ should be lowercase)
+4. Verify structure: You should see `public/`, `app/`, `vendor/`, etc. at the httpdocs level
 
 #### Method B: Via FTP/SFTP
 1. Connect to your server using FTP credentials from Plesk
-2. Upload all project files to your domain directory
+2. Upload all project files to your **domain directory** (`httpdocs/`, NOT `httpdocs/public/`)
 3. Maintain the exact folder structure
+4. After upload, verify you have: `httpdocs/public/`, `httpdocs/app/`, etc.
+
+**To verify correct structure:**
+```bash
+cd /path/to/httpdocs
+ls -la
+# Should show: public/, app/, vendor/, composer.json, .env, etc.
+# Should NOT show: public/public/
+```
 
 ### 3. Configure Environment
 
@@ -91,11 +105,28 @@ cd /path/to/eclectyc-energy
 composer install --no-dev --optimize-autoloader
 ```
 
+### 4a. Verify Deployment Structure (Recommended)
+
+Run the deployment checker to ensure everything is set up correctly:
+```bash
+php scripts/check-deployment.php
+```
+
+This will verify:
+- Files are in correct locations (no `public/public/` duplication)
+- Dependencies are installed
+- Permissions are correct
+
+If you see errors about `public/public/`, see [docs/DEPLOYMENT_PATH_ISSUE.md](docs/DEPLOYMENT_PATH_ISSUE.md)
+
 ### 5. Set Document Root in Plesk
 
+⚠️ **IMPORTANT:** DocumentRoot must point to the `public/` subdirectory, NOT the parent directory!
+
 1. Go to "Hosting Settings" for your domain
-2. Change Document Root to: `/httpdocs/eclectyc-energy/public`
-3. Save changes
+2. Change Document Root to: `/httpdocs/public` (or `/httpdocs/eclectyc-energy/public` if project is in subdirectory)
+3. **Verify:** The path should end with `/public`, NOT `/public/public`
+4. Save changes
 
 ### 6. Set Permissions
 ```bash
