@@ -28,7 +28,15 @@ class AuthMiddleware implements MiddlewareInterface
     {
         if (!$this->authService->check()) {
             $uri = $request->getUri();
-            $redirectTarget = $uri->getPath();
+            $path = $uri->getPath();
+            
+            // Prevent redirect loop: if already on login page, allow through
+            // The login page itself doesn't require authentication
+            if ($path === '/login') {
+                return $handler->handle($request);
+            }
+            
+            $redirectTarget = $path;
             $queryString = $uri->getQuery();
 
             if ($queryString !== '') {
