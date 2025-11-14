@@ -67,7 +67,7 @@
                         <option value="">Choose a meter...</option>
                         {% for meter in meters %}
                             <option value="{{ meter.id }}">
-                                {{ meter.mpan }} - {{ meter.site_name }} ({{ meter.energy_type }})
+                                {{ meter.mpan }} - {{ meter.site_name }} ({{ meter.meter_type }})
                             </option>
                         {% endfor %}
                     </select>
@@ -154,7 +154,7 @@
                 <tr>
                     <td><strong>{{ meter.mpan }}</strong></td>
                     <td>{{ meter.site_name }}</td>
-                    <td>{{ meter.energy_type|upper }}</td>
+                    <td>{{ meter.meter_type|upper }}</td>
                     <td>{{ meter.insight_count }}</td>
                     <td>{{ meter.last_insight_date ? meter.last_insight_date|date("d/m/Y") : 'Never' }}</td>
                     <td>
