@@ -1,7 +1,7 @@
 DirectoryIndex index.php
 
 <IfModule mod_negotiation.c>
-	Options -MultiViews
+	Options -MultiViews -Indexes
 </IfModule>
 
 <IfModule mod_authz_core.c>
@@ -11,6 +11,12 @@ DirectoryIndex index.php
 RewriteEngine On
 RewriteBase /
 
+# Handle WebSocket upgrade requests (if needed in future)
+# These will be routed through index.php for now
+RewriteCond %{HTTP:Upgrade} websocket [NC]
+RewriteCond %{HTTP:Connection} upgrade [NC]
+RewriteRule ^(.*)$ index.php [L,QSA]
+
 # Skip existing files/directories
 RewriteCond %{REQUEST_FILENAME} -f [OR]
 RewriteCond %{REQUEST_FILENAME} -d
@@ -18,3 +24,7 @@ RewriteRule ^ - [L]
 
 # Route everything else through index.php
 RewriteRule ^ index.php [QSA,L]
+
+# Custom error pages (optional)
+ErrorDocument 404 /index.php
+ErrorDocument 403 /index.php
