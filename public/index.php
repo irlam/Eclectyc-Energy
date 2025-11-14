@@ -30,10 +30,13 @@ declare(strict_types=1);
  * Last updated (UK): 09/11/2025 12:55:00
  */
 
+use App\Http\Controllers\Admin\AiInsightsController;
+use App\Http\Controllers\Admin\AlarmsController;
 use App\Http\Controllers\Admin\DocsController;
 use App\Http\Controllers\Admin\ExportsController;
 use App\Http\Controllers\Admin\ImportController;
 use App\Http\Controllers\Admin\MetersController as AdminMetersController;
+use App\Http\Controllers\Admin\ScheduledReportsController;
 use App\Http\Controllers\Admin\SettingsController;
 use App\Http\Controllers\Admin\SitesController;
 use App\Http\Controllers\Admin\TariffsController;
@@ -158,7 +161,7 @@ $container->set(\PDO::class, function () {
                 \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,
                 \PDO::ATTR_EMULATE_PREPARES   => false,
                 \PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci",
-                \PDO::ATTR_TIMEOUT            => 30  // Connection timeout to prevent hanging connections
+                \PDO::ATTR_TIMEOUT            => 5  // Connection timeout to prevent hanging connections
             ]
         );
         return $pdo;
@@ -281,6 +284,21 @@ $container->set(SettingsController::class, fn (ContainerInterface $c) => new Set
 ));
 
 $container->set(DocsController::class, fn (ContainerInterface $c) => new DocsController(
+    $c->get('view'),
+    $c->get('db')
+));
+
+$container->set(AiInsightsController::class, fn (ContainerInterface $c) => new AiInsightsController(
+    $c->get('db'),
+    $c->get('view')
+));
+
+$container->set(AlarmsController::class, fn (ContainerInterface $c) => new AlarmsController(
+    $c->get('view'),
+    $c->get('db')
+));
+
+$container->set(ScheduledReportsController::class, fn (ContainerInterface $c) => new ScheduledReportsController(
     $c->get('view'),
     $c->get('db')
 ));
