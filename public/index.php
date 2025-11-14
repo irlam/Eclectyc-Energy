@@ -30,7 +30,7 @@ declare(strict_types=1);
  * Last updated (UK): 09/11/2025 12:55:00
  */
 
-use App.Http\Controllers\Admin\AiInsightsController;
+use App\Http\Controllers\Admin\AiInsightsController;
 use App\Http\Controllers\Admin\AlarmsController;
 use App\Http\Controllers\Admin\DocsController;
 use App\Http\Controllers\Admin\ExportsController;
