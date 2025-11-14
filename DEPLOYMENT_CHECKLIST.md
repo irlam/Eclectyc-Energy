@@ -147,13 +147,14 @@ tail -100 logs/php-error.log
 tail -100 logs/app.log
 ```
 
-### Routes not working (404 errors)
+### Routes not working (404 errors) or 403 "No matching DirectoryIndex" errors
 
 **Solution:** Verify .htaccess and document root
 
-1. Check that `.htaccess` exists in the `public/` directory
+1. Check that `.htaccess` exists in the `public/` directory **and** root directory
 2. Verify Apache mod_rewrite is enabled
 3. Confirm document root points to `public/` directory
+4. See [docs/APACHE_CONFIGURATION_FIX.md](docs/APACHE_CONFIGURATION_FIX.md) for detailed troubleshooting
 
 ## Files Changed in This Deployment
 
@@ -166,8 +167,9 @@ tail -100 logs/app.log
 If you encounter issues not covered here:
 
 1. Check the main [README.md](README.md) for installation instructions
-2. Review [docs/DB_CONNECTION_FIX.md](docs/DB_CONNECTION_FIX.md) for database issues
-3. Check [docs/troubleshooting_504_timeouts.md](docs/troubleshooting_504_timeouts.md) for timeout issues
+2. Review [docs/APACHE_CONFIGURATION_FIX.md](docs/APACHE_CONFIGURATION_FIX.md) for 403/404 errors
+3. Review [docs/DB_CONNECTION_FIX.md](docs/DB_CONNECTION_FIX.md) for database issues
+4. Check [docs/troubleshooting_504_timeouts.md](docs/troubleshooting_504_timeouts.md) for timeout issues
 
 ## Summary
 

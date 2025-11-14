@@ -1,0 +1,30 @@
+# Root-level .htaccess for Eclectyc Energy
+# This file handles requests when DocumentRoot is set to parent directory
+# instead of the public/ subdirectory
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    
+    # If accessing from parent directory, redirect to public/
+    RewriteCond %{REQUEST_URI} !^/public/
+    RewriteCond %{REQUEST_FILENAME} !-f
+    RewriteCond %{REQUEST_FILENAME} !-d
+    RewriteRule ^(.*)$ /public/$1 [L,QSA]
+    
+    # If accessing /public directly, redirect to public/
+    RewriteCond %{REQUEST_URI} ^/public$
+    RewriteRule ^public$ /public/ [L,R=301]
+</IfModule>
+
+# Disable directory browsing
+Options -Indexes
+
+# Prevent access to sensitive files
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
+
+# Protect configuration files
+<FilesMatch "\.(env|json|lock|md|sql|sh)$">
+    Require all denied
+</FilesMatch>
