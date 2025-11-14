@@ -46,17 +46,27 @@
                     {% endif %}
 
                     {% if role == 'admin' %}
-                        <li><a href="/admin/imports">Imports</a></li>
-                        <li><a href="/admin/imports/history">Import History</a></li>
-                        <li><a href="/admin/exports">Exports</a></li>
+                        <li class="dropdown">
+                            <a>Imports</a>
+                            <div class="dropdown-menu">
+                                <a href="/admin/imports">📥 Imports</a>
+                                <a href="/admin/imports/history">📜 Import History</a>
+                                <a href="/admin/exports">📤 Exports</a>
+                            </div>
+                        </li>
                         <li><a href="/admin/meters">Meters</a></li>
                         <li><a href="/admin/sites">Sites</a></li>
-                        <li><a href="/admin/tariffs">Tariffs</a></li>
-                        <li><a href="/admin/tariff-switching">Tariff Switching</a></li>
+                        <li class="dropdown">
+                            <a>Tariffs</a>
+                            <div class="dropdown-menu">
+                                <a href="/admin/tariffs">💰 Tariffs</a>
+                                <a href="/admin/tariff-switching">🔄 Tariff Switching</a>
+                            </div>
+                        </li>
                         <li><a href="/admin/ai-insights">🤖 AI Insights</a></li>
                         <li><a href="/admin/users">Users</a></li>
                         <li class="dropdown">
-                            <a href="/tools">Tools</a>
+                            <a>Tools</a>
                             <div class="dropdown-menu">
                                 <a href="/tools">🏠 Tools Home</a>
                                 <a href="/tools/system-health">🏥 System Health</a>
