@@ -2,16 +2,273 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <!-- 
+        File: public/index.html
+        Name: Eclectyc Energy HTML Redirector
+        
+        What this file does:
+        - Provides a very simple HTML page that immediately redirects the browser to index.php.
+        - Uses both a meta-refresh and a JavaScript redirect as a fallback.
+        - Shows a minimal message and a manual link in case automatic redirect fails.
+
+        Notes:
+        - This file is only a convenience; the main application entry point is public/index.php.
+        - It is safe to leave in place even when Apache is using DirectoryIndex index.php.
+        
+        Last updated (UK): 14/11/2025 14:40:00
+    -->
     <meta http-equiv="refresh" content="0;url=index.php">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Redirecting...</title>
+    <title>Redirecting to Eclectyc Energy...</title>
+    <style>
+        :root {
+            color-scheme: dark;
+            --bg: #050816;
+            --bg-alt: #0b1020;
+            --accent: #38bdf8;
+            --accent-soft: rgba(56, 189, 248, 0.15);
+            --text: #f9fafb;
+            --muted: #9ca3af;
+            --border: rgba(148, 163, 184, 0.35);
+            --shadow-soft: 0 18px 45px rgba(15, 23, 42, 0.75);
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html, body {
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background:
+                radial-gradient(circle at top left, rgba(56, 189, 248, 0.12), transparent 55%),
+                radial-gradient(circle at bottom right, rgba(129, 140, 248, 0.12), transparent 55%),
+                linear-gradient(135deg, #020617 0%, #020617 45%, #020617 100%);
+            font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            color: var(--text);
+        }
+
+        .card {
+            width: min(460px, 100% - 3rem);
+            padding: 2.25rem 2.5rem;
+            border-radius: 1.25rem;
+            background: radial-gradient(circle at top, rgba(56,189,248,0.12), transparent 65%), 
+                        linear-gradient(145deg, rgba(15,23,42,0.96), rgba(15,23,42,0.98));
+            box-shadow: var(--shadow-soft);
+            border: 1px solid var(--border);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: "";
+            position: absolute;
+            inset: 0;
+            opacity: 0.45;
+            mix-blend-mode: screen;
+            background-image:
+                radial-gradient(circle at 0% 0%, rgba(56,189,248,0.25), transparent 55%),
+                radial-gradient(circle at 110% 10%, rgba(52,211,153,0.18), transparent 55%);
+            pointer-events: none;
+        }
+
+        .card-inner {
+            position: relative;
+            z-index: 1;
+        }
+
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.45rem;
+            padding: 0.3rem 0.75rem;
+            border-radius: 999px;
+            font-size: 0.75rem;
+            letter-spacing: 0.04em;
+            text-transform: uppercase;
+            background: rgba(15,23,42,0.85);
+            border: 1px solid rgba(148, 163, 184, 0.45);
+            color: var(--muted);
+        }
+
+        .badge-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 999px;
+            background: #22c55e;
+            box-shadow: 0 0 0 6px rgba(34,197,94,0.35);
+        }
+
+        h1 {
+            margin: 1.1rem 0 0.4rem;
+            font-size: 1.65rem;
+            font-weight: 600;
+            letter-spacing: -0.03em;
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            gap: 0.75rem;
+        }
+
+        h1 span {
+            background: linear-gradient(120deg, #e5e7eb, #38bdf8);
+            -webkit-background-clip: text;
+            color: transparent;
+        }
+
+        .tagline {
+            margin: 0;
+            font-size: 0.9rem;
+            color: var(--muted);
+        }
+
+        .progress {
+            margin-top: 1.5rem;
+            margin-bottom: 1rem;
+            height: 4px;
+            border-radius: 999px;
+            background: rgba(15,23,42,0.9);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .progress-bar {
+            position: absolute;
+            inset: 0;
+            width: 40%;
+            background: linear-gradient(90deg, #38bdf8, #22c55e, #38bdf8);
+            background-size: 200% 100%;
+            animation: indeterminate 1.4s infinite;
+        }
+
+        @keyframes indeterminate {
+            0% {
+                transform: translateX(-60%);
+            }
+            100% {
+                transform: translateX(160%);
+            }
+        }
+
+        .meta {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+            font-size: 0.8rem;
+            color: var(--muted);
+        }
+
+        .meta span strong {
+            color: #e5e7eb;
+            font-weight: 500;
+        }
+
+        .actions {
+            margin-top: 1.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: flex-start;
+            gap: 0.75rem;
+            font-size: 0.85rem;
+        }
+
+        .primary-btn {
+            border: none;
+            border-radius: 999px;
+            padding: 0.55rem 1.4rem;
+            cursor: pointer;
+            font-weight: 500;
+            letter-spacing: 0.02em;
+            background: radial-gradient(circle at 0 0, rgba(56,189,248,0.4), transparent 60%),
+                        linear-gradient(120deg, #0ea5e9, #22c55e);
+            color: #0b1120;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.4rem;
+            box-shadow: 0 10px 30px rgba(56,189,248,0.35);
+        }
+
+        .primary-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 18px 40px rgba(56,189,248,0.45);
+        }
+
+        .primary-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 10px 25px rgba(56,189,248,0.4);
+        }
+
+        .primary-btn span.icon {
+            font-size: 1.1rem;
+        }
+
+        .fallback {
+            color: var(--muted);
+        }
+
+        a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+    </style>
     <script>
-        // Immediate redirect if meta refresh fails
-        window.location.replace('index.php');
+        // Immediate redirect to the PHP front controller.
+        // If this fails for any reason, the user can click the button or link.
+        window.addEventListener('DOMContentLoaded', function () {
+            try {
+                window.location.replace('index.php');
+            } catch (e) {
+                // Fallback handled by link/button
+            }
+        });
     </script>
 </head>
 <body>
-    <p>Redirecting to application...</p>
-    <p>If you are not redirected, <a href="index.php">click here</a>.</p>
+    <main class="card" aria-label="Eclectyc Energy is starting">
+        <div class="card-inner">
+            <div class="badge">
+                <span class="badge-dot" aria-hidden="true"></span>
+                <span>Loading Eclectyc Energy</span>
+            </div>
+
+            <h1>
+                <span>Redirecting to dashboard</span>
+            </h1>
+            <p class="tagline">
+                Your energy intelligence workspace is booting. This usually takes less than a second.
+            </p>
+
+            <div class="progress" aria-hidden="true">
+                <div class="progress-bar"></div>
+            </div>
+
+            <div class="meta">
+                <span><strong>Target</strong> index.php (Slim front controller)</span>
+                <span>Secure redirect using HTML + JS</span>
+            </div>
+
+            <div class="actions">
+                <button type="button" class="primary-btn" onclick="window.location.href='index.php'">
+                    <span class="icon">↻</span>
+                    <span>Open application now</span>
+                </button>
+                <span class="fallback">
+                    or <a href="index.php">click here</a> if redirect does not start.
+                </span>
+            </div>
+        </div>
+    </main>
 </body>
 </html>
