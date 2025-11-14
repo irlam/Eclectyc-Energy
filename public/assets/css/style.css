@@ -160,6 +160,8 @@ a {
 .nav {
     background: transparent;
     padding: 0.65rem 0;
+    position: relative;
+    z-index: 30;
 }
 
 .nav ul {
@@ -221,7 +223,7 @@ a {
     visibility: hidden;
     transform: translateY(-10px);
     transition: all 0.2s ease;
-    z-index: 100;
+    z-index: 1000;
 }
 
 .nav .dropdown:hover .dropdown-menu {
