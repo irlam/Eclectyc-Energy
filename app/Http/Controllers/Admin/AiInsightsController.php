@@ -10,15 +10,15 @@ use Slim\Views\Twig;
 
 class AiInsightsController
 {
-    private PDO $db;
+    private ?PDO $db;
     private Twig $view;
-    private AiInsightsService $aiService;
+    private ?AiInsightsService $aiService;
     
-    public function __construct(PDO $db, Twig $view)
+    public function __construct(?PDO $db, Twig $view)
     {
         $this->db = $db;
         $this->view = $view;
-        $this->aiService = new AiInsightsService($db);
+        $this->aiService = $db ? new AiInsightsService($db) : null;
     }
     
     /**
@@ -26,6 +26,18 @@ class AiInsightsController
      */
     public function index(Request $request, Response $response): Response
     {
+        // Check database connection
+        if (!$this->db || !$this->aiService) {
+            return $this->view->render($response, 'admin/ai_insights/index.twig', [
+                'title' => 'AI Insights',
+                'is_configured' => false,
+                'provider_name' => null,
+                'meters' => [],
+                'recent_insights' => [],
+                'error' => 'Database connection not available'
+            ]);
+        }
+        
         // Check if AI is configured
         $isConfigured = $this->aiService->isConfigured();
         $providerName = $this->aiService->getConfiguredProviderName();
@@ -84,6 +96,10 @@ class AiInsightsController
         $insightType = $data['insight_type'] ?? null;
         
         try {
+            if (!$this->aiService) {
+                throw new \RuntimeException('Database connection not available.');
+            }
+            
             if (!$this->aiService->isConfigured()) {
                 throw new \RuntimeException('AI provider not configured. Please add an API key in Settings.');
             }
@@ -137,6 +153,17 @@ class AiInsightsController
     {
         $meterId = (int) $args['id'];
         
+        // Check database connection
+        if (!$this->db || !$this->aiService) {
+            $_SESSION['flash'] = [
+                'type' => 'error',
+                'message' => 'Database connection not available'
+            ];
+            return $response
+                ->withHeader('Location', '/admin/ai-insights')
+                ->withStatus(302);
+        }
+        
         // Get meter details
         $stmt = $this->db->prepare("
             SELECT m.*, s.name as site_name
@@ -177,6 +204,10 @@ class AiInsightsController
         $userId = $_SESSION['user_id'] ?? 0;
         
         try {
+            if (!$this->aiService) {
+                throw new \RuntimeException('Database connection not available');
+            }
+            
             $this->aiService->dismissInsight($insightId, $userId);
             
             $_SESSION['flash'] = [
@@ -228,7 +259,7 @@ class AiInsightsController
         return $this->view->render($response, 'admin/ai_insights/settings.twig', [
             'title' => 'AI Insights Settings',
             'providers' => $providers,
-            'active_provider' => $this->aiService->getConfiguredProviderName()
+            'active_provider' => $this->aiService ? $this->aiService->getConfiguredProviderName() : null
         ]);
     }
 }
