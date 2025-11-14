@@ -39,6 +39,11 @@ $app->get('/', [DashboardController::class, 'index'])
     ->setName('dashboard')
     ->add(AuthMiddleware::class);
 
+// Redirect /index.php to root
+$app->get('/index.php', function ($request, $response) {
+    return $response->withHeader('Location', '/')->withStatus(301);
+});
+
 $app->get('/login', [AuthController::class, 'showLoginForm'])->setName('auth.login');
 $app->post('/login', [AuthController::class, 'login'])->setName('auth.login.submit');
 $app->map(['GET', 'POST'], '/logout', [AuthController::class, 'logout'])
