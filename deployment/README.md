@@ -8,27 +8,36 @@ If you're deploying to production for the first time:
 
 ```bash
 # 1. Upload all project files to the server (e.g., to /var/www/vhosts/yourdomain.com/httpdocs/)
+#    NOTE: vendor/ directory is included, so no composer install needed!
 
-# 2. Run the dependency installer
-bash deployment/install-dependencies.sh
-
-# 3. Verify the deployment structure
+# 2. Verify the deployment structure
 php deployment/fix-deployment-structure.php
 
-# 4. Configure .env file with your database credentials
+# 3. Configure .env file with your database credentials
 cp .env.example .env
 nano .env  # Edit with your settings
 
+# 4. Set correct DocumentRoot in Apache/Plesk
+#    Set to: /var/www/vhosts/yourdomain.com/httpdocs/public
+
 # 5. Test the application
-curl https://yourdomain.com/check-deployment.php?allow
+curl https://yourdomain.com/
 ```
+
+**Key Points:**
+- ✅ Vendor directory included - no `composer install` required
+- ✅ Index.html workaround included for DirectoryIndex issues
+- ✅ All dependencies are production-ready (no dev packages)
+
 
 ## Files in This Directory
 
 ### Installation & Setup Scripts
 
-#### `install-dependencies.sh` ⭐ **Start Here**
+#### `install-dependencies.sh` (OPTIONAL - Dependencies Now Included)
 Automated script to install all PHP dependencies via Composer.
+
+**⚠️ NOTE:** As of November 14, 2025, the `vendor/` directory is included in the repository. You typically don't need to run this script unless you're updating dependencies.
 
 **Usage:**
 ```bash
@@ -42,7 +51,10 @@ bash deployment/install-dependencies.sh
 - Sets correct file permissions
 - Verifies installation
 
-**When to use:** Run this immediately after uploading project files to the server.
+**When to use:** 
+- When updating dependencies to newer versions
+- When you've modified composer.json
+- Optional for first-time deployment (vendor/ already included)
 
 ---
 

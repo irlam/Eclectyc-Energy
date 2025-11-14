@@ -9,11 +9,16 @@ The platform was experiencing two types of errors:
 
 ## Root Cause Analysis
 
-### 403 Error
-The 403 error occurred because the Apache DocumentRoot was incorrectly configured to point to a parent directory instead of the application's `public/` folder. When Apache tried to serve the root URL, it attempted to list the directory contents instead of serving `index.php`.
+### 403 Error - Scenario 1: Misconfigured DocumentRoot
+The 403 error can occur because the Apache DocumentRoot was incorrectly configured to point to a parent directory instead of the application's `public/` folder. When Apache tried to serve the root URL, it attempted to list the directory contents instead of serving `index.php`.
 
 **Expected DocumentRoot**: `/httpdocs/eclectyc-energy/public/`  
 **Actual DocumentRoot** (misconfigured): `/httpdocs/public/`
+
+### 403 Error - Scenario 2: .htaccess Not Processed
+Even with correct DocumentRoot, some hosting environments don't process `.htaccess` files properly, or the `AllowOverride` directive is set to `None`. In these cases, the `DirectoryIndex index.php` directive in `.htaccess` is ignored, and Apache falls back to its default DirectoryIndex list which may prioritize `index.html` over `index.php`.
+
+**Solution**: An `index.html` file that redirects to `index.php` ensures Apache finds an index file regardless of `.htaccess` processing.
 
 ### 404 Error
 The `/ws/ws` endpoint was being requested (likely by browser extensions or cached JavaScript) but was not defined in the application routes, causing a 404 error.
@@ -42,6 +47,21 @@ The existing `public/.htaccess` was enhanced with:
 - Custom error documents (403 and 404 routed through `index.php`)
 - Better handling of undefined routes through the Slim application
 
+### 3. Index.html Workaround (NEW)
+
+An `index.html` file has been added to `public/` directory that immediately redirects to `index.php`. This ensures Apache can always find an index file, even if:
+- `.htaccess` files are not being processed
+- `DirectoryIndex` directives are ignored
+- The server prioritizes `index.html` over `index.php`
+
+**File**: `/public/index.html`
+
+**How it works**:
+- Uses meta refresh tag for immediate redirect
+- Uses JavaScript for instant client-side redirect
+- Provides a manual link as final fallback
+- Zero delay - users won't notice the redirect
+
 ## Deployment Instructions
 
 ### For Existing Deployments
@@ -54,10 +74,15 @@ If you're experiencing these errors on a live server:
    git pull origin main
    ```
 
-2. **Verify the new `.htaccess` files exist**:
+2. **Verify the new files exist**:
    ```bash
-   ls -la .htaccess public/.htaccess
+   ls -la .htaccess public/.htaccess public/index.html
    ```
+   
+   You should see:
+   - `.htaccess` (root level)
+   - `public/.htaccess` (with DirectoryIndex)
+   - `public/index.html` (redirect workaround)
 
 3. **Clear Apache cache** (if applicable):
    ```bash

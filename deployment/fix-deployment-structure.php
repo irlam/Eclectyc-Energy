@@ -118,6 +118,7 @@ if (!file_exists($vendorDir)) {
 output("\n--- Checking index.php location ---");
 
 $publicIndexPhp = $projectRoot . '/public/index.php';
+$publicIndexHtml = $projectRoot . '/public/index.html';
 $nestedIndexPhp = $nestedPublicDir . '/index.php';
 
 if (file_exists($nestedIndexPhp)) {
@@ -128,6 +129,13 @@ if (file_exists($publicIndexPhp)) {
     output("✓ Found index.php in correct location: public/index.php", 'success');
 } else {
     output("✗ Missing index.php in public/ directory!", 'error');
+}
+
+// Check for index.html workaround (for servers where .htaccess DirectoryIndex isn't processed)
+if (file_exists($publicIndexHtml)) {
+    output("✓ Found index.html workaround for DirectoryIndex issues", 'success');
+} else {
+    output("ℹ index.html workaround not found (optional, helps if .htaccess is ignored)", 'info');
 }
 
 // Check 5: Verify .htaccess files
@@ -205,11 +213,23 @@ if ($hasPublicPublic || count($missingDirs) > 0 || !file_exists($vendorAutoload)
     output("   After fixing, run this script again to verify");
     
 } else {
-    output("\n✓ All checks passed! Deployment structure looks correct.", 'success');
+    output("\n✓ All checks passed and vendor is present! Deployment structure looks correct.", 'success');
     output("\nNext steps:");
     output("  1. Test the website in your browser");
     output("  2. Check logs/php-error.log for any errors");
     output("  3. Verify database connection is working");
+    
+    // Provide additional guidance if experiencing 403 errors
+    if (file_exists($publicIndexHtml)) {
+        output("\nℹ Note: index.html workaround is in place for DirectoryIndex issues.", 'info');
+        output("  If you still get 403 'No matching DirectoryIndex' errors:");
+        output("  - Ensure Apache is processing .htaccess files (AllowOverride All)");
+        output("  - Check that mod_rewrite is enabled");
+        output("  - The index.html file will redirect to index.php as a fallback");
+    } else {
+        output("\nℹ If you experience 403 'No matching DirectoryIndex' errors:", 'info');
+        output("  An index.html workaround file can help (see docs/APACHE_CONFIGURATION_FIX.md)");
+    }
 }
 
 // Provide web link to documentation

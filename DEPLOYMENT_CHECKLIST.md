@@ -73,7 +73,9 @@ git pull origin main
 
 ### 2. Install Dependencies
 
-**This is the critical step that was missing before!**
+**NOTE: As of November 14, 2025, the vendor directory is now included in the repository!**
+
+You can skip this step as all dependencies are already included. However, if you need to update dependencies in the future:
 
 ```bash
 composer install --no-dev --optimize-autoloader
