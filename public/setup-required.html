@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Eclectyc Energy - Setup Required</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            max-width: 800px;
+            margin: 60px auto;
+            padding: 40px;
+            background: #f5f5f5;
+            color: #333;
+        }
+        .container {
+            background: white;
+            border-radius: 8px;
+            padding: 40px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #e74c3c;
+            border-bottom: 3px solid #e74c3c;
+            padding-bottom: 10px;
+        }
+        h2 {
+            color: #3498db;
+            margin-top: 30px;
+        }
+        .error {
+            background: #ffe6e6;
+            border-left: 4px solid #e74c3c;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .success {
+            background: #e6ffe6;
+            border-left: 4px solid #27ae60;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .warning {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        code {
+            background: #f4f4f4;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+        pre {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+        ul {
+            line-height: 1.8;
+        }
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background: #3498db;
+            color: white;
+            text-decoration: none;
+            border-radius: 5px;
+            margin: 10px 10px 10px 0;
+        }
+        .btn:hover {
+            background: #2980b9;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚠️ Eclectyc Energy - Setup Incomplete</h1>
+        
+        <div class="error">
+            <strong>If you're seeing this page, the application is not properly configured.</strong>
+        </div>
+
+        <p>The Eclectyc Energy platform requires initial setup before it can run. You're seeing this static HTML page instead of the application because:</p>
+
+        <ul>
+            <li>PHP dependencies haven't been installed (missing <code>vendor/</code> directory)</li>
+            <li>Files may be in the wrong location (deployment path issue)</li>
+            <li>PHP may not be properly configured in Apache</li>
+        </ul>
+
+        <h2>Quick Diagnostics</h2>
+        
+        <p>Try accessing these diagnostic tools:</p>
+        
+        <a href="/check-deployment.php?allow" class="btn">Check Deployment Status</a>
+        <a href="/deployment/fix-deployment-structure.php?allow" class="btn">Fix Deployment Structure</a>
+
+        <h2>Common Issues & Solutions</h2>
+
+        <div class="warning">
+            <h3>Issue 1: Missing Dependencies</h3>
+            <p><strong>Symptoms:</strong> "Failed to open vendor/autoload.php" error</p>
+            <p><strong>Solution:</strong> Run composer install</p>
+            <pre>cd /path/to/eclectyc-energy
+composer install --no-dev --optimize-autoloader</pre>
+            <p>OR use the helper script:</p>
+            <pre>bash deployment/install-dependencies.sh</pre>
+        </div>
+
+        <div class="warning">
+            <h3>Issue 2: Wrong Upload Location</h3>
+            <p><strong>Symptoms:</strong> Error logs show <code>public/public/index.php</code> paths</p>
+            <p><strong>Solution:</strong> Files were uploaded to wrong directory</p>
+            <p>See <a href="/docs/DEPLOYMENT_PATH_ISSUE.md">DEPLOYMENT_PATH_ISSUE.md</a> for detailed fix instructions</p>
+        </div>
+
+        <div class="warning">
+            <h3>Issue 3: PHP Not Processing</h3>
+            <p><strong>Symptoms:</strong> Seeing this HTML instead of dynamic content</p>
+            <p><strong>Solution:</strong> Ensure PHP is configured in Apache and <code>index.php</code> is in DirectoryIndex</p>
+            <p>The <code>public/.htaccess</code> file should contain:</p>
+            <pre>DirectoryIndex index.php</pre>
+        </div>
+
+        <h2>Setup Steps</h2>
+
+        <ol>
+            <li>
+                <strong>Install Dependencies:</strong>
+                <pre>cd /path/to/eclectyc-energy
+bash deployment/install-dependencies.sh</pre>
+            </li>
+            <li>
+                <strong>Verify Structure:</strong>
+                <pre>php deployment/fix-deployment-structure.php</pre>
+            </li>
+            <li>
+                <strong>Configure Environment:</strong>
+                <p>Ensure <code>.env</code> file exists with correct database credentials</p>
+            </li>
+            <li>
+                <strong>Set DocumentRoot:</strong>
+                <p>In your hosting panel (Plesk/cPanel), set DocumentRoot to:</p>
+                <pre>/path/to/eclectyc-energy/public</pre>
+            </li>
+            <li>
+                <strong>Test:</strong>
+                <p>Reload this page - you should see the login screen instead of this message</p>
+            </li>
+        </ol>
+
+        <h2>Need Help?</h2>
+
+        <p>Consult these documentation files:</p>
+        <ul>
+            <li><a href="/DEPLOYMENT_CHECKLIST.md">DEPLOYMENT_CHECKLIST.md</a> - Complete deployment guide</li>
+            <li><a href="/docs/DEPLOYMENT_PATH_ISSUE.md">DEPLOYMENT_PATH_ISSUE.md</a> - Fix path duplication issues</li>
+            <li><a href="/README.md">README.md</a> - Installation and setup instructions</li>
+        </ul>
+
+        <hr style="margin: 30px 0;">
+        
+        <p style="text-align: center; color: #7f8c8d; font-size: 14px;">
+            <strong>Note:</strong> Once the application is running, you can delete this <code>setup-required.html</code> file.
+        </p>
+    </div>
+
+    <script>
+        // Auto-check if PHP is working by trying to load check-deployment.php
+        setTimeout(function() {
+            var xhr = new XMLHttpRequest();
+            xhr.open('HEAD', '/check-deployment.php?allow', true);
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    console.log('PHP appears to be working - diagnostic tools available');
+                }
+            };
+            xhr.send();
+        }, 1000);
+    </script>
+</body>
+</html>
