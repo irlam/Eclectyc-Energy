@@ -17,7 +17,52 @@ This document provides a step-by-step checklist to redeploy the Eclectyc Energy 
 - [ ] Confirm database host (10.35.233.124:3306) is accessible from the server
 - [ ] Backup current website files (optional but recommended)
 
+## ⚠️ CRITICAL: Upload Location Warning
+
+**IMPORTANT:** Make sure to upload files to the **correct location**!
+
+### ✅ Correct Structure
+```
+/var/www/vhosts/yourdomain.com/
+  httpdocs/              ← Upload project files HERE
+    .htaccess
+    public/              ← DocumentRoot points to this
+      index.php
+      assets/
+    app/
+    vendor/
+    composer.json
+```
+
+### ❌ Incorrect Structure (causes public/public error)
+```
+/var/www/vhosts/yourdomain.com/
+  httpdocs/
+    public/              ← DocumentRoot
+      .htaccess          ← WRONG! Files uploaded to public/ instead of httpdocs/
+      public/            ← This creates public/public/
+        index.php
+```
+
+If you see errors like `public/public/index.php` or `Failed to open vendor/autoload.php`, see [docs/DEPLOYMENT_PATH_ISSUE.md](docs/DEPLOYMENT_PATH_ISSUE.md) for detailed fix instructions.
+
 ## Deployment Steps
+
+### 0. Verify Project Structure (First-Time Deployment Only)
+
+**Before doing anything else**, run the deployment checker:
+
+```bash
+php scripts/check-deployment.php
+```
+
+This will verify:
+- Files are in the correct location (no public/public duplication)
+- All required directories exist
+- Permissions are set correctly
+- Dependencies are installed
+
+If errors are found, fix them before proceeding!
 
 ### 1. Pull Latest Code
 
@@ -149,11 +194,20 @@ tail -100 logs/app.log
 
 ### Routes not working (404 errors) or 403 "No matching DirectoryIndex" errors
 
-**Solution:** Verify .htaccess and document root
+**Solution:** Check for deployment path issues first
 
+```bash
+# Run the deployment structure checker
+php scripts/check-deployment.php
+```
+
+If you see `public/public/` duplication:
+- See [docs/DEPLOYMENT_PATH_ISSUE.md](docs/DEPLOYMENT_PATH_ISSUE.md) for detailed fix
+
+Otherwise, verify .htaccess and document root:
 1. Check that `.htaccess` exists in the `public/` directory **and** root directory
 2. Verify Apache mod_rewrite is enabled
-3. Confirm document root points to `public/` directory
+3. Confirm document root points to `public/` directory (NOT `public/public/`)
 4. See [docs/APACHE_CONFIGURATION_FIX.md](docs/APACHE_CONFIGURATION_FIX.md) for detailed troubleshooting
 
 ## Files Changed in This Deployment
@@ -166,10 +220,11 @@ tail -100 logs/app.log
 
 If you encounter issues not covered here:
 
-1. Check the main [README.md](README.md) for installation instructions
-2. Review [docs/APACHE_CONFIGURATION_FIX.md](docs/APACHE_CONFIGURATION_FIX.md) for 403/404 errors
-3. Review [docs/DB_CONNECTION_FIX.md](docs/DB_CONNECTION_FIX.md) for database issues
-4. Check [docs/troubleshooting_504_timeouts.md](docs/troubleshooting_504_timeouts.md) for timeout issues
+1. **Path duplication errors** (`public/public/`): [docs/DEPLOYMENT_PATH_ISSUE.md](docs/DEPLOYMENT_PATH_ISSUE.md)
+2. Check the main [README.md](README.md) for installation instructions
+3. Review [docs/APACHE_CONFIGURATION_FIX.md](docs/APACHE_CONFIGURATION_FIX.md) for 403/404 errors
+4. Review [docs/DB_CONNECTION_FIX.md](docs/DB_CONNECTION_FIX.md) for database issues
+5. Check [docs/troubleshooting_504_timeouts.md](docs/troubleshooting_504_timeouts.md) for timeout issues
 
 ## Summary
 
