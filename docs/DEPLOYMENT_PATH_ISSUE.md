@@ -1,5 +1,28 @@
 # Deployment Path Issue: public/public Duplication
 
+## Quick Diagnostic
+
+**Are you experiencing this issue?** Check for these symptoms:
+
+1. ✗ Apache error logs show `/public/public/index.php` in the path
+2. ✗ Error: `Failed to open vendor/autoload.php`
+3. ✗ 403 Forbidden or 500 Internal Server Error
+4. ✗ "No matching DirectoryIndex" error
+
+**Quick Check (via web):** Access `https://yourdomain.com/check-deployment.php`
+
+**Quick Check (via SSH):**
+```bash
+cd /path/to/httpdocs  # or wherever DocumentRoot parent is
+ls -la
+# You should see: public/, app/, vendor/, composer.json
+# You should NOT see: public/public/
+```
+
+If you see `public/public/`, follow the fix instructions below.
+
+---
+
 ## Problem Description
 
 If you're seeing errors like these in your Apache error logs:
