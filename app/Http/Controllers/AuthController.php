@@ -82,11 +82,28 @@ class AuthController
             return '/';
         }
 
+        // Prevent absolute URLs and protocol-relative URLs
         if (str_starts_with($path, 'http') || str_starts_with($path, '//')) {
             return '/';
         }
 
-        return $path[0] === '/' ? $path : '/' . ltrim($path, '/');
+        // Ensure path starts with /
+        $path = $path[0] === '/' ? $path : '/' . ltrim($path, '/');
+
+        // Strip query parameters to prevent redirect loops via nested redirect parameters
+        $queryPos = strpos($path, '?');
+        if ($queryPos !== false) {
+            $path = substr($path, 0, $queryPos);
+        }
+
+        // Strip fragment identifiers as well
+        $fragmentPos = strpos($path, '#');
+        if ($fragmentPos !== false) {
+            $path = substr($path, 0, $fragmentPos);
+        }
+
+        // If empty after stripping, return root
+        return $path !== '' ? $path : '/';
     }
 
     public function logout(Request $request, Response $response): Response
