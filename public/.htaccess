@@ -1,37 +1,70 @@
+# eclectyc.energy/httpdocs/public/.htaccess
+# --------------------------------------------------------------------
+# Eclectyc Energy - Public Web Root
+#
+# This file:
+# - Sets index.php as the front controller (Slim or similar framework)
+# - Avoids redirect loops for / and /index.php
+# - Skips existing files and directories
+# - Optionally supports WebSocket upgrade requests (forwarded to index.php)
+# - Maps 404/403 errors to index.php for SPA-style routing
+# --------------------------------------------------------------------
+
 DirectoryIndex index.php
 
 <IfModule mod_negotiation.c>
-	Options -MultiViews -Indexes
+    Options -MultiViews -Indexes
 </IfModule>
 
 <IfModule mod_authz_core.c>
-	Require all granted
+    Require all granted
 </IfModule>
 
-RewriteEngine On
-RewriteBase /
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+    RewriteBase /
 
-# Handle WebSocket upgrade requests (if needed in future)
-# These will be routed through index.php for now
-RewriteCond %{HTTP:Upgrade} websocket [NC]
-RewriteCond %{HTTP:Connection} upgrade [NC]
-RewriteRule ^(.*)$ index.php [L,QSA]
+    # ------------------------------------------------------------
+    # 1. WebSocket upgrade handling (future-proofing)
+    # ------------------------------------------------------------
+    # If you later introduce WebSockets, these requests will be
+    # routed to index.php. For now it's harmless and safe.
+    RewriteCond %{HTTP:Upgrade} websocket [NC]
+    RewriteCond %{HTTP:Connection} upgrade [NC]
+    RewriteRule ^(.*)$ index.php [L,QSA]
 
-# Prevent direct access to index.php - always route through Slim
-RewriteCond %{REQUEST_URI} ^/index\.php$
-RewriteRule ^index\.php$ / [R=301,L]
+    # ------------------------------------------------------------
+    # 2. Prevent direct access to /index.php via URL
+    # ------------------------------------------------------------
+    # We do NOT want people to visit /index.php directly.
+    # However, we MUST avoid causing a redirect loop between
+    # / and /index.php. This rule only triggers when the
+    # requested URI is exactly /index.php at the public root.
+    RewriteCond %{THE_REQUEST} \s/+index\.php[\s?] [NC]
+    RewriteRule ^index\.php$ / [R=301,L]
 
-# Skip existing files/directories (except index.php)
-RewriteCond %{REQUEST_FILENAME} -f
-RewriteCond %{REQUEST_FILENAME} !index.php$
-RewriteRule ^ - [L]
+    # ------------------------------------------------------------
+    # 3. Short-circuit for real files and directories
+    # ------------------------------------------------------------
+    # If the requested path is an existing file (other than index.php),
+    # serve it directly.
+    RewriteCond %{REQUEST_FILENAME} -f
+    RewriteCond %{REQUEST_URI} !^/index\.php$ [NC]
+    RewriteRule ^ - [L]
 
-RewriteCond %{REQUEST_FILENAME} -d
-RewriteRule ^ - [L]
+    # If the requested path is an existing directory, serve it directly.
+    RewriteCond %{REQUEST_FILENAME} -d
+    RewriteRule ^ - [L]
 
-# Route everything else through index.php
-RewriteRule ^ index.php [QSA,L]
+    # ------------------------------------------------------------
+    # 4. Front controller: send everything else to index.php
+    # ------------------------------------------------------------
+    RewriteRule ^ index.php [QSA,L]
 
-# Custom error pages (optional)
+</IfModule>
+
+# ------------------------------------------------------------
+# 5. Error handling: let the app decide
+# ------------------------------------------------------------
 ErrorDocument 404 /index.php
 ErrorDocument 403 /index.php
