@@ -1,0 +1,6 @@
+name,company_id,region_id,address,postcode,site_type,floor_area,latitude,longitude,is_active,created_at
+Test Office 1,1,1,123 Business St London,SW1A 1AA,office,500.50,51.5074,-0.1278,1,2025-01-15
+Test Warehouse,1,2,456 Industrial Rd Manchester,M1 1AA,warehouse,2000,53.4808,-2.2426,1,2025-02-20
+Retail Shop,2,3,789 High St Birmingham,B1 1BB,retail,150.25,52.4862,-1.8904,1,2025-03-10
+Solar Farm,3,4,Green Fields Leeds,LS1 1AA,industrial,5000,53.8008,-1.5491,1,2025-04-05
+Head Office,1,1,100 Main Street London,W1A 1AA,office,1200.75,51.5155,-0.1415,1,2025-05-12
