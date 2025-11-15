@@ -159,6 +159,24 @@ testMiddleware(
     '/login?redirect=%2Flogout'
 );
 
+// Test 8: Page with nested redirect parameter should strip it and not create loop
+testMiddleware(
+    'Page with nested redirect param strips it to prevent loop',
+    '/',
+    'redirect=%2F%3Fredirect%3D%252F',
+    true,
+    '/login?redirect=%2F'
+);
+
+// Test 9: Page with redirect and other params should keep other params
+testMiddleware(
+    'Page with redirect and other params keeps other params',
+    '/dashboard',
+    'tab=overview&redirect=%2F',
+    true,
+    '/login?redirect=%2Fdashboard%3Ftab%3Doverview'
+);
+
 // Summary
 echo "=== Test Summary ===\n";
 echo "Total Tests: {$totalTests}\n";
