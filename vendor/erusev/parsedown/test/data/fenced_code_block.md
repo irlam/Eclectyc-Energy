@@ -24,7 +24,15 @@ echo "Hello World";
 <a href="http://auraphp.com" >Aura Project</a>
 ```
 
-```php some-class
-<?php
-echo "Hello World";
+````
+the following isn't quite enough to close
+```
+still a fenced code block
+````
+
+```
+foo
+
+
+bar
 ```

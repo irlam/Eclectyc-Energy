@@ -177,22 +177,22 @@
 }
 
 .insight-card {
-    border: 1px solid #ddd;
+    border: 1px solid var(--line);
     border-radius: 8px;
     padding: 1.5rem;
-    background: white;
+    background: var(--card);
 }
 
 .insight-card.priority-high {
-    border-left: 4px solid #dc3545;
+    border-left: 4px solid var(--danger);
 }
 
 .insight-card.priority-medium {
-    border-left: 4px solid #ffc107;
+    border-left: 4px solid var(--warning);
 }
 
 .insight-card.priority-low {
-    border-left: 4px solid #28a745;
+    border-left: 4px solid var(--brand);
 }
 
 .insight-header {
@@ -205,6 +205,7 @@
 .insight-header h4 {
     margin: 0 0 0.5rem 0;
     font-size: 1.1rem;
+    color: var(--ink);
 }
 
 .priority-badge {
@@ -212,20 +213,21 @@
     border-radius: 4px;
     font-size: 0.75rem;
     font-weight: bold;
-    color: white;
 }
 
 .priority-badge.priority-high {
-    background: #dc3545;
+    background: var(--danger);
+    color: var(--ink);
 }
 
 .priority-badge.priority-medium {
-    background: #ffc107;
+    background: var(--warning);
     color: #000;
 }
 
 .priority-badge.priority-low {
-    background: #28a745;
+    background: var(--brand);
+    color: #000;
 }
 
 .insight-body {
@@ -236,6 +238,7 @@
     margin-top: 1rem;
     font-size: 0.9rem;
     font-weight: bold;
+    color: var(--ink);
 }
 
 .insight-body ul {
@@ -246,7 +249,7 @@
     display: flex;
     gap: 0.5rem;
     padding-top: 1rem;
-    border-top: 1px solid #eee;
+    border-top: 1px solid var(--line);
 }
 
 .form-row {
