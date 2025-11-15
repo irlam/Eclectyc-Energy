@@ -323,11 +323,14 @@ $app = AppFactory::create();
 // Optional: set base path if deploying in a subdirectory
 // $app->setBasePath('/eclectyc-energy');
 
-// Add redirect parameter cleanup middleware BEFORE routing
-// This prevents URLs like /?redirect=%2F from causing loops
-$app->add(new RedirectParameterCleanupMiddleware());
-
 $app->addRoutingMiddleware();
+
+/**
+ * Redirect parameter cleanup middleware
+ * Added AFTER routing middleware so it runs BEFORE route handlers and route-specific middleware
+ * This prevents URLs like /?redirect=%2F from causing loops
+ */
+$app->add(new RedirectParameterCleanupMiddleware());
 
 /**
  * Auth globals refresh middleware
