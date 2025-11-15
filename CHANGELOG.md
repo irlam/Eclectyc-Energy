@@ -4,6 +4,29 @@ This file tracks significant changes, implementations, and fixes to the Eclectyc
 
 ## November 2025
 
+### Critical Fixes
+
+#### Database Connection Exhaustion Fix (Nov 15, 2025)
+- **Issue:** `max_user_connections` errors due to multiple simultaneous instances of `process_import_jobs.php`
+- **Root Cause:** Cron job running every 2 minutes without `--once` flag, causing overlapping instances
+- **Solution:** Implemented file-based lock mechanism with PID tracking
+- **Features:**
+  - Exclusive file lock prevents multiple instances from running
+  - Automatic stale lock detection and cleanup
+  - Graceful shutdown handling (SIGTERM, SIGINT)
+  - PID file tracking for process monitoring
+  - Safe to run frequently with `--once` flag
+- **Files Modified:**
+  - `scripts/process_import_jobs.php` - Added lock mechanism
+  - `docs/CRON_SETUP_FIX.md` - Comprehensive cron setup guide (NEW)
+  - `docs/DB_CONNECTION_FIX.md` - Updated with lock mechanism info
+  - `README.md` - Added lock mechanism documentation
+  - `DEPLOYMENT_CHECKLIST.md` - Updated troubleshooting section
+- **Testing:**
+  - `tests/test_lock_basic.php` - Basic lock validation
+  - `tests/test_import_job_lock.php` - Comprehensive edge case testing
+- **Impact:** Eliminates connection pool exhaustion, enables safe frequent cron execution
+
 ### Major Features Implemented
 
 #### User Permissions System (Nov 9, 2025)

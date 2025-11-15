@@ -165,15 +165,30 @@ ps aux | grep process_import_jobs.php
 
 ### 1. Ensure Only One Import Processor
 
-Make sure your cron configuration runs only one instance of `process_import_jobs.php`:
+**✨ UPDATE (2025-11-15):** The script now includes a built-in lock mechanism to prevent multiple instances from running simultaneously. This makes cron setup much simpler and safer.
+
+**Recommended cron configuration:**
 
 ```bash
-# Good - runs once, stays running
-*/5 * * * * pgrep -f process_import_jobs.php || /usr/local/php84/bin/php /path/to/scripts/process_import_jobs.php
+# RECOMMENDED - Use --once flag with lock mechanism (safe to run frequently)
+*/2 * * * * cd /path/to/eclectyc-energy && /usr/local/php84/bin/php scripts/process_import_jobs.php --once >> logs/import_worker.log 2>&1
 
-# Bad - starts a new instance every 2 minutes
+# The lock mechanism ensures only one instance runs at a time, even if cron
+# tries to start a new one while the previous is still running
+```
+
+**Alternative configurations:**
+
+```bash
+# Good - Long-running daemon with monitoring
+@reboot cd /path/to/eclectyc-energy && /usr/local/php84/bin/php scripts/process_import_jobs.php >> logs/import_worker.log 2>&1 &
+*/5 * * * * pgrep -f process_import_jobs.php || (cd /path/to/eclectyc-energy && /usr/local/php84/bin/php scripts/process_import_jobs.php >> logs/import_worker.log 2>&1 &)
+
+# Bad - Old approach without --once flag (NOT RECOMMENDED)
 */2 * * * * /usr/local/php84/bin/php /path/to/scripts/process_import_jobs.php
 ```
+
+For detailed cron setup instructions and troubleshooting, see [CRON_SETUP_FIX.md](CRON_SETUP_FIX.md).
 
 ### 2. Monitor Connection Count
 
