@@ -161,11 +161,15 @@ This loads sample readings for 30 Oct–06 Nov 2025 alongside precomputed daily,
 
 **⚠️ IMPORTANT:** The import system requires a background worker to process queued jobs. Without this, import jobs will remain stuck in "QUEUED" status.
 
+**✨ NEW: Lock Mechanism Prevents Multiple Instances** - The script now includes built-in protection against running multiple instances simultaneously, which previously caused "max_user_connections" database errors.
+
 Add this cron job via Plesk Scheduled Tasks or crontab:
 
 ```cron
 * * * * * cd /path/to/eclectyc-energy && /usr/bin/php scripts/process_import_jobs.php --once >> logs/import_worker_cron.log 2>&1
 ```
+
+**Note:** The `--once` flag is recommended for cron jobs. The built-in lock mechanism prevents overlapping executions, so you can safely run this every 1-2 minutes without worrying about multiple instances.
 
 To verify the worker is set up correctly:
 
@@ -173,7 +177,7 @@ To verify the worker is set up correctly:
 php scripts/check_import_setup.php
 ```
 
-See the [Cron Job Setup section](#cron-job-setup-plesk) below for detailed instructions, or [Troubleshooting Guide](docs/TROUBLESHOOTING_IMPORTS.md) if you experience issues.
+See the [Cron Job Setup Guide](docs/CRON_SETUP_FIX.md) for detailed configuration options and troubleshooting, or [Troubleshooting Guide](docs/TROUBLESHOOTING_IMPORTS.md) if you experience issues.
 
 ### Default Accounts & Roles
 
