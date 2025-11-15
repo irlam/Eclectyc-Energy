@@ -174,7 +174,9 @@ composer install --no-dev --optimize-autoloader
 
 ### Database connection timeout or "max_user_connections" errors
 
-**Solution:** See [docs/DB_CONNECTION_FIX.md](docs/DB_CONNECTION_FIX.md) for detailed troubleshooting
+**✨ UPDATE (2025-11-15):** The `process_import_jobs.php` script now includes a lock mechanism to prevent multiple instances from running simultaneously. This fixes the most common cause of connection exhaustion.
+
+**Solution:** See [docs/DB_CONNECTION_FIX.md](docs/DB_CONNECTION_FIX.md) and [docs/CRON_SETUP_FIX.md](docs/CRON_SETUP_FIX.md) for detailed troubleshooting.
 
 Quick fix:
 ```bash
@@ -183,6 +185,13 @@ php scripts/cleanup_db_connections.php
 
 # Kill idle connections if needed
 php scripts/cleanup_db_connections.php --kill-idle
+
+# Verify only one import worker is running
+ps aux | grep process_import_jobs.php
+# Should see at most ONE instance (plus the grep command)
+
+# Update cron to use --once flag (prevents multiple instances)
+# */2 * * * * cd /path && /usr/local/php84/bin/php scripts/process_import_jobs.php --once >> logs/import_worker.log 2>&1
 ```
 
 ### "Application Error" or blank page

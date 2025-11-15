@@ -17,6 +17,16 @@ $dotenv->safeLoad();
 
 date_default_timezone_set($_ENV['APP_TIMEZONE'] ?? 'Europe/London');
 
+// Lock file to prevent multiple instances
+$lockFile = dirname(__DIR__) . '/storage/process_import_jobs.lock';
+$pidFile = dirname(__DIR__) . '/storage/process_import_jobs.pid';
+
+// Ensure storage directory exists
+$storageDir = dirname($lockFile);
+if (!is_dir($storageDir)) {
+    mkdir($storageDir, 0755, true);
+}
+
 // Parse command line arguments
 $args = getopt('h', ['help', 'once', 'limit:']);
 
@@ -32,11 +42,84 @@ if (isset($args['h']) || isset($args['help'])) {
     echo "Examples:\n";
     echo "  php process_import_jobs.php --once\n";
     echo "  php process_import_jobs.php --limit=5\n\n";
+    echo "Note:\n";
+    echo "  This script uses a lock file to prevent multiple instances from running\n";
+    echo "  simultaneously. If the script is already running, it will exit immediately.\n\n";
     exit(0);
 }
 
 $runOnce = isset($args['once']);
 $limit = isset($args['limit']) ? (int) $args['limit'] : 10;
+
+// Try to acquire lock
+$lockFp = fopen($lockFile, 'c+');
+if (!$lockFp) {
+    echo "ERROR: Failed to create lock file: $lockFile\n";
+    exit(1);
+}
+
+// Try to get exclusive lock (non-blocking)
+if (!flock($lockFp, LOCK_EX | LOCK_NB)) {
+    // Another instance is already running
+    if (file_exists($pidFile)) {
+        $runningPid = trim(file_get_contents($pidFile));
+        // Check if the process is actually running
+        if (posix_kill((int)$runningPid, 0)) {
+            echo "Another instance is already running (PID: $runningPid).\n";
+            echo "If you believe this is an error, remove the lock file: $lockFile\n";
+            fclose($lockFp);
+            exit(0);
+        } else {
+            // Stale lock - the process is not running anymore
+            echo "Removing stale lock file from dead process (PID: $runningPid)\n";
+            flock($lockFp, LOCK_UN);
+            fclose($lockFp);
+            @unlink($lockFile);
+            @unlink($pidFile);
+            // Try again
+            $lockFp = fopen($lockFile, 'c+');
+            if (!flock($lockFp, LOCK_EX | LOCK_NB)) {
+                echo "ERROR: Failed to acquire lock after removing stale lock\n";
+                fclose($lockFp);
+                exit(1);
+            }
+        }
+    } else {
+        echo "Another instance is already running.\n";
+        fclose($lockFp);
+        exit(0);
+    }
+}
+
+// Write PID file
+file_put_contents($pidFile, getmypid());
+
+// Register cleanup function to remove lock and PID file
+$cleanup = function() use ($lockFp, $lockFile, $pidFile) {
+    Database::closeConnection();
+    if (is_resource($lockFp)) {
+        flock($lockFp, LOCK_UN);
+        fclose($lockFp);
+    }
+    @unlink($lockFile);
+    @unlink($pidFile);
+};
+
+register_shutdown_function($cleanup);
+
+// Handle termination signals gracefully
+if (function_exists('pcntl_signal')) {
+    pcntl_signal(SIGTERM, function() use ($cleanup) {
+        echo "\nReceived SIGTERM, shutting down gracefully...\n";
+        $cleanup();
+        exit(0);
+    });
+    pcntl_signal(SIGINT, function() use ($cleanup) {
+        echo "\nReceived SIGINT, shutting down gracefully...\n";
+        $cleanup();
+        exit(0);
+    });
+}
 
 echo "\n";
 echo "===========================================\n";
@@ -57,12 +140,12 @@ try {
     $csvService = new CsvIngestionService($db);
     $alertService = new ImportAlertService($db);
 
-    // Register shutdown handler to ensure connection cleanup
-    register_shutdown_function(function() {
-        Database::closeConnection();
-    });
-
     do {
+        // Check for signals in continuous mode
+        if (function_exists('pcntl_signal_dispatch')) {
+            pcntl_signal_dispatch();
+        }
+        
         $jobs = $jobService->getQueuedJobs($limit);
         
         if (empty($jobs)) {
@@ -198,15 +281,12 @@ try {
 
     } while (true);
 
-    // Clean up connection before exit
-    Database::closeConnection();
-    
+    // Clean up will be handled by shutdown function
     echo "Import job processor finished.\n\n";
     exit(0);
 
 } catch (Exception $e) {
     echo "Fatal Error: " . $e->getMessage() . "\n";
-    // Ensure connection is closed on error
-    Database::closeConnection();
+    // Cleanup will be handled by shutdown function
     exit(1);
 }
