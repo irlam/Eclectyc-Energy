@@ -1,30 +1,31 @@
 <?php
 declare(strict_types=1);
+
 /**
  * File: public/index.php
  * Name: Eclectyc Energy Slim Front Controller
  *
  * What this file does:
- *  - Bootstraps the Slim framework application
- *  - Loads environment variables and sets UK timezone
- *  - Configures PHP error handling (development vs production)
- *  - Builds and configures the Dependency Injection (DI) container
- *  - Registers Twig (view layer) with explicit DI bindings to fix autowire errors
- *  - Registers PDO database connection (nullable) with explicit DI bindings
- *  - Registers all controllers, middleware, logger, and services
- *  - Adds middlewares (routing, Twig, auth globals, error handling, CORS for /api)
- *  - Loads application route definitions
- *  - Runs the Slim application safely with graceful error fallback in production
+ *  - Bootstraps the Slim framework application.
+ *  - Loads environment variables and sets UK timezone.
+ *  - Configures PHP error handling (development vs production).
+ *  - Builds and configures the Dependency Injection (DI) container.
+ *  - Registers Twig (view layer) with explicit DI bindings to fix autowire errors.
+ *  - Registers PDO database connection (nullable) with explicit DI bindings.
+ *  - Registers all controllers, middleware, logger, and services.
+ *  - Adds middlewares (routing, Twig, auth globals, error handling, CORS for /api).
+ *  - Loads application route definitions.
+ *  - Runs the Slim application with graceful error fallback in production.
  *
- * Why this update (09/11/2025 12:55:00 UK):
+ * Why this update (UK format: 09/11/2025 12:55:00):
  *  - FIX: “Slim Application Error” caused by PHP-DI trying to autowire Slim\Views\Twig
  *    and failing on Twig\Loader\LoaderInterface being not instantiable.
  *    RESOLVED by adding explicit container bindings for Twig::class and PDO::class,
  *    plus a manual binding for SettingsController.
  *  - Modernised header, enabled strict_types, improved comments.
- *  - Provided aliases 'view' and 'db' for backwards compatibility while also binding
+ *  - Provided aliases 'view' and 'db' for backwards compatibility while binding
  *    Twig::class and PDO::class for autowiring.
- *  - Added SettingsController binding (previously missing) so /tools/settings works.
+ *  - Added SettingsController binding so /tools/settings works.
  *  - Ensured UK date format remains for logging.
  *
  * Last updated (UK): 09/11/2025 12:55:00
@@ -51,8 +52,8 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\NotFoundController;
 use App\Http\Controllers\ReportsController;
-use App\Http\Controllers\ToolsController;
 use App\Http\Controllers\Tools\SftpController;
+use App\Http\Controllers\ToolsController;
 use App\Http\Middleware\AuthMiddleware;
 use App\Http\Middleware\RedirectParameterCleanupMiddleware;
 use App\Services\AuthService;
@@ -69,6 +70,7 @@ use Slim\Views\TwigMiddleware;
 // -----------------------------------------------------------------------------
 // PHP error reporting & environment preparation
 // -----------------------------------------------------------------------------
+
 error_reporting(E_ALL);
 ini_set('display_errors', '0'); // Overridden below if in development
 
@@ -101,21 +103,26 @@ if ($appEnv === 'development' || $debugMode) {
 } else {
     ini_set('display_errors', '0');
     ini_set('log_errors', '1');
+
     $errorLogPath = BASE_PATH . '/logs/php-error.log';
     if (!is_dir(dirname($errorLogPath))) {
         @mkdir(dirname($errorLogPath), 0775, true);
     }
+
     ini_set('error_log', $errorLogPath);
 }
 
 // -----------------------------------------------------------------------------
 // Dependency Injection Container
 // -----------------------------------------------------------------------------
+
 $container = new Container();
 
 /**
  * Bind Twig::class (explicit) and 'view' alias.
+ *
  * This prevents PHP-DI from attempting to autowire Twig internals (LoaderInterface).
+ * It also sets up global Twig variables used across templates.
  */
 $container->set(Twig::class, function () {
     $twig = Twig::create(BASE_PATH . '/app/views', [
@@ -140,9 +147,10 @@ $container->set('view', fn (ContainerInterface $c) => $c->get(Twig::class));
 
 /**
  * Bind PDO::class (nullable) and 'db' alias.
- * Returns null if connection fails—controllers using ?PDO handle that gracefully.
+ *
+ * Returns null if connection fails—controllers using ?PDO should handle that gracefully.
  */
-$container->set(\PDO::class, function () {
+$container->set(PDO::class, function () {
     $host    = $_ENV['DB_HOST'] ?? '127.0.0.1';
     $port    = $_ENV['DB_PORT'] ?? '3306';
     $dbname  = $_ENV['DB_DATABASE'] ?? $_ENV['DB_NAME'] ?? 'energy_platform';
@@ -150,57 +158,68 @@ $container->set(\PDO::class, function () {
     $pass    = $_ENV['DB_PASSWORD'] ?? $_ENV['DB_PASS'] ?? '';
     $charset = $_ENV['DB_CHARSET'] ?? 'utf8mb4';
 
-    $dsn = sprintf('mysql:host=%s;port=%s;dbname=%s;charset=%s', $host, $port, $dbname, $charset);
+    $dsn = sprintf(
+        'mysql:host=%s;port=%s;dbname=%s;charset=%s',
+        $host,
+        $port,
+        $dbname,
+        $charset
+    );
 
     try {
-        $pdo = new \PDO(
+        $pdo = new PDO(
             $dsn,
             $user,
             $pass,
             [
-                \PDO::ATTR_ERRMODE            => \PDO::ERRMODE_EXCEPTION,
-                \PDO::ATTR_DEFAULT_FETCH_MODE => \PDO::FETCH_ASSOC,
-                \PDO::ATTR_EMULATE_PREPARES   => false,
-                \PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci",
-                \PDO::ATTR_TIMEOUT            => 5  // Connection timeout to prevent hanging connections
+                PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                PDO::ATTR_EMULATE_PREPARES   => false,
+                PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES utf8mb4 COLLATE utf8mb4_unicode_ci',
+                PDO::ATTR_TIMEOUT            => 5,  // Connection timeout to prevent hanging connections
             ]
         );
+
         return $pdo;
-    } catch (\PDOException $e) {
+    } catch (PDOException $e) {
         error_log('Database connection failed: ' . $e->getMessage());
         return null;
     }
 });
 
 // Backwards-compatible alias
-$container->set('db', fn (ContainerInterface $c) => $c->get(\PDO::class));
+$container->set('db', fn (ContainerInterface $c) => $c->get(PDO::class));
 
 /**
  * Monolog logger (UK date format).
  */
 $container->set('logger', function () {
-    $logger    = new Logger('eclectyc-energy');
-    $logLevel  = strtoupper($_ENV['LOG_LEVEL'] ?? 'INFO');
-    $logPath   = BASE_PATH . '/' . ($_ENV['LOG_PATH'] ?? 'logs/app.log');
-    $logDir    = dirname($logPath);
+    $logger   = new Logger('eclectyc-energy');
+    $logLevel = strtoupper($_ENV['LOG_LEVEL'] ?? 'INFO');
+    $logPath  = BASE_PATH . '/' . ($_ENV['LOG_PATH'] ?? 'logs/app.log');
+    $logDir   = dirname($logPath);
 
     if (!is_dir($logDir)) {
         @mkdir($logDir, 0777, true);
     }
 
     $handler = new StreamHandler($logPath, $logLevel);
-    $handler->setFormatter(new LineFormatter(
-        "[%datetime%] %channel%.%level_name%: %message% %context% %extra%\n",
-        'd/m/Y H:i:s'
-    ));
+    $handler->setFormatter(
+        new LineFormatter(
+            "[%datetime%] %channel%.%level_name%: %message% %context% %extra%\n",
+            'd/m/Y H:i:s'
+        )
+    );
 
     $logger->pushHandler($handler);
+
     return $logger;
 });
 
 // -----------------------------------------------------------------------------
 // Services & Controllers
 // -----------------------------------------------------------------------------
+
 $container->set(AuthService::class, fn (ContainerInterface $c) => new AuthService($c->get('db')));
 
 $container->set(AuthController::class, fn (ContainerInterface $c) => new AuthController(
@@ -317,32 +336,40 @@ $container->set(NotFoundController::class, fn (ContainerInterface $c) => new Not
 // -----------------------------------------------------------------------------
 // Slim App creation & Middleware
 // -----------------------------------------------------------------------------
+
 AppFactory::setContainer($container);
 $app = AppFactory::create();
 
 // Optional: set base path if deploying in a subdirectory
 // $app->setBasePath('/eclectyc-energy');
 
+// Core routing middleware
 $app->addRoutingMiddleware();
 
 /**
- * Redirect parameter cleanup middleware
- * Added AFTER routing middleware so it runs BEFORE route handlers and route-specific middleware
- * This prevents URLs like /?redirect=%2F from causing loops
+ * Redirect parameter cleanup middleware.
+ *
+ * Added AFTER routing middleware so it runs BEFORE route handlers and route-specific middleware.
+ * This prevents URLs like /?redirect=%2F from causing loops by normalising or clearing
+ * problematic redirect parameters.
  */
 $app->add(new RedirectParameterCleanupMiddleware());
 
 /**
- * Auth globals refresh middleware
- * Ensures 'auth' global reflects current session per request.
+ * Auth globals refresh middleware.
+ *
+ * Ensures 'auth' global reflects current session on every request,
+ * so Twig templates always see up-to-date login state.
  */
 $app->add(function ($request, $handler) use ($container) {
     /** @var Twig $twig */
     $twig = $container->get('view');
+
     $twig->getEnvironment()->addGlobal('auth', [
         'check' => isset($_SESSION['user']),
         'user'  => $_SESSION['user'] ?? null,
     ]);
+
     return $handler->handle($request);
 });
 
@@ -363,6 +390,7 @@ $errorMiddleware = $app->addErrorMiddleware(
 // CORS middleware (only for /api endpoints)
 $app->add(function ($request, $handler) {
     $response = $handler->handle($request);
+
     if (str_starts_with($request->getUri()->getPath(), '/api')) {
         return $response
             ->withHeader('Access-Control-Allow-Origin', '*')
@@ -370,27 +398,37 @@ $app->add(function ($request, $handler) {
                 'Access-Control-Allow-Headers',
                 'X-Requested-With, Content-Type, Accept, Origin, Authorization'
             )
-            ->withHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+            ->withHeader(
+                'Access-Control-Allow-Methods',
+                'GET, POST, PUT, DELETE, PATCH, OPTIONS'
+            );
     }
+
     return $response;
 });
 
 // -----------------------------------------------------------------------------
 // Routes
 // -----------------------------------------------------------------------------
+
 require BASE_PATH . '/app/Http/routes.php';
 
 // -----------------------------------------------------------------------------
 // Run Application
 // -----------------------------------------------------------------------------
+
 try {
     $app->run();
 } catch (Throwable $e) {
     error_log('Application error: ' . $e->getMessage());
+
     if ($appEnv === 'production') {
         http_response_code(500);
         header('Content-Type: application/json; charset=utf-8');
-        echo json_encode(['error' => 'Internal Server Error']);
+
+        echo json_encode([
+            'error' => 'Internal Server Error',
+        ]);
     } else {
         throw $e;
     }
