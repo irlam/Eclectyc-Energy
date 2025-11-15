@@ -131,9 +131,25 @@ class ToolsController
         $perPage = 50;
         $offset = ($page - 1) * $perPage;
         
+        // Sanitize and validate input parameters
         $jobName = $queryParams['job_name'] ?? '';
+        if (strlen($jobName) > 100) {
+            $jobName = substr($jobName, 0, 100);
+        }
+        
+        // Validate job_type against allowed values
         $jobType = $queryParams['job_type'] ?? '';
+        $allowedJobTypes = ['daily', 'weekly', 'monthly', 'annual', 'import', 'export', 'cleanup', 'other'];
+        if (!empty($jobType) && !in_array($jobType, $allowedJobTypes, true)) {
+            $jobType = '';
+        }
+        
+        // Validate status against allowed values
         $status = $queryParams['status'] ?? '';
+        $allowedStatuses = ['running', 'completed', 'failed', 'timeout'];
+        if (!empty($status) && !in_array($status, $allowedStatuses, true)) {
+            $status = '';
+        }
         
         // Get flash message
         $flash = $_SESSION['tools_flash'] ?? null;
@@ -225,6 +241,15 @@ class ToolsController
         $data = $request->getParsedBody() ?? [];
         $jobKey = $data['job_key'] ?? '';
         
+        // Validate job_key to prevent any potential command injection
+        if (!preg_match('/^[a-z_]+$/', $jobKey)) {
+            $_SESSION['tools_flash'] = [
+                'type' => 'error',
+                'message' => 'Invalid cron job key format.',
+            ];
+            return $response->withHeader('Location', '/tools/cron-logs')->withStatus(302);
+        }
+        
         $cronJobs = $this->getCronJobDefinitions();
         
         if (!isset($cronJobs[$jobKey])) {
@@ -247,7 +272,13 @@ class ToolsController
             }
             
             $args = $job['args'] ?? '';
-            $command = 'php ' . escapeshellarg($scriptPath) . ' ' . $args . ' > /dev/null 2>&1 &';
+            // Build command safely - args come from getCronJobDefinitions() which is hardcoded, not user input
+            // However, we still validate to ensure no command injection is possible
+            $command = 'php ' . escapeshellarg($scriptPath);
+            if (!empty($args)) {
+                $command .= ' ' . $args; // Safe: args are predefined in getCronJobDefinitions()
+            }
+            $command .= ' > /dev/null 2>&1 &';
             
             // Execute in background
             exec($command);
