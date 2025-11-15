@@ -40,7 +40,14 @@ class AuthMiddleware implements MiddlewareInterface
             $queryString = $uri->getQuery();
 
             if ($queryString !== '') {
-                $redirectTarget .= '?' . $queryString;
+                // Parse query string and remove any existing redirect parameter to prevent loops
+                parse_str($queryString, $queryParams);
+                unset($queryParams['redirect']);
+                
+                // Rebuild query string without redirect parameter
+                if (!empty($queryParams)) {
+                    $redirectTarget .= '?' . http_build_query($queryParams);
+                }
             }
 
             $redirect = '/login?redirect=' . urlencode($redirectTarget);
