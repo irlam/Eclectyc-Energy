@@ -198,7 +198,7 @@ class ImportController
             $errors[] = 'Please upload a CSV file.';
         }
 
-        if (!in_array($format, ['hh', 'daily'], true)) {
+        if (!in_array($format, ['hh', 'daily', 'sites'], true)) {
             $errors[] = 'Invalid import type selected.';
         }
 

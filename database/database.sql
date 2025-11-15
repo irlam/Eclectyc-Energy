@@ -52,14 +52,15 @@ CREATE TABLE `ai_insights` (
 CREATE TABLE `annual_aggregations` (
   `id` bigint UNSIGNED NOT NULL,
   `meter_id` int UNSIGNED NOT NULL,
-  `year` year NOT NULL,
-  `total_consumption` decimal(12,4) NOT NULL DEFAULT '0.0000',
-  `peak_consumption` decimal(12,4) NOT NULL DEFAULT '0.0000',
-  `off_peak_consumption` decimal(12,4) NOT NULL DEFAULT '0.0000',
-  `min_daily_consumption` decimal(12,4) DEFAULT NULL,
-  `max_daily_consumption` decimal(12,4) DEFAULT NULL,
-  `day_count` int NOT NULL DEFAULT '0',
-  `reading_count` int NOT NULL DEFAULT '0',
+  `year_start` date NOT NULL,
+  `year_end` date NOT NULL,
+  `total_consumption` decimal(15,3) NOT NULL,
+  `peak_consumption` decimal(15,3) DEFAULT NULL,
+  `off_peak_consumption` decimal(15,3) DEFAULT NULL,
+  `min_daily_consumption` decimal(15,3) DEFAULT NULL,
+  `max_daily_consumption` decimal(15,3) DEFAULT NULL,
+  `day_count` int DEFAULT '0',
+  `reading_count` int DEFAULT '0',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -395,7 +396,7 @@ CREATE TABLE `import_jobs` (
   `batch_id` varchar(36) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `filename` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `file_path` varchar(500) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `import_type` enum('hh','daily') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'hh',
+  `import_type` enum('hh','daily','sites') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'hh',
   `status` enum('queued','processing','completed','failed','cancelled') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'queued',
   `priority` enum('low','normal','high','critical') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'normal',
   `progress` int DEFAULT '0',
@@ -699,7 +700,7 @@ CREATE TABLE `sftp_configurations` (
   `private_key_path` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Path to SSH private key file',
   `remote_directory` varchar(500) COLLATE utf8mb4_unicode_ci DEFAULT '/' COMMENT 'Remote directory to monitor',
   `file_pattern` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT '*.csv' COMMENT 'File pattern to match (e.g., *.csv, data_*.csv)',
-  `import_type` enum('hh','daily') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'hh' COMMENT 'Default import type for files',
+  `import_type` enum('hh','daily','sites') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'hh' COMMENT 'Default import type for files',
   `auto_import` tinyint(1) DEFAULT '0' COMMENT 'Automatically import matching files',
   `delete_after_import` tinyint(1) DEFAULT '0' COMMENT 'Delete files from SFTP after successful import',
   `is_active` tinyint(1) DEFAULT '1' COMMENT 'Whether this configuration is active',
@@ -1165,8 +1166,8 @@ ALTER TABLE `ai_insights`
 --
 ALTER TABLE `annual_aggregations`
   ADD PRIMARY KEY (`id`),
-  ADD UNIQUE KEY `unique_meter_year` (`meter_id`,`year`),
-  ADD KEY `idx_year` (`year`);
+  ADD UNIQUE KEY `unique_year` (`meter_id`,`year_start`),
+  ADD KEY `idx_year` (`year_start`,`year_end`);
 
 --
 -- Indexes for table `audit_logs`

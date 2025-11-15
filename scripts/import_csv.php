@@ -106,7 +106,7 @@ if (isset($args['h']) || isset($args['help'])) {
     echo "Usage: php import_csv.php -f <file> [-t <type>] [--dry-run]\n\n";
     echo "Options:\n";
     echo "  -f, --file    Path to CSV file to import (required)\n";
-    echo "  -t, --type    Import type: hh (half-hourly) or daily (default: hh)\n";
+    echo "  -t, --type    Import type: hh (half-hourly), daily, or sites (default: hh)\n";
     echo "  -n, --dry-run Validate only, do not write to the database\n";
     echo "  -h, --help    Show this help message\n\n";
     echo "CSV Format for Half-Hourly (HH) Data:\n";
@@ -114,8 +114,13 @@ if (isset($args['h']) || isset($args['help'])) {
     echo "  Where HH01-HH48 are the 48 half-hourly periods\n\n";
     echo "CSV Format for Daily Data:\n";
     echo "  MPAN, Date, Reading\n\n";
+    echo "CSV Format for Sites:\n";
+    echo "  name, company_id, region_id, address, postcode, site_type, floor_area, created_at\n";
+    echo "  Required: name\n";
+    echo "  Optional: all other fields\n\n";
     echo "Example:\n";
-    echo "  php import_csv.php -f /path/to/readings.csv -t hh\n\n";
+    echo "  php import_csv.php -f /path/to/readings.csv -t hh\n";
+    echo "  php import_csv.php -f /path/to/sites.csv -t sites\n\n";
     exit(0);
 }
 
@@ -133,8 +138,8 @@ if (!file_exists($csvFile)) {
     exit(1);
 }
 
-if (!in_array($importType, ['hh', 'daily'], true)) {
-    echo "Error: Invalid import type. Must be 'hh' or 'daily'.\n";
+if (!in_array($importType, ['hh', 'daily', 'sites'], true)) {
+    echo "Error: Invalid import type. Must be 'hh', 'daily', or 'sites'.\n";
     exit(1);
 }
 

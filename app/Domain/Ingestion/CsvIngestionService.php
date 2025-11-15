@@ -79,11 +79,23 @@ class CsvIngestionService
         }
 
         $format = strtolower($format);
-        if (!in_array($format, ['hh', 'daily'], true)) {
-            throw new Exception('Unsupported import format. Use "hh" or "daily".');
+        if (!in_array($format, ['hh', 'daily', 'sites'], true)) {
+            throw new Exception('Unsupported import format. Use "hh", "daily", or "sites".');
         }
 
         $batchId = $batchId ?: Uuid::uuid4()->toString();
+        
+        // Handle sites import separately
+        if ($format === 'sites') {
+            $sitesService = new SitesCsvImportService($this->pdo);
+            $result = $sitesService->importFromCsv($filePath, $batchId, $dryRun, $userId, $progressCallback);
+            
+            if (!$dryRun) {
+                $this->logAudit($userId, $result);
+            }
+            
+            return $result;
+        }
 
     $delimiter = $this->detectDelimiter($filePath);
     $reader = Reader::from($filePath);

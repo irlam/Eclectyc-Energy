@@ -1,0 +1,5 @@
+name,company_id,region_id,address,postcode,site_type,floor_area,latitude,longitude,is_active,created_at
+Test Site 1,1,1,Address 1,AA1 1AA,office,100,51.5,-0.1,1,2025-01-01
+Test Site 2,1,2,Address 2,BB2 2BB,retail,200,52.5,-1.0,1,2025-02-01
+Test Site 3,2,3,Address 3,CC3 3CC,warehouse,300,53.5,-2.0,1,INVALID_DATE
+Test Site 4,1,1,Address 4,DD4 4DD,office,400,51.6,-0.2,1,2025-04-01
