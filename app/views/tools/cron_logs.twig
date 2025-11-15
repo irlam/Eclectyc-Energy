@@ -1,0 +1,663 @@
+{% extends "base.twig" %}
+
+{% block title %}Cron Logs{% endblock %}
+
+{% block content %}
+<section class="card cron-logs-card">
+    <div class="card-header cron-logs-card__header">
+        <div>
+            <h2>Cron Logs Viewer</h2>
+            <p class="mb-0" style="color: var(--muted); font-size: 0.9rem;">
+                Monitor and manage automated task execution history
+            </p>
+        </div>
+        <a href="/tools" class="btn btn-secondary">← Back to Tools</a>
+    </div>
+
+    {% if flash %}
+    <div class="flash-message flash-{{ flash.type }}">
+        {{ flash.message }}
+    </div>
+    {% endif %}
+
+    <!-- Cron Jobs Overview -->
+    <div class="cron-jobs-section">
+        <h3>🕐 Available Cron Jobs</h3>
+        <p style="color: var(--muted); margin-bottom: 1.5rem;">
+            These are the configured cron jobs in the system. Use the "Run Now" button to execute a job manually.
+        </p>
+        
+        <div class="cron-jobs-grid">
+            {% for key, job in cron_jobs %}
+            <div class="cron-job-card">
+                <div class="cron-job-header">
+                    <h4>{{ job.name }}</h4>
+                    <span class="cron-type-badge cron-type-{{ job.job_type }}">{{ job.job_type|upper }}</span>
+                </div>
+                <p class="cron-description">{{ job.description }}</p>
+                
+                <div class="cron-schedule">
+                    <strong>Schedule:</strong> <code>{{ job.schedule }}</code>
+                </div>
+
+                <div class="cron-commands">
+                    <div class="command-section">
+                        <strong>Server Command:</strong>
+                        <div class="code-block">
+                            <code>{{ job.command_template }}</code>
+                            <button class="copy-btn" onclick="copyToClipboard('{{ job.command_template|escape('js') }}', this)">📋 Copy</button>
+                        </div>
+                    </div>
+                    
+                    <div class="command-section">
+                        <strong>Local Command:</strong>
+                        <div class="code-block">
+                            <code>{{ job.local_command }}</code>
+                            <button class="copy-btn" onclick="copyToClipboard('{{ job.local_command|escape('js') }}', this)">📋 Copy</button>
+                        </div>
+                    </div>
+                </div>
+
+                <form method="POST" action="/tools/cron-logs/run" class="run-job-form" onsubmit="return confirm('Are you sure you want to run {{ job.name }} now?');">
+                    <input type="hidden" name="job_key" value="{{ key }}">
+                    <button type="submit" class="btn btn-primary btn-sm">▶️ Run Now</button>
+                </form>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters-section">
+        <h3>📊 Execution History</h3>
+        <form method="GET" action="/tools/cron-logs" class="filters-form">
+            <div class="filter-group">
+                <label>Job Name</label>
+                <input type="text" name="job_name" value="{{ filters.job_name }}" placeholder="Filter by name...">
+            </div>
+            
+            <div class="filter-group">
+                <label>Job Type</label>
+                <select name="job_type">
+                    <option value="">All Types</option>
+                    <option value="daily" {% if filters.job_type == 'daily' %}selected{% endif %}>Daily</option>
+                    <option value="weekly" {% if filters.job_type == 'weekly' %}selected{% endif %}>Weekly</option>
+                    <option value="monthly" {% if filters.job_type == 'monthly' %}selected{% endif %}>Monthly</option>
+                    <option value="annual" {% if filters.job_type == 'annual' %}selected{% endif %}>Annual</option>
+                    <option value="import" {% if filters.job_type == 'import' %}selected{% endif %}>Import</option>
+                    <option value="export" {% if filters.job_type == 'export' %}selected{% endif %}>Export</option>
+                    <option value="cleanup" {% if filters.job_type == 'cleanup' %}selected{% endif %}>Cleanup</option>
+                    <option value="other" {% if filters.job_type == 'other' %}selected{% endif %}>Other</option>
+                </select>
+            </div>
+            
+            <div class="filter-group">
+                <label>Status</label>
+                <select name="status">
+                    <option value="">All Statuses</option>
+                    <option value="running" {% if filters.status == 'running' %}selected{% endif %}>Running</option>
+                    <option value="completed" {% if filters.status == 'completed' %}selected{% endif %}>Completed</option>
+                    <option value="failed" {% if filters.status == 'failed' %}selected{% endif %}>Failed</option>
+                    <option value="timeout" {% if filters.status == 'timeout' %}selected{% endif %}>Timeout</option>
+                </select>
+            </div>
+            
+            <div class="filter-actions">
+                <button type="submit" class="btn btn-primary">Apply Filters</button>
+                <a href="/tools/cron-logs" class="btn btn-secondary">Clear Filters</a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Logs Table -->
+    <div class="logs-section">
+        {% if logs|length > 0 %}
+        <div class="logs-stats">
+            <span>Total Logs: <strong>{{ total_logs }}</strong></span>
+            <span>Page {{ page }} of {{ total_pages }}</span>
+        </div>
+
+        <div class="logs-table-container">
+            <table class="logs-table">
+                <thead>
+                    <tr>
+                        <th>Job Name</th>
+                        <th>Type</th>
+                        <th>Start Time</th>
+                        <th>Duration</th>
+                        <th>Status</th>
+                        <th>Records</th>
+                        <th>Errors</th>
+                        <th>Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for log in logs %}
+                    <tr class="log-row log-status-{{ log.status }}">
+                        <td><strong>{{ log.job_name }}</strong></td>
+                        <td><span class="type-badge type-{{ log.job_type }}">{{ log.job_type }}</span></td>
+                        <td>{{ log.start_time }}</td>
+                        <td>
+                            {% if log.duration_seconds %}
+                                {% if log.duration_seconds < 60 %}
+                                    {{ log.duration_seconds }}s
+                                {% elseif log.duration_seconds < 3600 %}
+                                    {{ (log.duration_seconds / 60)|round(1) }}m
+                                {% else %}
+                                    {{ (log.duration_seconds / 3600)|round(2) }}h
+                                {% endif %}
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="status-badge status-{{ log.status }}">
+                                {% if log.status == 'completed' %}✅
+                                {% elseif log.status == 'failed' %}❌
+                                {% elseif log.status == 'running' %}⏳
+                                {% elseif log.status == 'timeout' %}⏱️
+                                {% endif %}
+                                {{ log.status }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="text-success">{{ log.records_processed|default(0) }}</span>
+                            {% if log.records_failed > 0 %}
+                                / <span class="text-danger">{{ log.records_failed }} failed</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if log.errors_count > 0 %}
+                                <span class="text-danger">{{ log.errors_count }}</span>
+                            {% else %}
+                                <span class="text-muted">0</span>
+                            {% endif %}
+                            {% if log.warnings_count > 0 %}
+                                / <span class="text-warning">{{ log.warnings_count }} warnings</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <button class="btn btn-sm btn-secondary toggle-details" onclick="toggleDetails({{ log.id }})">
+                                View Details
+                            </button>
+                        </td>
+                    </tr>
+                    <tr id="details-{{ log.id }}" class="details-row" style="display: none;">
+                        <td colspan="8">
+                            <div class="log-details">
+                                {% if log.error_message %}
+                                <div class="detail-section">
+                                    <strong>Error Message:</strong>
+                                    <pre class="error-message">{{ log.error_message }}</pre>
+                                </div>
+                                {% endif %}
+                                
+                                {% if log.log_data_parsed %}
+                                <div class="detail-section">
+                                    <strong>Log Data:</strong>
+                                    <pre class="log-data">{{ log.log_data_parsed|json_encode(constant('JSON_PRETTY_PRINT')) }}</pre>
+                                </div>
+                                {% endif %}
+                                
+                                <div class="detail-section">
+                                    <div class="detail-grid">
+                                        <div><strong>Exit Code:</strong> {{ log.exit_code ?? 'N/A' }}</div>
+                                        <div><strong>End Time:</strong> {{ log.end_time ?? 'N/A' }}</div>
+                                        <div><strong>Created At:</strong> {{ log.created_at }}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination -->
+        {% if total_pages > 1 %}
+        <div class="pagination">
+            {% if page > 1 %}
+            <a href="/tools/cron-logs?page={{ page - 1 }}{% if filters.job_name %}&job_name={{ filters.job_name }}{% endif %}{% if filters.job_type %}&job_type={{ filters.job_type }}{% endif %}{% if filters.status %}&status={{ filters.status }}{% endif %}" class="btn btn-secondary">← Previous</a>
+            {% endif %}
+            
+            <span class="page-info">Page {{ page }} of {{ total_pages }}</span>
+            
+            {% if page < total_pages %}
+            <a href="/tools/cron-logs?page={{ page + 1 }}{% if filters.job_name %}&job_name={{ filters.job_name }}{% endif %}{% if filters.job_type %}&job_type={{ filters.job_type }}{% endif %}{% if filters.status %}&status={{ filters.status }}{% endif %}" class="btn btn-secondary">Next →</a>
+            {% endif %}
+        </div>
+        {% endif %}
+        
+        {% else %}
+        <div class="no-logs">
+            <p>📭 No cron logs found matching the current filters.</p>
+            {% if filters.job_name or filters.job_type or filters.status %}
+            <a href="/tools/cron-logs" class="btn btn-primary">Clear Filters</a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+<script>
+function toggleDetails(logId) {
+    const detailsRow = document.getElementById('details-' + logId);
+    if (detailsRow.style.display === 'none') {
+        detailsRow.style.display = 'table-row';
+    } else {
+        detailsRow.style.display = 'none';
+    }
+}
+
+function copyToClipboard(text, button) {
+    navigator.clipboard.writeText(text).then(() => {
+        const originalText = button.textContent;
+        button.textContent = '✅ Copied!';
+        button.style.background = 'var(--brand)';
+        setTimeout(() => {
+            button.textContent = originalText;
+            button.style.background = '';
+        }, 2000);
+    }).catch(err => {
+        console.error('Failed to copy:', err);
+    });
+}
+</script>
+
+<style>
+.cron-logs-card {
+    background: linear-gradient(180deg, #0f172a 0%, #111827 45%, #0b1120 100%);
+    color: #e2e8f0;
+    border: none;
+    box-shadow: 0 25px 45px rgba(15, 23, 42, 0.45);
+}
+
+.cron-logs-card__header {
+    border-bottom: 1px solid rgba(148, 163, 184, 0.16);
+    padding-bottom: 1rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.flash-message {
+    padding: 1rem 1.5rem;
+    margin: 1.5rem;
+    border-radius: 8px;
+    font-weight: 500;
+}
+
+.flash-success {
+    background: rgba(39, 224, 165, 0.15);
+    border: 1px solid rgba(39, 224, 165, 0.3);
+    color: var(--brand);
+}
+
+.flash-error {
+    background: rgba(255, 107, 107, 0.15);
+    border: 1px solid rgba(255, 107, 107, 0.3);
+    color: var(--danger);
+}
+
+.cron-jobs-section,
+.filters-section,
+.logs-section {
+    padding: 1.5rem;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.cron-jobs-section h3,
+.filters-section h3,
+.logs-section h3 {
+    font-size: 1.3rem;
+    margin-bottom: 1rem;
+    color: #f8fafc;
+}
+
+.cron-jobs-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(450px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+}
+
+.cron-job-card {
+    padding: 1.5rem;
+    background: linear-gradient(135deg, rgba(30, 41, 59, 0.6) 0%, rgba(20, 30, 45, 0.5) 100%);
+    border-radius: 12px;
+    border: 1px solid rgba(148, 163, 184, 0.15);
+    transition: all 0.3s ease;
+}
+
+.cron-job-card:hover {
+    border-color: rgba(39, 224, 165, 0.3);
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.3);
+    transform: translateY(-2px);
+}
+
+.cron-job-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.75rem;
+}
+
+.cron-job-header h4 {
+    font-size: 1.1rem;
+    color: #f8fafc;
+    margin: 0;
+}
+
+.cron-type-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.cron-type-daily { background: rgba(87, 161, 255, 0.2); color: var(--brand-alt); }
+.cron-type-weekly { background: rgba(39, 224, 165, 0.2); color: var(--brand); }
+.cron-type-monthly { background: rgba(244, 183, 64, 0.2); color: var(--warning); }
+.cron-type-annual { background: rgba(255, 107, 107, 0.2); color: var(--danger); }
+.cron-type-import { background: rgba(168, 85, 247, 0.2); color: #a855f7; }
+.cron-type-export { background: rgba(236, 72, 153, 0.2); color: #ec4899; }
+.cron-type-cleanup { background: rgba(148, 163, 184, 0.2); color: var(--muted); }
+.cron-type-other { background: rgba(100, 116, 139, 0.2); color: #94a3b8; }
+
+.cron-description {
+    color: var(--muted);
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+}
+
+.cron-schedule {
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+}
+
+.cron-schedule code {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    color: var(--brand);
+}
+
+.cron-commands {
+    margin: 1rem 0;
+}
+
+.command-section {
+    margin-bottom: 1rem;
+}
+
+.command-section strong {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.85rem;
+    color: var(--muted);
+}
+
+.code-block {
+    position: relative;
+    background: rgba(0, 0, 0, 0.4);
+    padding: 0.75rem;
+    border-radius: 6px;
+    border: 1px solid rgba(148, 163, 184, 0.15);
+}
+
+.code-block code {
+    display: block;
+    font-size: 0.8rem;
+    color: #e2e8f0;
+    word-break: break-all;
+    font-family: 'Courier New', monospace;
+    padding-right: 80px;
+}
+
+.copy-btn {
+    position: absolute;
+    top: 0.5rem;
+    right: 0.5rem;
+    padding: 0.25rem 0.5rem;
+    background: rgba(39, 224, 165, 0.2);
+    border: 1px solid rgba(39, 224, 165, 0.3);
+    border-radius: 4px;
+    color: var(--brand);
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.copy-btn:hover {
+    background: rgba(39, 224, 165, 0.3);
+    border-color: var(--brand);
+}
+
+.run-job-form {
+    margin-top: 1rem;
+}
+
+.filters-form {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    background: rgba(30, 41, 59, 0.4);
+    padding: 1.5rem;
+    border-radius: 8px;
+    border: 1px solid rgba(148, 163, 184, 0.15);
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.filter-group label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: var(--muted);
+}
+
+.filter-group input,
+.filter-group select {
+    padding: 0.5rem;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(148, 163, 184, 0.2);
+    border-radius: 6px;
+    color: #e2e8f0;
+    font-size: 0.9rem;
+}
+
+.filter-group input:focus,
+.filter-group select:focus {
+    outline: none;
+    border-color: var(--brand);
+}
+
+.filter-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-end;
+}
+
+.logs-stats {
+    display: flex;
+    justify-content: space-between;
+    padding: 1rem;
+    background: rgba(30, 41, 59, 0.4);
+    border-radius: 8px;
+    margin-bottom: 1.5rem;
+}
+
+.logs-table-container {
+    overflow-x: auto;
+    border-radius: 8px;
+    border: 1px solid rgba(148, 163, 184, 0.15);
+}
+
+.logs-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.logs-table thead {
+    background: rgba(30, 41, 59, 0.6);
+}
+
+.logs-table th {
+    padding: 1rem;
+    text-align: left;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+}
+
+.logs-table td {
+    padding: 1rem;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.1);
+}
+
+.log-row {
+    transition: background 0.2s ease;
+}
+
+.log-row:hover {
+    background: rgba(30, 41, 59, 0.3);
+}
+
+.log-status-failed {
+    background: rgba(255, 107, 107, 0.05);
+}
+
+.log-status-running {
+    background: rgba(87, 161, 255, 0.05);
+}
+
+.type-badge,
+.status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    display: inline-block;
+}
+
+.type-daily { background: rgba(87, 161, 255, 0.2); color: var(--brand-alt); }
+.type-weekly { background: rgba(39, 224, 165, 0.2); color: var(--brand); }
+.type-monthly { background: rgba(244, 183, 64, 0.2); color: var(--warning); }
+.type-annual { background: rgba(255, 107, 107, 0.2); color: var(--danger); }
+.type-import { background: rgba(168, 85, 247, 0.2); color: #a855f7; }
+.type-export { background: rgba(236, 72, 153, 0.2); color: #ec4899; }
+.type-cleanup { background: rgba(148, 163, 184, 0.2); color: var(--muted); }
+.type-other { background: rgba(100, 116, 139, 0.2); color: #94a3b8; }
+
+.status-completed { background: rgba(39, 224, 165, 0.2); color: var(--brand); }
+.status-failed { background: rgba(255, 107, 107, 0.2); color: var(--danger); }
+.status-running { background: rgba(87, 161, 255, 0.2); color: var(--brand-alt); }
+.status-timeout { background: rgba(244, 183, 64, 0.2); color: var(--warning); }
+
+.text-success { color: var(--brand); }
+.text-danger { color: var(--danger); }
+.text-warning { color: var(--warning); }
+.text-muted { color: var(--muted); }
+
+.details-row td {
+    background: rgba(0, 0, 0, 0.3);
+    padding: 0;
+}
+
+.log-details {
+    padding: 1.5rem;
+}
+
+.detail-section {
+    margin-bottom: 1rem;
+}
+
+.detail-section:last-child {
+    margin-bottom: 0;
+}
+
+.detail-section strong {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: var(--muted);
+    font-size: 0.85rem;
+}
+
+.error-message,
+.log-data {
+    background: rgba(0, 0, 0, 0.4);
+    padding: 1rem;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 107, 107, 0.3);
+    color: var(--danger);
+    font-family: 'Courier New', monospace;
+    font-size: 0.85rem;
+    overflow-x: auto;
+    margin: 0;
+}
+
+.log-data {
+    border-color: rgba(148, 163, 184, 0.3);
+    color: #e2e8f0;
+}
+
+.detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.pagination {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.5rem;
+}
+
+.page-info {
+    color: var(--muted);
+    font-weight: 600;
+}
+
+.no-logs {
+    text-align: center;
+    padding: 3rem 1.5rem;
+    color: var(--muted);
+}
+
+.no-logs p {
+    font-size: 1.1rem;
+    margin-bottom: 1.5rem;
+}
+
+@media (max-width: 768px) {
+    .cron-jobs-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .filters-form {
+        grid-template-columns: 1fr;
+    }
+    
+    .logs-table {
+        font-size: 0.85rem;
+    }
+    
+    .logs-table th,
+    .logs-table td {
+        padding: 0.5rem;
+    }
+}
+</style>
+{% endblock %}
