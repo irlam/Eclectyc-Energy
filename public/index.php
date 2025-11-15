@@ -54,6 +54,7 @@ use App\Http\Controllers\ReportsController;
 use App\Http\Controllers\ToolsController;
 use App\Http\Controllers\Tools\SftpController;
 use App\Http\Middleware\AuthMiddleware;
+use App\Http\Middleware\RedirectParameterCleanupMiddleware;
 use App\Services\AuthService;
 use DI\Container;
 use Dotenv\Dotenv;
@@ -323,6 +324,13 @@ $app = AppFactory::create();
 // $app->setBasePath('/eclectyc-energy');
 
 $app->addRoutingMiddleware();
+
+/**
+ * Redirect parameter cleanup middleware
+ * Added AFTER routing middleware so it runs BEFORE route handlers and route-specific middleware
+ * This prevents URLs like /?redirect=%2F from causing loops
+ */
+$app->add(new RedirectParameterCleanupMiddleware());
 
 /**
  * Auth globals refresh middleware
