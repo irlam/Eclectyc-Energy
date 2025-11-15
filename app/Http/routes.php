@@ -79,6 +79,8 @@ $app->group('/tools', function ($group) {
     $group->map(['GET', 'POST'], '/email-test', [ToolsController::class, 'emailTest'])->setName('tools.email');
     $group->get('/cli-tools', [ToolsController::class, 'cliTools'])->setName('tools.cli');
     $group->get('/cron-jobs', [ToolsController::class, 'cronJobs'])->setName('tools.cron');
+    $group->get('/cron-logs', [ToolsController::class, 'cronLogs'])->setName('tools.cron.logs');
+    $group->post('/cron-logs/run', [ToolsController::class, 'runCronJob'])->setName('tools.cron.run');
     $group->get('/logs', [ToolsController::class, 'viewLogs'])->setName('tools.logs');
     $group->post('/logs/clear', [ToolsController::class, 'clearLogs'])->setName('tools.logs.clear');
     

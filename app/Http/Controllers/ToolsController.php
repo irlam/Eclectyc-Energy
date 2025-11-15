@@ -122,6 +122,283 @@ class ToolsController
     }
 
     /**
+     * View cron logs from the database
+     */
+    public function cronLogs(Request $request, Response $response): Response
+    {
+        $queryParams = $request->getQueryParams();
+        $page = isset($queryParams['page']) ? max(1, (int)$queryParams['page']) : 1;
+        $perPage = 50;
+        $offset = ($page - 1) * $perPage;
+        
+        $jobName = $queryParams['job_name'] ?? '';
+        $jobType = $queryParams['job_type'] ?? '';
+        $status = $queryParams['status'] ?? '';
+        
+        // Get flash message
+        $flash = $_SESSION['tools_flash'] ?? null;
+        unset($_SESSION['tools_flash']);
+        
+        $logs = [];
+        $totalLogs = 0;
+        $totalPages = 1;
+        
+        if ($this->pdo) {
+            try {
+                // Build WHERE clause
+                $where = [];
+                $params = [];
+                
+                if (!empty($jobName)) {
+                    $where[] = 'job_name LIKE :job_name';
+                    $params['job_name'] = '%' . $jobName . '%';
+                }
+                
+                if (!empty($jobType)) {
+                    $where[] = 'job_type = :job_type';
+                    $params['job_type'] = $jobType;
+                }
+                
+                if (!empty($status)) {
+                    $where[] = 'status = :status';
+                    $params['status'] = $status;
+                }
+                
+                $whereClause = !empty($where) ? 'WHERE ' . implode(' AND ', $where) : '';
+                
+                // Get total count
+                $countSql = "SELECT COUNT(*) FROM cron_logs $whereClause";
+                $countStmt = $this->pdo->prepare($countSql);
+                $countStmt->execute($params);
+                $totalLogs = (int)$countStmt->fetchColumn();
+                $totalPages = max(1, ceil($totalLogs / $perPage));
+                
+                // Get logs
+                $sql = "SELECT * FROM cron_logs $whereClause ORDER BY start_time DESC LIMIT :limit OFFSET :offset";
+                $stmt = $this->pdo->prepare($sql);
+                
+                foreach ($params as $key => $value) {
+                    $stmt->bindValue(':' . $key, $value);
+                }
+                $stmt->bindValue(':limit', $perPage, PDO::PARAM_INT);
+                $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
+                
+                $stmt->execute();
+                $logs = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                
+                // Parse JSON log_data for each log
+                foreach ($logs as &$log) {
+                    if (!empty($log['log_data'])) {
+                        $log['log_data_parsed'] = json_decode($log['log_data'], true);
+                    }
+                }
+            } catch (\PDOException $e) {
+                error_log('Failed to fetch cron logs: ' . $e->getMessage());
+            }
+        }
+        
+        // Define available cron jobs with their commands
+        $cronJobs = $this->getCronJobDefinitions();
+        
+        return $this->view->render($response, 'tools/cron_logs.twig', [
+            'page_title' => 'Cron Logs',
+            'logs' => $logs,
+            'total_logs' => $totalLogs,
+            'page' => $page,
+            'per_page' => $perPage,
+            'total_pages' => $totalPages,
+            'filters' => [
+                'job_name' => $jobName,
+                'job_type' => $jobType,
+                'status' => $status,
+            ],
+            'cron_jobs' => $cronJobs,
+            'flash' => $flash,
+        ]);
+    }
+
+    /**
+     * Run a cron job manually
+     */
+    public function runCronJob(Request $request, Response $response): Response
+    {
+        $data = $request->getParsedBody() ?? [];
+        $jobKey = $data['job_key'] ?? '';
+        
+        $cronJobs = $this->getCronJobDefinitions();
+        
+        if (!isset($cronJobs[$jobKey])) {
+            $_SESSION['tools_flash'] = [
+                'type' => 'error',
+                'message' => 'Invalid cron job specified.',
+            ];
+            return $response->withHeader('Location', '/tools/cron-logs')->withStatus(302);
+        }
+        
+        $job = $cronJobs[$jobKey];
+        $basePath = defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__, 3);
+        
+        try {
+            // Build the command
+            $scriptPath = $basePath . '/' . ltrim($job['script'], '/');
+            
+            if (!file_exists($scriptPath)) {
+                throw new \Exception('Script file not found: ' . $job['script']);
+            }
+            
+            $args = $job['args'] ?? '';
+            $command = 'php ' . escapeshellarg($scriptPath) . ' ' . $args . ' > /dev/null 2>&1 &';
+            
+            // Execute in background
+            exec($command);
+            
+            $_SESSION['tools_flash'] = [
+                'type' => 'success',
+                'message' => 'Cron job "' . $job['name'] . '" has been started in the background. Check the logs below for results.',
+            ];
+        } catch (\Exception $e) {
+            $_SESSION['tools_flash'] = [
+                'type' => 'error',
+                'message' => 'Failed to run cron job: ' . $e->getMessage(),
+            ];
+        }
+        
+        return $response->withHeader('Location', '/tools/cron-logs')->withStatus(302);
+    }
+
+    /**
+     * Get cron job definitions
+     */
+    private function getCronJobDefinitions(): array
+    {
+        $basePath = defined('BASE_PATH') ? BASE_PATH : dirname(__DIR__, 3);
+        $phpBin = PHP_BINARY;
+        
+        return [
+            'import_jobs' => [
+                'name' => 'Background Import Processing',
+                'script' => 'scripts/process_import_jobs.php',
+                'args' => '--once',
+                'schedule' => '* * * * *',
+                'description' => 'Processes queued import jobs asynchronously',
+                'job_type' => 'import',
+                'command_template' => "cd \${HTTPD_VHOSTS_D}/eclectyc.energy && /usr/local/php84/bin/php httpdocs/scripts/process_import_jobs.php --once >> httpdocs/logs/import_worker.log 2>&1",
+                'local_command' => "cd {$basePath} && {$phpBin} scripts/process_import_jobs.php --once",
+            ],
+            'aggregate_daily' => [
+                'name' => 'Daily Data Aggregation',
+                'script' => 'scripts/aggregate_cron.php',
+                'args' => '--range=daily',
+                'schedule' => '0 1 * * *',
+                'description' => 'Aggregates half-hourly data into daily summaries',
+                'job_type' => 'daily',
+                'command_template' => "cd \${HTTPD_VHOSTS_D}/eclectyc.energy && /usr/local/php84/bin/php httpdocs/scripts/aggregate_cron.php --range=daily >> httpdocs/logs/aggregate_daily.log 2>&1",
+                'local_command' => "cd {$basePath} && {$phpBin} scripts/aggregate_cron.php --range=daily",
+            ],
+            'aggregate_weekly' => [
+                'name' => 'Weekly Data Aggregation',
+                'script' => 'scripts/aggregate_cron.php',
+                'args' => '--range=weekly',
+                'schedule' => '0 2 * * 1',
+                'description' => 'Aggregates daily data into weekly summaries',
+                'job_type' => 'weekly',
+                'command_template' => "cd \${HTTPD_VHOSTS_D}/eclectyc.energy && /usr/local/php84/bin/php httpdocs/scripts/aggregate_cron.php --range=weekly >> httpdocs/logs/aggregate_weekly.log 2>&1",
+                'local_command' => "cd {$basePath} && {$phpBin} scripts/aggregate_cron.php --range=weekly",
+            ],
+            'aggregate_monthly' => [
+                'name' => 'Monthly Data Aggregation',
+                'script' => 'scripts/aggregate_cron.php',
+                'args' => '--range=monthly',
+                'schedule' => '0 3 1 * *',
+                'description' => 'Aggregates daily data into monthly summaries',
+                'job_type' => 'monthly',
+                'command_template' => "cd \${HTTPD_VHOSTS_D}/eclectyc.energy && /usr/local/php84/bin/php httpdocs/scripts/aggregate_cron.php --range=monthly >> httpdocs/logs/aggregate_monthly.log 2>&1",
+                'local_command' => "cd {$basePath} && {$phpBin} scripts/aggregate_cron.php --range=monthly",
+            ],
+            'aggregate_annual' => [
+                'name' => 'Annual Data Aggregation',
+                'script' => 'scripts/aggregate_cron.php',
+                'args' => '--range=annual',
+                'schedule' => '0 4 1 1 *',
+                'description' => 'Aggregates daily data into annual summaries',
+                'job_type' => 'annual',
+                'command_template' => "cd \${HTTPD_VHOSTS_D}/eclectyc.energy && /usr/local/php84/bin/php httpdocs/scripts/aggregate_cron.php --range=annual >> httpdocs/logs/aggregate_annual.log 2>&1",
+                'local_command' => "cd {$basePath} && {$phpBin} scripts/aggregate_cron.php --range=annual",
+            ],
+            'cleanup_logs' => [
+                'name' => 'Log Cleanup',
+                'script' => 'scripts/cleanup_logs.php',
+                'args' => '',
+                'schedule' => '0 0 * * 0',
+                'description' => 'Cleans up old log files and database logs',
+                'job_type' => 'cleanup',
+                'command_template' => "cd \${HTTPD_VHOSTS_D}/eclectyc.energy && /usr/local/php84/bin/php httpdocs/scripts/cleanup_logs.php >> httpdocs/logs/cleanup.log 2>&1",
+                'local_command' => "cd {$basePath} && {$phpBin} scripts/cleanup_logs.php",
+            ],
+            'cleanup_import_jobs' => [
+                'name' => 'Import Jobs Cleanup',
+                'script' => 'scripts/cleanup_import_jobs.php',
+                'args' => '',
+                'schedule' => '0 2 * * *',
+                'description' => 'Cleans up old completed import jobs',
+                'job_type' => 'cleanup',
+                'command_template' => "cd \${HTTPD_VHOSTS_D}/eclectyc.energy && /usr/local/php84/bin/php httpdocs/scripts/cleanup_import_jobs.php >> httpdocs/logs/cleanup.log 2>&1",
+                'local_command' => "cd {$basePath} && {$phpBin} scripts/cleanup_import_jobs.php",
+            ],
+            'carbon_intensity' => [
+                'name' => 'Fetch Carbon Intensity',
+                'script' => 'scripts/fetch_carbon_intensity.php',
+                'args' => '',
+                'schedule' => '*/30 * * * *',
+                'description' => 'Fetches carbon intensity data from National Grid',
+                'job_type' => 'other',
+                'command_template' => "cd \${HTTPD_VHOSTS_D}/eclectyc.energy && /usr/local/php84/bin/php httpdocs/scripts/fetch_carbon_intensity.php >> httpdocs/logs/carbon_intensity.log 2>&1",
+                'local_command' => "cd {$basePath} && {$phpBin} scripts/fetch_carbon_intensity.php",
+            ],
+            'scheduled_reports' => [
+                'name' => 'Process Scheduled Reports',
+                'script' => 'scripts/process_scheduled_reports.php',
+                'args' => '',
+                'schedule' => '0 6 * * *',
+                'description' => 'Generates and sends scheduled reports',
+                'job_type' => 'other',
+                'command_template' => "cd \${HTTPD_VHOSTS_D}/eclectyc.energy && /usr/local/php84/bin/php httpdocs/scripts/process_scheduled_reports.php >> httpdocs/logs/scheduled_reports.log 2>&1",
+                'local_command' => "cd {$basePath} && {$phpBin} scripts/process_scheduled_reports.php",
+            ],
+            'evaluate_alarms' => [
+                'name' => 'Evaluate Alarms',
+                'script' => 'scripts/evaluate_alarms.php',
+                'args' => '',
+                'schedule' => '*/15 * * * *',
+                'description' => 'Evaluates alarm conditions and triggers alerts',
+                'job_type' => 'other',
+                'command_template' => "cd \${HTTPD_VHOSTS_D}/eclectyc.energy && /usr/local/php84/bin/php httpdocs/scripts/evaluate_alarms.php >> httpdocs/logs/alarms.log 2>&1",
+                'local_command' => "cd {$basePath} && {$phpBin} scripts/evaluate_alarms.php",
+            ],
+            'export_sftp' => [
+                'name' => 'SFTP Export',
+                'script' => 'scripts/export_sftp.php',
+                'args' => '',
+                'schedule' => '0 5 * * *',
+                'description' => 'Exports data to configured SFTP servers',
+                'job_type' => 'export',
+                'command_template' => "cd \${HTTPD_VHOSTS_D}/eclectyc.energy && /usr/local/php84/bin/php httpdocs/scripts/export_sftp.php >> httpdocs/logs/sftp_export.log 2>&1",
+                'local_command' => "cd {$basePath} && {$phpBin} scripts/export_sftp.php",
+            ],
+            'ai_insights' => [
+                'name' => 'Generate AI Insights',
+                'script' => 'scripts/generate_ai_insights.php',
+                'args' => '',
+                'schedule' => '0 7 * * *',
+                'description' => 'Generates AI-powered insights and recommendations',
+                'job_type' => 'other',
+                'command_template' => "cd \${HTTPD_VHOSTS_D}/eclectyc.energy && /usr/local/php84/bin/php httpdocs/scripts/generate_ai_insights.php >> httpdocs/logs/ai_insights.log 2>&1",
+                'local_command' => "cd {$basePath} && {$phpBin} scripts/generate_ai_insights.php",
+            ],
+        ];
+    }
+
+    /**
      * View application logs
      */
     public function viewLogs(Request $request, Response $response): Response
