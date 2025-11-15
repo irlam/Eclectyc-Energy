@@ -485,7 +485,7 @@ class HealthController
     private function tableExists(PDO $db, string $table): bool
     {
         try {
-            $stmt = $db->prepare('SHOW TABLES LIKE :table');
+            $stmt = $db->prepare('SELECT 1 FROM information_schema.tables WHERE table_schema = DATABASE() AND table_name = :table LIMIT 1');
             $stmt->execute(['table' => $table]);
             return (bool) $stmt->fetchColumn();
         } catch (Exception $exception) {
